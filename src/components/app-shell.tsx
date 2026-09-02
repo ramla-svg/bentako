@@ -35,8 +35,8 @@ export function AppShell({
   children,
 }: {
   title: string;
-  subtitle?: string;
-  action?: ReactNode;
+  subtitle?: string | undefined;
+  action?: ReactNode | undefined;
   children: ReactNode;
 }) {
   const { store } = useAppSession();
