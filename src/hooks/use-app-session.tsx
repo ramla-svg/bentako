@@ -50,9 +50,23 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
   const [email, setEmail] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const { data } = await supabase.auth.getSession();
-    const session = data.session;
+    let session = null as Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"];
+    try {
+      const { data } = await supabase.auth.getSession();
+      session = data.session;
+    } catch {
+      session = null;
+    }
+
     if (!session) {
+      // Offline (or a token refresh that could not reach the network): fall back
+      // to the last known local snapshot so the store can keep selling.
+      const cached = await getSetting<Snapshot | null>(SNAPSHOT_KEY, null);
+      if (!isOnline() && cached) {
+        setSnapshot(cached);
+        setStatus(cached.store ? "ready" : "no-store");
+        return;
+      }
       setSnapshot(null);
       setStatus("signed-out");
       return;
@@ -66,12 +80,41 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       setStatus(cached.store ? "ready" : "no-store");
     }
 
+
     // 2. Refresh from the cloud when we can reach it.
     if (isOnline()) {
-      const [{ data: profile }, { data: roles }] = await Promise.all([
-        supabase.from("profiles").select("id, full_name, store_id").eq("id", session.user.id).maybeSingle(),
-        supabase.from("user_roles").select("role").eq("user_id", session.user.id),
-      ]);
+      type ProfileRow = { full_name: string | null; store_id: string | null };
+      let profile: ProfileRow | null = null;
+      let roles: { role: string }[] = [];
+      let reachedCloud = true;
+      try {
+        const [profileRes, rolesRes] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("id, full_name, store_id")
+            .eq("id", session.user.id)
+            .maybeSingle(),
+          supabase.from("user_roles").select("role").eq("user_id", session.user.id),
+        ]);
+        if (profileRes.error || rolesRes.error) reachedCloud = false;
+        profile = (profileRes.data as ProfileRow | null) ?? null;
+        roles = (rolesRes.data as { role: string }[] | null) ?? [];
+      } catch {
+        reachedCloud = false;
+      }
+
+      // Network said "online" but the request failed: never downgrade a working
+      // offline session (that would bounce the cashier into onboarding).
+      if (!reachedCloud) {
+        if (cached) {
+          setSnapshot(cached);
+          setStatus(cached.store ? "ready" : "no-store");
+        } else {
+          setStatus("no-store");
+        }
+        return;
+      }
+
       let store: StoreProfile | null = null;
       if (profile?.store_id) {
         const { data: storeRow } = await supabase
@@ -82,8 +125,9 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
           .eq("id", profile.store_id)
           .maybeSingle();
         if (storeRow) store = storeRow as StoreProfile;
+        else if (cached?.store) store = cached.store; // store row unreachable — keep local copy
       }
-      const role: Role = (roles ?? []).some((r) => r.role === "owner") ? "owner" : "cashier";
+      const role: Role = roles.some((r) => r.role === "owner") ? "owner" : "cashier";
       const fresh: Snapshot = {
         userId: session.user.id,
         userName: profile?.full_name || session.user.email || null,
@@ -97,6 +141,7 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     } else if (!cached) {
       setStatus("no-store");
     }
+
   }, []);
 
   useEffect(() => {

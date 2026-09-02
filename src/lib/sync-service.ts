@@ -107,6 +107,13 @@ async function markSynced(entity: SyncEntity, id: string) {
 
 let running = false;
 
+/** Exponential backoff so a permanently-failing row can't hammer the network. */
+function isBackedOff(item: SyncQueueItem): boolean {
+  if (item.status !== "failed" || item.retry_count === 0) return false;
+  const waitMs = Math.min(5 * 60_000, 5_000 * 2 ** Math.min(item.retry_count - 1, 6));
+  return Date.now() - new Date(item.updated_at).getTime() < waitMs;
+}
+
 /** Drain the pending queue. Safe to call often; never throws to the caller. */
 export async function syncNow(): Promise<void> {
   if (typeof window === "undefined" || running) return;
@@ -114,12 +121,21 @@ export async function syncNow(): Promise<void> {
     emit({ connection: "offline" });
     return;
   }
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (!sessionData.session) return;
+  let hasSession = false;
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    hasSession = !!sessionData.session;
+  } catch {
+    hasSession = false;
+  }
+  if (!hasSession) {
+    await refreshPending();
+    return;
+  }
 
   running = true;
   try {
-    const queue = await db().sync_queue.toArray();
+    const queue = (await db().sync_queue.toArray()).filter((item) => !isBackedOff(item));
     if (queue.length === 0) {
       await refreshPending();
       return;
@@ -170,6 +186,7 @@ export async function syncNow(): Promise<void> {
   }
 }
 
+
 function coerce(row: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...row, sync_status: "synced" };
   for (const key of Object.keys(out)) {
@@ -183,11 +200,20 @@ function coerce(row: Record<string, unknown>): Record<string, unknown> {
 /** Pull cloud data into the local database (never clobbers unsynced local edits). */
 export async function pullAll(storeId: string): Promise<void> {
   if (typeof window === "undefined" || !isOnline()) return;
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (!sessionData.session) return;
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) return;
+  } catch {
+    return;
+  }
+
+  // Always push local work first, so a pull can never overwrite a sale or stock
+  // change that has not reached the cloud yet.
+  await syncNow();
 
   try {
     emit({ connection: "syncing" });
+    const queuedIds = new Set((await db().sync_queue.toArray()).map((q) => q.entity_id));
     for (const entity of ENTITY_ORDER) {
       const query = supabase.from(entity).select("*").eq("store_id", storeId).limit(5000);
       const { data, error } = await query;
@@ -195,11 +221,13 @@ export async function pullAll(storeId: string): Promise<void> {
       const table = db().table(entity);
       for (const raw of data as Record<string, unknown>[]) {
         const id = raw["id"] as string;
+        if (queuedIds.has(id)) continue; // still waiting to upload — local wins
         const local = (await table.get(id)) as { sync_status?: string } | undefined;
         if (local && local.sync_status !== "synced") continue; // keep local pending edits
         await table.put(coerce(raw));
       }
     }
+
     await setSetting("last_sync_at", nowIso());
     emit({ connection: isOnline() ? "online" : "offline", lastSync: nowIso() });
   } catch {

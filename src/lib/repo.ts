@@ -307,6 +307,38 @@ async function nextTransactionNumber(storeId: string): Promise<string> {
   return makeTransactionNumber(todayCount + 1);
 }
 
+function buildMovement(
+  ctx: StoreContext,
+  input: {
+    product_id: string;
+    movement_type: MovementType;
+    quantity: number;
+    previous_stock: number;
+    new_stock: number;
+    unit_cost?: number | null;
+    supplier?: string | null;
+    reference_id?: string | null;
+    notes?: string | null;
+  },
+): LocalMovement {
+  return {
+    id: uuid(),
+    store_id: ctx.storeId,
+    product_id: input.product_id,
+    movement_type: input.movement_type,
+    quantity: input.quantity,
+    previous_stock: input.previous_stock,
+    new_stock: input.new_stock,
+    unit_cost: input.unit_cost ?? null,
+    supplier: input.supplier ?? null,
+    reference_id: input.reference_id ?? null,
+    notes: input.notes ?? null,
+    created_by: ctx.userId,
+    created_at: nowIso(),
+    sync_status: "pending",
+  };
+}
+
 export async function checkout(
   ctx: StoreContext,
   input: { lines: CartLine[]; cash_received: number; discount?: number; notes?: string | null },
@@ -353,36 +385,54 @@ export async function checkout(
     sync_status: "pending",
   }));
 
-  await db().sales.put(sale);
-  await db().sale_items.bulkPut(items);
+  const touchedProducts: string[] = [];
+  const movements: LocalMovement[] = [];
 
-  // Deduct stock locally + write a movement per line.
-  for (const line of input.lines) {
-    const product = await db().products.get(line.product_id);
-    if (!product) continue;
-    const newStock = product.stock_quantity - line.quantity;
-    await db().products.update(product.id, {
-      stock_quantity: newStock,
-      updated_at: nowIso(),
-      sync_status: "pending",
-    });
-    await enqueue("products", product.id);
-    await recordMovement(ctx, {
-      product_id: product.id,
-      movement_type: "sale",
-      quantity: line.quantity,
-      previous_stock: product.stock_quantity,
-      new_stock: newStock,
-      reference_id: sale.id,
-      notes: sale.transaction_number,
-    });
-  }
+  // Single atomic local write: sale, items, stock deduction and movements all
+  // land together or not at all — even if the tab closes mid-checkout.
+  const local = db();
+  await local.transaction(
+    "rw",
+    [local.sales, local.sale_items, local.products, local.inventory_movements],
+    async () => {
+      await local.sales.put(sale);
+      await local.sale_items.bulkPut(items);
 
+      for (const line of input.lines) {
+        const product = await local.products.get(line.product_id);
+        if (!product) continue;
+        const newStock = product.stock_quantity - line.quantity;
+        await local.products.update(product.id, {
+          stock_quantity: newStock,
+          updated_at: nowIso(),
+          sync_status: "pending",
+        });
+        touchedProducts.push(product.id);
+        movements.push(
+          buildMovement(ctx, {
+            product_id: product.id,
+            movement_type: "sale",
+            quantity: line.quantity,
+            previous_stock: product.stock_quantity,
+            new_stock: newStock,
+            reference_id: sale.id,
+            notes: sale.transaction_number,
+          }),
+        );
+      }
+      if (movements.length > 0) await local.inventory_movements.bulkPut(movements);
+    },
+  );
+
+  // Queue for upload only after the local commit succeeded.
+  for (const productId of touchedProducts) await enqueue("products", productId);
   await enqueue("sales", sale.id);
   for (const item of items) await enqueue("sale_items", item.id);
+  for (const movement of movements) await enqueue("inventory_movements", movement.id);
 
   return { sale, items };
 }
+
 
 export async function voidSale(ctx: StoreContext, saleId: string): Promise<void> {
   const sale = await db().sales.get(saleId);
