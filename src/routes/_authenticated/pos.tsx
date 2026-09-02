@@ -124,6 +124,20 @@ function PosPage() {
     setCart({ ...cart, [product.id]: current + 1 });
   }
 
+  /**
+   * Accepts a barcode/SKU string from any source — typed, pasted, or later a
+   * native scanner — and adds the matching product to the cart.
+   */
+  function scanCode(code: string) {
+    const product = matchProductByCode(products ?? [], code);
+    if (!product) {
+      toast.error("No product matches that code.");
+      return;
+    }
+    add(product);
+    setSearch("");
+  }
+
   function setQty(productId: string, qty: number) {
     if (qty <= 0) {
       const next = { ...cart };
@@ -136,10 +150,13 @@ function PosPage() {
 
   async function handleCheckout() {
     if (!ctx || lines.length === 0) return;
+    // Guard against a double tap / re-entrant submit creating two sales.
+    if (committingRef.current) return;
     if (cashNumber < total) {
       toast.error("Cash received is less than the total.");
       return;
     }
+    committingRef.current = true;
     setBusy(true);
     try {
       const result = await checkout(ctx, { lines, cash_received: cashNumber });
@@ -150,6 +167,7 @@ function PosPage() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Checkout failed.");
     } finally {
+      committingRef.current = false;
       setBusy(false);
     }
   }
@@ -162,11 +180,20 @@ function PosPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && search.trim()) {
+                e.preventDefault();
+                scanCode(search);
+              }
+            }}
             placeholder="Search product or scan code"
             className="h-12 pl-9"
             inputMode="search"
+            enterKeyHint="search"
+            autoComplete="off"
           />
         </div>
+
 
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
           <CategoryChip active={categoryId === "all"} onClick={() => setCategoryId("all")}>
