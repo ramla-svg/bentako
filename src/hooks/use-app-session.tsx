@@ -159,13 +159,18 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
 
       let store: StoreProfile | null = null;
       if (profile?.store_id) {
-        const { data: storeRow } = await supabase
-          .from("stores")
-          .select(
-            "id, name, owner_name, logo_url, currency, receipt_footer, allow_negative_stock, default_low_stock_threshold, confirm_void",
-          )
-          .eq("id", profile.store_id)
-          .maybeSingle();
+        const storeRow = await withTimeout(
+          supabase
+            .from("stores")
+            .select(
+              "id, name, owner_name, logo_url, currency, receipt_footer, allow_negative_stock, default_low_stock_threshold, confirm_void",
+            )
+            .eq("id", profile.store_id)
+            .maybeSingle()
+            .then((r) => r.data),
+          10000,
+          null,
+        );
         if (storeRow) store = storeRow as StoreProfile;
         else if (cached?.store) store = cached.store; // store row unreachable — keep local copy
       }
@@ -176,7 +181,7 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
         role,
         store,
       };
-      await setSetting(SNAPSHOT_KEY, fresh);
+      await withTimeout(setSetting(SNAPSHOT_KEY, fresh), 4000, undefined as void);
       setSnapshot(fresh);
       setStatus(store ? "ready" : "no-store");
       if (store) void pullAll(store.id);
@@ -187,7 +192,15 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void load();
+    let cancelled = false;
+    void load().catch(() => {
+      // Boot must never end on the splash screen: fall back to sign-in.
+      if (!cancelled) setStatus((s) => (s === "loading" ? "signed-out" : s));
+    });
+    // Last-resort watchdog for anything that neither resolves nor rejects.
+    const watchdog = window.setTimeout(() => {
+      if (!cancelled) setStatus((s) => (s === "loading" ? "signed-out" : s));
+    }, 12000);
     const stop = startSyncEngine();
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
@@ -195,10 +208,13 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       }
     });
     return () => {
+      cancelled = true;
+      window.clearTimeout(watchdog);
       sub.subscription.unsubscribe();
       stop();
     };
   }, [load]);
+
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
