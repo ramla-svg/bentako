@@ -8,6 +8,13 @@
       "when": 1788356702616,
       "tag": "0000_saripos_phase1_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788386826461,
+      "tag": "0001_allow_idempotent_movement_audit_sync",
+      "breakpoints": true
     }
   ]
 }
