@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Cloud, CloudOff, RefreshCw, UploadCloud } from "lucide-react";
+import { AlertTriangle, Cloud, CloudOff, RefreshCw, UploadCloud } from "lucide-react";
 
 import { getSyncState, isOnline, subscribeSync, syncNow } from "@/lib/sync-service";
 import { cn } from "@/lib/utils";
