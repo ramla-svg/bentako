@@ -23,31 +23,54 @@ export function useConnection() {
 }
 
 export function ConnectionChip({ className }: { className?: string }) {
-  const { connection, pending } = useConnection();
+  const { connection, pending, failed } = useConnection();
   const offline = connection === "offline" || !isOnline();
+  const issue = failed > 0 && !offline;
 
   const label = offline
-    ? "Offline"
-    : connection === "syncing"
-      ? "Syncing"
-      : pending > 0
-        ? `${pending} pending`
-        : "Online";
+    ? pending > 0
+      ? `Offline • ${pending} pending`
+      : "Offline"
+    : issue
+      ? "Sync issue"
+      : connection === "syncing"
+        ? pending > 0
+          ? `Syncing • ${pending} left`
+          : "Syncing"
+        : pending > 0
+          ? `${pending} pending`
+          : "Synced";
 
-  const Icon = offline ? CloudOff : connection === "syncing" ? RefreshCw : pending > 0 ? UploadCloud : Cloud;
+  const Icon = offline
+    ? CloudOff
+    : issue
+      ? AlertTriangle
+      : connection === "syncing"
+        ? RefreshCw
+        : pending > 0
+          ? UploadCloud
+          : Cloud;
 
   return (
     <button
       type="button"
       onClick={() => void syncNow()}
-      title={offline ? "Offline — sales will sync automatically later" : "Tap to sync now"}
+      title={
+        offline
+          ? "Offline — sales are saved here and sync automatically later"
+          : issue
+            ? "Some records are still waiting. Tap to try again."
+            : "Tap to sync now"
+      }
       className={cn(
         "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
         offline
           ? "border-warning/40 bg-warning/15 text-accent-foreground"
-          : pending > 0
-            ? "border-accent/40 bg-accent/15 text-accent-foreground"
-            : "border-primary/25 bg-primary/10 text-primary",
+          : issue
+            ? "border-destructive/40 bg-destructive/10 text-destructive"
+            : pending > 0
+              ? "border-accent/40 bg-accent/15 text-accent-foreground"
+              : "border-primary/25 bg-primary/10 text-primary",
         className,
       )}
     >
@@ -56,3 +79,4 @@ export function ConnectionChip({ className }: { className?: string }) {
     </button>
   );
 }
+
