@@ -407,7 +407,7 @@ export async function checkout(
     const local = db();
     await local.transaction(
       "rw",
-      [local.sales, local.sale_items, local.products, local.inventory_movements],
+      [local.sales, local.sale_items, local.products, local.inventory_movements, local.sync_queue],
       async () => {
         await local.sales.put(sale);
         await local.sale_items.bulkPut(items);
@@ -435,18 +435,18 @@ export async function checkout(
           );
         }
         if (movements.length > 0) await local.inventory_movements.bulkPut(movements);
+
+        // Queue intent is part of this same local commit. An app close directly
+        // after checkout cannot leave a saved sale undiscoverable by sync.
+        const group = sale.id;
+        for (const productId of touchedProducts)
+          await enqueue("products", productId, { groupId: group });
+        await enqueue("sales", sale.id, { groupId: group });
+        for (const item of items) await enqueue("sale_items", item.id, { groupId: group });
+        for (const movement of movements)
+          await enqueue("inventory_movements", movement.id, { groupId: group });
       },
     );
-
-    // Queue for upload only after the local commit succeeded. One group id ties
-    // the sale, its items and its stock movements together so they sync as a unit.
-    const group = sale.id;
-    for (const productId of touchedProducts)
-      await enqueue("products", productId, { groupId: group });
-    await enqueue("sales", sale.id, { groupId: group });
-    for (const item of items) await enqueue("sale_items", item.id, { groupId: group });
-    for (const movement of movements)
-      await enqueue("inventory_movements", movement.id, { groupId: group });
   } finally {
     endCriticalWork();
   }

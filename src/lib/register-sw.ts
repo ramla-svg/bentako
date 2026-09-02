@@ -112,12 +112,12 @@ export function registerServiceWorker(): void {
     return;
   }
 
-  window.addEventListener("load", () => {
-    void navigator.serviceWorker
-      .register(SW_URL, { scope: "/" })
-      .then((registration) => trackRegistration(registration))
-      .catch(() => {
-        /* offline app shell is best-effort */
-      });
-  });
+  // Register immediately instead of waiting for every remote font/image. This
+  // gives the worker the best chance to cache the shell during first setup.
+  void navigator.serviceWorker
+    .register(SW_URL, { scope: "/" })
+    .then((registration) => trackRegistration(registration))
+    .catch(() => {
+      /* offline app shell is best-effort */
+    });
 }

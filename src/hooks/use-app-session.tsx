@@ -79,6 +79,18 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     const readCache = () =>
       withTimeout<Snapshot | null>(getSetting<Snapshot | null>(SNAPSHOT_KEY, null), 4000, null);
 
+    // Open from IndexedDB before touching Supabase. A returning store must not
+    // wait for DNS, token refresh, or navigator.onLine to be accurate before it
+    // can reach the POS. Explicit sign-out deletes this snapshot first.
+    const cached = await readCache();
+    if (cached?.userId && cached.store?.id) {
+      setSnapshot(cached);
+      setStatus("ready");
+    } else if (cached?.userId) {
+      setSnapshot(cached);
+      setStatus("no-store");
+    }
+
     let session = null as Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"];
     try {
       const data = await withTimeout(
@@ -92,10 +104,10 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     }
 
     if (!session) {
-      // Offline (or a token refresh that could not reach the network): fall back
-      // to the last known local snapshot so the store can keep selling.
-      const cached = await readCache();
-      if (!isOnline() && cached) {
+      // A cached device remains usable if auth storage is temporarily
+      // unavailable or a refresh cannot reach Supabase. signOut() clears the
+      // snapshot, so this cannot undo an intentional logout.
+      if (cached) {
         setSnapshot(cached);
         setStatus(cached.store ? "ready" : "no-store");
         return;
@@ -107,8 +119,7 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
 
     setEmail(session.user.email ?? null);
 
-    // 1. Local snapshot first — this is what makes cold offline starts work.
-    const cached = await readCache();
+    // Keep the local snapshot while the cloud refresh runs in the background.
     if (cached && cached.userId === session.user.id) {
       setSnapshot(cached);
       setStatus(cached.store ? "ready" : "no-store");
@@ -219,10 +230,12 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
 
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    // Remove offline access before notifying Supabase, so an auth event racing
+    // this call cannot reopen the cached store after an intentional logout.
     await db().settings.delete(SNAPSHOT_KEY);
     setSnapshot(null);
     setStatus("signed-out");
+    await withTimeout(supabase.auth.signOut().then(() => undefined), 8000, undefined);
   }, []);
 
   const value = useMemo<AppSessionValue>(
