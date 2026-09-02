@@ -172,6 +172,26 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Snappy UI: no decorative motion on low-end Android devices.
+   Loading spinners keep animating so progress stays visible. */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-spin,
+  .animate-pulse,
+  .animate-caret-blink {
+    animation-duration: 1s !important;
+  }
+}
+
+
 /* Android/iOS safe areas: status bar, gesture bar, and display cutouts.
    The viewport uses viewport-fit=cover, so insets must be applied by hand. */
 .safe-bottom {
