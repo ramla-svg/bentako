@@ -82,12 +82,24 @@ function PosPage() {
 
   useEffect(() => {
     if (!draftKey || !cartRestored.current) return;
-    try {
-      if (Object.keys(cart).length === 0) window.localStorage.removeItem(draftKey);
-      else window.localStorage.setItem(draftKey, JSON.stringify({ cart, cash }));
-    } catch {
-      /* storage full / blocked — the sale still works */
-    }
+    // Deferred so the storage write never blocks the tap or the cart opening.
+    const write = () => {
+      try {
+        if (Object.keys(cart).length === 0) window.localStorage.removeItem(draftKey);
+        else window.localStorage.setItem(draftKey, JSON.stringify({ cart, cash }));
+      } catch {
+        /* storage full / blocked — the sale still works */
+      }
+    };
+    const ric = (window as unknown as { requestIdleCallback?: (cb: () => void) => number })
+      .requestIdleCallback;
+    const id = ric ? ric(write) : window.setTimeout(write, 200);
+    return () => {
+      const cic = (window as unknown as { cancelIdleCallback?: (h: number) => void })
+        .cancelIdleCallback;
+      if (ric && cic) cic(id);
+      else window.clearTimeout(id);
+    };
   }, [cart, cash, draftKey]);
 
   const products = useLiveQuery(
