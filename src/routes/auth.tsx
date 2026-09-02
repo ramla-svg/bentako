@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Store } from "lucide-react";
+import { Eye, EyeOff, Loader2, Store } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
