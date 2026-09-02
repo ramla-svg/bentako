@@ -26,8 +26,11 @@ export default defineConfig({
         manifest: false, // public/manifest.webmanifest is maintained by hand
         workbox: {
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-          navigateFallback: "/",
-          navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//],
+          // Client assets are emitted under dist/client but served from the
+          // root, so precache URLs must be rewritten or install 404s.
+          modifyURLPrefix: { "client/": "/" },
+          // HTML is server-rendered, so there is no index.html to fall back to:
+          // navigations are served by the NetworkFirst page cache below.
           skipWaiting: false,
           clientsClaim: true,
           cleanupOutdatedCaches: true,
