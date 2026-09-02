@@ -1,5 +1,5 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
-import { BarChart3, Boxes, ChevronRight, Settings, Wallet } from "lucide-react";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { BarChart3, Boxes, ChevronRight, LogOut, Settings, Wallet } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
 import { useAppSession } from "@/hooks/use-app-session";
@@ -25,7 +25,8 @@ const LINKS = [
 ] as const;
 
 function MorePage() {
-  const { store, role } = useAppSession();
+  const { store, role, signOut } = useAppSession();
+  const navigate = useNavigate();
 
   return (
     <AppShell title="More" subtitle={`${store?.name ?? ""} · ${role === "owner" ? "Owner" : "Cashier"}`}>
@@ -50,6 +51,17 @@ function MorePage() {
           </li>
         ))}
       </ul>
+
+      <button
+        type="button"
+        onClick={async () => {
+          await signOut();
+          void navigate({ to: "/auth", replace: true });
+        }}
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border p-4 font-semibold text-destructive active:bg-accent/10"
+      >
+        <LogOut className="size-4" /> Sign out
+      </button>
     </AppShell>
   );
 }
