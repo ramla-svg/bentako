@@ -42,13 +42,14 @@ function SettingsPage() {
   const [confirmVoid, setConfirmVoid] = useState(store?.confirm_void ?? true);
   const [busy, setBusy] = useState(false);
 
-  const pending = useLiveQuery(
-    // Everything still queued counts as waiting — including rows that failed a
-    // previous attempt and will be retried.
-    async () => await db().sync_queue.count(),
-    [],
-    0,
-  );
+  const [issues, setIssues] = useState<IntegrityIssue[] | null>(null);
+  const { connection, pending, failed, lastIssue } = useConnection();
+  const online = connection !== "offline" && isOnline();
+  const lastSyncAt = useLiveQuery(async () => await getSetting<string | null>("last_sync_at", null), [
+    connection,
+    pending,
+  ]);
+
 
 
   async function saveStore() {
