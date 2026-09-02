@@ -34,9 +34,9 @@ export const Route = createFileRoute("/_authenticated/inventory")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Inventory — SariPOS" },
+      { title: "Inventory — BentaKo" },
       { name: "description", content: "Receive deliveries, fix stock counts, and see stock history." },
-      { property: "og:title", content: "Inventory — SariPOS" },
+      { property: "og:title", content: "Inventory — BentaKo" },
       { property: "og:description", content: "Stock in, adjustments, and movement history." },
     ],
   }),

@@ -177,7 +177,7 @@ export interface SettingRow {
   updated_at: string;
 }
 
-class SariposDatabase extends Dexie {
+class BentakoDatabase extends Dexie {
   products!: Table<LocalProduct, string>;
   categories!: Table<LocalCategory, string>;
   sales!: Table<LocalSale, string>;
@@ -204,17 +204,17 @@ class SariposDatabase extends Dexie {
   }
 }
 
-let instance: SariposDatabase | null = null;
+let instance: BentakoDatabase | null = null;
 
 /**
  * Local database accessor. Kept behind this function so the storage engine can
  * later be swapped for Capacitor SQLite without touching feature code.
  */
-export function db(): SariposDatabase {
+export function db(): BentakoDatabase {
   if (typeof window === "undefined") {
     throw new Error("Local database is only available in the browser");
   }
-  if (!instance) instance = new SariposDatabase();
+  if (!instance) instance = new BentakoDatabase();
   return instance;
 }
 

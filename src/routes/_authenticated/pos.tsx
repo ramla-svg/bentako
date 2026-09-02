@@ -19,9 +19,9 @@ export const Route = createFileRoute("/_authenticated/pos")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "New sale — SariPOS" },
+      { title: "New sale — BentaKo" },
       { name: "description", content: "Tap products, take cash, and give change fast." },
-      { property: "og:title", content: "New sale — SariPOS" },
+      { property: "og:title", content: "New sale — BentaKo" },
       { property: "og:description", content: "The offline sari-sari store checkout screen." },
     ],
   }),

@@ -20,10 +20,10 @@ export const Route = createFileRoute("/_authenticated/settings")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Settings — SariPOS" },
+      { title: "Settings — BentaKo" },
       { name: "description", content: "Store details, receipt footer, sync, and account options." },
-      { property: "og:title", content: "Settings — SariPOS" },
-      { property: "og:description", content: "Manage your SariPOS store preferences." },
+      { property: "og:title", content: "Settings — BentaKo" },
+      { property: "og:description", content: "Manage your BentaKo store preferences." },
     ],
   }),
   component: SettingsPage,
@@ -186,7 +186,7 @@ function SettingsPage() {
         </Button>
 
         <p className="pb-4 text-center text-xs text-muted-foreground">
-          SariPOS works offline. Sales are saved on this device and uploaded when you have signal.
+          BentaKo works offline. Sales are saved on this device and uploaded when you have signal.
         </p>
       </div>
     </AppShell>

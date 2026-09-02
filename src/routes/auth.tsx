@@ -15,10 +15,10 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Sign in — SariPOS" },
-      { name: "description", content: "Sign in to your SariPOS store to start selling." },
-      { property: "og:title", content: "Sign in — SariPOS" },
-      { property: "og:description", content: "Owner and cashier sign-in for SariPOS." },
+      { title: "Sign in — BentaKo" },
+      { name: "description", content: "Sign in to your BentaKo store to start selling." },
+      { property: "og:title", content: "Sign in — BentaKo" },
+      { property: "og:description", content: "Owner and cashier sign-in for BentaKo." },
     ],
   }),
   component: AuthPage,
@@ -92,7 +92,7 @@ function AuthPage() {
           <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-primary text-primary-foreground">
             <Store className="size-7" />
           </div>
-          <h1 className="mt-4 font-display text-2xl font-extrabold">SariPOS</h1>
+          <h1 className="mt-4 font-display text-2xl font-extrabold">BentaKo</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Point of sale for your sari-sari store.
           </p>

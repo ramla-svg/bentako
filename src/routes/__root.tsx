@@ -79,14 +79,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "SariPOS — Offline Sari-Sari Store POS" },
+      { title: "BentaKo — Offline Sari-Sari Store POS" },
       {
         name: "description",
         content:
-          "SariPOS is a fast, offline-first point of sale and inventory app made for Philippine sari-sari stores.",
+          "BentaKo is a fast, offline-first point of sale and inventory app made for Philippine sari-sari stores.",
       },
       { name: "theme-color", content: "#1f5f47" },
-      { property: "og:title", content: "SariPOS — Offline Sari-Sari Store POS" },
+      { property: "og:title", content: "BentaKo — Offline Sari-Sari Store POS" },
       {
         property: "og:description",
         content: "Sell, track stock, and record expenses even without internet.",

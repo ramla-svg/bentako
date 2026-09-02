@@ -1,6 +1,6 @@
 {
-  "name": "SariPOS — Sari-Sari Store POS",
-  "short_name": "SariPOS",
+  "name": "BentaKo — Sari-Sari Store POS",
+  "short_name": "BentaKo",
   "description": "Offline-first point of sale and inventory for Philippine sari-sari stores.",
   "start_url": "/",
   "scope": "/",

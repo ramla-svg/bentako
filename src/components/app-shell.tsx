@@ -53,8 +53,8 @@ export function AppShell({
               <Store className="size-5" />
             </div>
             <div className="min-w-0">
-              <p className="truncate font-display text-sm font-bold">{store?.name ?? "SariPOS"}</p>
-              <p className="text-xs text-muted-foreground">SariPOS</p>
+              <p className="truncate font-display text-sm font-bold">{store?.name ?? "BentaKo"}</p>
+              <p className="text-xs text-muted-foreground">BentaKo</p>
             </div>
           </div>
           {NAV.map((item) => {
