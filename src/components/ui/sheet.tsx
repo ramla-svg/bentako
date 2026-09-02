@@ -52,14 +52,16 @@ interface SheetContentProps
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, forceMount, ...props }, ref) => (
+>(({ side = "right", className, children, forceMount, ...props }, ref) => {
   // `forceMount` keeps the panel in the DOM so the first open costs nothing
   // extra: opening only flips visibility instead of mounting a portal.
-  <SheetPortal forceMount={forceMount}>
-    <SheetOverlay forceMount={forceMount} />
+  const mount = forceMount ? ({ forceMount: true } as const) : {};
+  return (
+  <SheetPortal {...mount}>
+    <SheetOverlay {...mount} />
     <SheetPrimitive.Content
       ref={ref}
-      forceMount={forceMount}
+      {...mount}
       className={cn(sheetVariants({ side }), "data-[state=closed]:hidden", className)}
       {...props}
     >
