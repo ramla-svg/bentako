@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import {
   isOnline as networkIsOnline,
+  probeReachable,
   subscribeNetwork,
 } from "@/lib/platform/network-service";
 
@@ -37,6 +38,8 @@ const NUMERIC_FIELDS = new Set([
   "amount",
   "sort_order",
 ]);
+
+const CLOUD_HEALTH_URL = `${import.meta.env.VITE_SUPABASE_URL ?? ""}/auth/v1/health`;
 
 export type ConnectionState = "online" | "offline" | "syncing";
 
@@ -424,9 +427,18 @@ export function startSyncEngine(): () => void {
     // Wait for the connection to settle before hitting the network: mobile
     // hotspots fire `online` well before packets actually flow.
     window.clearTimeout(stabilizeTimer);
-    stabilizeTimer = window.setTimeout(() => {
+    stabilizeTimer = window.setTimeout(async () => {
       log("reconnect-stable");
-      void syncNow();
+      // navigator.onLine can be true on a captive portal or dead hotspot. Do
+      // not churn queue attempts until the cloud endpoint is actually reachable.
+      const reachable = CLOUD_HEALTH_URL.startsWith("http")
+        ? await probeReachable(CLOUD_HEALTH_URL)
+        : await probeReachable();
+      if (reachable) void syncNow();
+      else {
+        emit({ connection: "offline" });
+        log("reconnect-not-reachable");
+      }
     }, 2500);
   };
   const onOffline = () => {
