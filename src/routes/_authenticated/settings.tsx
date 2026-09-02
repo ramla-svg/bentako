@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
-import { LogOut, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
+import { Download, LogOut, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/app-shell";
@@ -16,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime } from "@/lib/format";
 import { runIntegrityCheck, type IntegrityIssue } from "@/lib/integrity";
 import { getSetting } from "@/lib/local-db";
+import { promptInstall, useInstallState } from "@/lib/platform/install-service";
+import { platformLabel } from "@/lib/platform/platform-service";
 import { seedDemoProducts } from "@/lib/repo";
 import { isOnline, syncNow } from "@/lib/sync-service";
 
@@ -47,6 +49,7 @@ function SettingsPage() {
   const [busy, setBusy] = useState(false);
 
   const [issues, setIssues] = useState<IntegrityIssue[] | null>(null);
+  const install = useInstallState();
   const { connection, pending, failed, lastIssue } = useConnection();
   const online = connection !== "offline" && isOnline();
   const lastSyncAt = useLiveQuery(async () => await getSetting<string | null>("last_sync_at", null), [
