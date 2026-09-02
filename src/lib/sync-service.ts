@@ -39,7 +39,7 @@ const NUMERIC_FIELDS = new Set([
   "sort_order",
 ]);
 
-const CLOUD_HEALTH_URL = `${import.meta.env.VITE_SUPABASE_URL ?? ""}/auth/v1/health`;
+const CLOUD_HEALTH_URL = `${import.meta.env["VITE_SUPABASE_URL"] ?? ""}/auth/v1/health`;
 
 export type ConnectionState = "online" | "offline" | "syncing";
 
