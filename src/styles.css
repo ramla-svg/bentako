@@ -172,7 +172,24 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Android/iOS safe areas: status bar, gesture bar, and display cutouts.
+   The viewport uses viewport-fit=cover, so insets must be applied by hand. */
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-x {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Keep fixed bars clear of the system navigation bar. */
+.safe-nav-offset {
+  bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+}
+
 
