@@ -1,4 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
+import {
+  isOnline as networkIsOnline,
+  subscribeNetwork,
+} from "@/lib/platform/network-service";
 
 import { db, setSetting, type SyncEntity, type SyncQueueItem } from "./local-db";
 import { nowIso, uuid } from "./ids";
