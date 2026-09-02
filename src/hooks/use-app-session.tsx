@@ -44,15 +44,48 @@ const AppSessionContext = createContext<AppSessionValue | null>(null);
 
 const SNAPSHOT_KEY = "session_snapshot";
 
+/**
+ * Never let a hung promise (Supabase auth lock, blocked IndexedDB) freeze the
+ * splash screen — every await in the boot path is time-boxed.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return new Promise<T>((resolve) => {
+    let settled = false;
+    const done = (value: T) => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
+    const timer = setTimeout(() => done(fallback), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        done(value);
+      },
+      () => {
+        clearTimeout(timer);
+        done(fallback);
+      },
+    );
+  });
+}
+
 export function AppSessionProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>("loading");
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [email, setEmail] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    const readCache = () =>
+      withTimeout<Snapshot | null>(getSetting<Snapshot | null>(SNAPSHOT_KEY, null), 4000, null);
+
     let session = null as Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"];
     try {
-      const { data } = await supabase.auth.getSession();
+      const data = await withTimeout(
+        supabase.auth.getSession().then((r) => r.data),
+        8000,
+        { session: null },
+      );
       session = data.session;
     } catch {
       session = null;
@@ -61,7 +94,7 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     if (!session) {
       // Offline (or a token refresh that could not reach the network): fall back
       // to the last known local snapshot so the store can keep selling.
-      const cached = await getSetting<Snapshot | null>(SNAPSHOT_KEY, null);
+      const cached = await readCache();
       if (!isOnline() && cached) {
         setSnapshot(cached);
         setStatus(cached.store ? "ready" : "no-store");
@@ -71,10 +104,11 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       setStatus("signed-out");
       return;
     }
+
     setEmail(session.user.email ?? null);
 
     // 1. Local snapshot first — this is what makes cold offline starts work.
-    const cached = await getSetting<Snapshot | null>(SNAPSHOT_KEY, null);
+    const cached = await readCache();
     if (cached && cached.userId === session.user.id) {
       setSnapshot(cached);
       setStatus(cached.store ? "ready" : "no-store");
@@ -88,20 +122,28 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       let roles: { role: string }[] = [];
       let reachedCloud = true;
       try {
-        const [profileRes, rolesRes] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("id, full_name, store_id")
-            .eq("id", session.user.id)
-            .maybeSingle(),
-          supabase.from("user_roles").select("role").eq("user_id", session.user.id),
-        ]);
+        const [profileRes, rolesRes] = await withTimeout(
+          Promise.all([
+            supabase
+              .from("profiles")
+              .select("id, full_name, store_id")
+              .eq("id", session.user.id)
+              .maybeSingle(),
+            supabase.from("user_roles").select("role").eq("user_id", session.user.id),
+          ]),
+          10000,
+          [
+            { data: null, error: { message: "timeout" } },
+            { data: null, error: { message: "timeout" } },
+          ] as never,
+        );
         if (profileRes.error || rolesRes.error) reachedCloud = false;
         profile = (profileRes.data as ProfileRow | null) ?? null;
         roles = (rolesRes.data as { role: string }[] | null) ?? [];
       } catch {
         reachedCloud = false;
       }
+
 
       // Network said "online" but the request failed: never downgrade a working
       // offline session (that would bounce the cashier into onboarding).
@@ -117,13 +159,20 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
 
       let store: StoreProfile | null = null;
       if (profile?.store_id) {
-        const { data: storeRow } = await supabase
-          .from("stores")
-          .select(
-            "id, name, owner_name, logo_url, currency, receipt_footer, allow_negative_stock, default_low_stock_threshold, confirm_void",
-          )
-          .eq("id", profile.store_id)
-          .maybeSingle();
+        const storeRow = await withTimeout(
+          Promise.resolve(
+            supabase
+              .from("stores")
+              .select(
+                "id, name, owner_name, logo_url, currency, receipt_footer, allow_negative_stock, default_low_stock_threshold, confirm_void",
+              )
+              .eq("id", profile.store_id)
+              .maybeSingle(),
+          ).then((r) => r.data),
+          10000,
+          null,
+        );
+
         if (storeRow) store = storeRow as StoreProfile;
         else if (cached?.store) store = cached.store; // store row unreachable — keep local copy
       }
@@ -134,7 +183,7 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
         role,
         store,
       };
-      await setSetting(SNAPSHOT_KEY, fresh);
+      await withTimeout(setSetting(SNAPSHOT_KEY, fresh), 4000, undefined as void);
       setSnapshot(fresh);
       setStatus(store ? "ready" : "no-store");
       if (store) void pullAll(store.id);
@@ -145,7 +194,15 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void load();
+    let cancelled = false;
+    void load().catch(() => {
+      // Boot must never end on the splash screen: fall back to sign-in.
+      if (!cancelled) setStatus((s) => (s === "loading" ? "signed-out" : s));
+    });
+    // Last-resort watchdog for anything that neither resolves nor rejects.
+    const watchdog = window.setTimeout(() => {
+      if (!cancelled) setStatus((s) => (s === "loading" ? "signed-out" : s));
+    }, 12000);
     const stop = startSyncEngine();
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
@@ -153,10 +210,13 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       }
     });
     return () => {
+      cancelled = true;
+      window.clearTimeout(watchdog);
       sub.subscription.unsubscribe();
       stop();
     };
   }, [load]);
+
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
