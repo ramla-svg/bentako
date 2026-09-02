@@ -41,7 +41,9 @@ export function AppShell({
   action?: ReactNode | undefined;
   children: ReactNode;
 }) {
-  const { store } = useAppSession();
+  const { store, signOut } = useAppSession();
+  const navigate = useNavigate();
+
   const { connection } = useConnection();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
