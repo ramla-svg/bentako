@@ -1,7 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useMemo, useState } from "react";
-import { Check, Minus, Plus, Search, ShoppingBasket, Trash2, X } from "lucide-react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import {
+  Check,
+  Minus,
+  Plus,
+  Printer,
+  Search,
+  Share2,
+  ShoppingBasket,
+  Trash2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell, EmptyState } from "@/components/app-shell";
@@ -10,9 +20,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAppSession } from "@/hooks/use-app-session";
+import { useBackHandler } from "@/hooks/use-back-handler";
 import { formatMoney, formatQty } from "@/lib/format";
 import { db, type LocalProduct } from "@/lib/local-db";
-import { checkout, type CartLine, type CheckoutResult } from "@/lib/repo";
+import { printReceiptText } from "@/lib/platform/print-service";
+import { shareText } from "@/lib/platform/share-service";
+import { buildReceiptText } from "@/lib/receipt";
+import { checkout, matchProductByCode, type CartLine, type CheckoutResult } from "@/lib/repo";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/pos")({
