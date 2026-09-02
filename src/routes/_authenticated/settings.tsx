@@ -43,10 +43,13 @@ function SettingsPage() {
   const [busy, setBusy] = useState(false);
 
   const pending = useLiveQuery(
-    async () => await db().sync_queue.where("status").equals("pending").count(),
+    // Everything still queued counts as waiting — including rows that failed a
+    // previous attempt and will be retried.
+    async () => await db().sync_queue.count(),
     [],
     0,
   );
+
 
   async function saveStore() {
     if (!store) return;
