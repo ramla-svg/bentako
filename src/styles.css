@@ -187,9 +187,15 @@
   padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* Keep fixed bars clear of the system navigation bar. */
+/* Keep fixed bars clear of the system navigation bar (mobile bottom nav). */
 .safe-nav-offset {
   bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 1024px) {
+  .safe-nav-offset {
+    bottom: 1rem;
+  }
 }
 
 

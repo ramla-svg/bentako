@@ -269,7 +269,7 @@ function PosPage() {
 
       {/* Cart bar */}
       {itemCount > 0 ? (
-        <div className="safe-nav-offset safe-x fixed inset-x-0 z-30 px-4 lg:bottom-4">
+        <div className="safe-nav-offset safe-x fixed inset-x-0 z-30 px-4">
           <button
             onClick={() => setCartOpen(true)}
             className="mx-auto flex w-full max-w-md items-center justify-between rounded-2xl bg-primary px-4 py-3.5 text-primary-foreground shadow-lg shadow-primary/30 active:scale-[0.99]"
