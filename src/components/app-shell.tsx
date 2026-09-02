@@ -1,8 +1,9 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3,
   Boxes,
   LayoutGrid,
+  LogOut,
   MoreHorizontal,
   Package,
   Receipt,
@@ -11,6 +12,7 @@ import {
   Store,
   Wallet,
 } from "lucide-react";
+
 import type { ReactNode } from "react";
 
 import { ConnectionChip, useConnection } from "@/components/connection-chip";
