@@ -29,9 +29,9 @@ export const Route = createFileRoute("/_authenticated/sales")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Sales history — SariPOS" },
+      { title: "Sales history — BentaKo" },
       { name: "description", content: "Browse past transactions, view receipts, and void mistakes." },
-      { property: "og:title", content: "Sales history — SariPOS" },
+      { property: "og:title", content: "Sales history — BentaKo" },
       { property: "og:description", content: "Every sale saved on this device, synced when online." },
     ],
   }),

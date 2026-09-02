@@ -17,9 +17,9 @@ export const Route = createFileRoute("/onboarding")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Set up your store — SariPOS" },
+      { title: "Set up your store — BentaKo" },
       { name: "description", content: "Name your sari-sari store and start selling in minutes." },
-      { property: "og:title", content: "Set up your store — SariPOS" },
+      { property: "og:title", content: "Set up your store — BentaKo" },
       { property: "og:description", content: "Two quick steps and your POS is ready." },
     ],
   }),

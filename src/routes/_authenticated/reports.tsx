@@ -13,9 +13,9 @@ export const Route = createFileRoute("/_authenticated/reports")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Reports — SariPOS" },
+      { title: "Reports — BentaKo" },
       { name: "description", content: "Daily sales, profit, expenses, and your best-selling items." },
-      { property: "og:title", content: "Reports — SariPOS" },
+      { property: "og:title", content: "Reports — BentaKo" },
       { property: "og:description", content: "Simple numbers that show how your store is doing." },
     ],
   }),

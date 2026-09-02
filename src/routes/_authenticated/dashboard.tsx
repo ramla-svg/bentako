@@ -22,9 +22,9 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Dashboard — SariPOS" },
+      { title: "Dashboard — BentaKo" },
       { name: "description", content: "Today's sales, profit, expenses, and low-stock alerts." },
-      { property: "og:title", content: "Dashboard — SariPOS" },
+      { property: "og:title", content: "Dashboard — BentaKo" },
       { property: "og:description", content: "See how your sari-sari store is doing today." },
     ],
   }),

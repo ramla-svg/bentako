@@ -8,13 +8,13 @@ export const Route = createFileRoute("/")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "SariPOS — Sari-Sari Store POS that works offline" },
+      { title: "BentaKo — Sari-Sari Store POS that works offline" },
       {
         name: "description",
         content:
-          "Sell fast, track stock, and record expenses in your sari-sari store — even with no internet. SariPOS syncs automatically when you're back online.",
+          "Sell fast, track stock, and record expenses in your sari-sari store — even with no internet. BentaKo syncs automatically when you're back online.",
       },
-      { property: "og:title", content: "SariPOS — Sari-Sari Store POS that works offline" },
+      { property: "og:title", content: "BentaKo — Sari-Sari Store POS that works offline" },
       {
         property: "og:description",
         content: "Tap product, enter payment, see change. Built for Philippine sari-sari stores.",
@@ -40,7 +40,7 @@ function Landing() {
         <div className="mx-auto grid size-16 place-items-center rounded-3xl bg-primary text-primary-foreground">
           <Store className="size-8" />
         </div>
-        <h1 className="mt-5 font-display text-3xl font-extrabold">SariPOS</h1>
+        <h1 className="mt-5 font-display text-3xl font-extrabold">BentaKo</h1>
         <p className="mt-2 text-sm text-muted-foreground">Bilis ng tindahan, kahit walang internet.</p>
         <Loader2 className="mx-auto mt-6 size-5 animate-spin text-primary" />
       </div>

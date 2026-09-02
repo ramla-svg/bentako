@@ -33,9 +33,9 @@ export const Route = createFileRoute("/_authenticated/expenses")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Expenses — SariPOS" },
+      { title: "Expenses — BentaKo" },
       { name: "description", content: "Record store expenses so your profit numbers stay honest." },
-      { property: "og:title", content: "Expenses — SariPOS" },
+      { property: "og:title", content: "Expenses — BentaKo" },
       { property: "og:description", content: "Track deliveries, kuryente, and other daily costs." },
     ],
   }),

@@ -45,9 +45,9 @@ export const Route = createFileRoute("/_authenticated/products")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Products — SariPOS" },
+      { title: "Products — BentaKo" },
       { name: "description", content: "Manage your product list, prices, and stock levels." },
-      { property: "og:title", content: "Products — SariPOS" },
+      { property: "og:title", content: "Products — BentaKo" },
       { property: "og:description", content: "Add and edit sari-sari store products offline." },
     ],
   }),
