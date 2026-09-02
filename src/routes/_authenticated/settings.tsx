@@ -1,0 +1,218 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useLiveQuery } from "dexie-react-hooks";
+import { useState } from "react";
+import { LogOut, RefreshCw, Sparkles } from "lucide-react";
+import { toast } from "sonner";
+
+import { AppShell } from "@/components/app-shell";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { useAppSession } from "@/hooks/use-app-session";
+import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/local-db";
+import { seedDemoProducts } from "@/lib/repo";
+import { isOnline, syncNow } from "@/lib/sync-service";
+
+export const Route = createFileRoute("/_authenticated/settings")({
+  ssr: false,
+  head: () => ({
+    meta: [
+      { title: "Settings — SariPOS" },
+      { name: "description", content: "Store details, receipt footer, sync, and account options." },
+      { property: "og:title", content: "Settings — SariPOS" },
+      { property: "og:description", content: "Manage your SariPOS store preferences." },
+    ],
+  }),
+  component: SettingsPage,
+});
+
+function SettingsPage() {
+  const { store, ctx, role, email, refresh, signOut } = useAppSession();
+  const navigate = useNavigate();
+  const isOwner = role === "owner";
+
+  const [name, setName] = useState(store?.name ?? "");
+  const [ownerName, setOwnerName] = useState(store?.owner_name ?? "");
+  const [footer, setFooter] = useState(store?.receipt_footer ?? "");
+  const [threshold, setThreshold] = useState(String(store?.default_low_stock_threshold ?? 5));
+  const [negative, setNegative] = useState(store?.allow_negative_stock ?? false);
+  const [confirmVoid, setConfirmVoid] = useState(store?.confirm_void ?? true);
+  const [busy, setBusy] = useState(false);
+
+  const pending = useLiveQuery(
+    async () => await db().sync_queue.where("status").equals("pending").count(),
+    [],
+    0,
+  );
+
+  async function saveStore() {
+    if (!store) return;
+    if (!isOnline()) {
+      toast.error("Connect to the internet to change store settings.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase
+        .from("stores")
+        .update({
+          name: name.trim(),
+          owner_name: ownerName.trim() || null,
+          receipt_footer: footer.trim() || null,
+          default_low_stock_threshold: Number(threshold) || 5,
+          allow_negative_stock: negative,
+          confirm_void: confirmVoid,
+        })
+        .eq("id", store.id);
+      if (error) throw error;
+      await refresh();
+      toast.success("Settings saved.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save settings.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <AppShell title="Settings" subtitle={email ?? undefined}>
+      <div className="space-y-4">
+        <section className="space-y-3 rounded-2xl border bg-card p-4">
+          <h2 className="font-display text-sm font-bold">Store details</h2>
+          <div className="space-y-1.5">
+            <Label>Store name</Label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="h-12"
+              disabled={!isOwner}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Owner name</Label>
+            <Input
+              value={ownerName}
+              onChange={(e) => setOwnerName(e.target.value)}
+              className="h-12"
+              disabled={!isOwner}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Receipt footer</Label>
+            <Textarea
+              value={footer}
+              onChange={(e) => setFooter(e.target.value)}
+              rows={2}
+              disabled={!isOwner}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Default low-stock alert</Label>
+            <Input
+              value={threshold}
+              onChange={(e) => setThreshold(e.target.value.replace(/[^0-9]/g, ""))}
+              inputMode="numeric"
+              className="tnum h-12"
+              disabled={!isOwner}
+            />
+          </div>
+          <ToggleRow
+            label="Allow selling below zero stock"
+            description="Useful if your counts are not exact yet."
+            checked={negative}
+            onChange={setNegative}
+            disabled={!isOwner}
+          />
+          <ToggleRow
+            label="Confirm before voiding"
+            description="Ask for confirmation when cancelling a sale."
+            checked={confirmVoid}
+            onChange={setConfirmVoid}
+            disabled={!isOwner}
+          />
+          {isOwner ? (
+            <Button className="h-12 w-full" onClick={() => void saveStore()} disabled={busy}>
+              Save changes
+            </Button>
+          ) : (
+            <p className="text-xs text-muted-foreground">Only the owner can change store settings.</p>
+          )}
+        </section>
+
+        <section className="space-y-3 rounded-2xl border bg-card p-4">
+          <h2 className="font-display text-sm font-bold">Sync</h2>
+          <p className="text-sm text-muted-foreground">
+            {pending === 0
+              ? "Everything on this device is backed up."
+              : `${pending} change${pending > 1 ? "s" : ""} waiting to upload.`}
+          </p>
+          <Button variant="outline" className="h-12 w-full" onClick={() => void syncNow()}>
+            <RefreshCw className="size-4" /> Sync now
+          </Button>
+        </section>
+
+        {isOwner ? (
+          <section className="space-y-3 rounded-2xl border bg-card p-4">
+            <h2 className="font-display text-sm font-bold">Sample data</h2>
+            <p className="text-sm text-muted-foreground">
+              Add common sari-sari products for testing or training.
+            </p>
+            <Button
+              variant="outline"
+              className="h-12 w-full"
+              onClick={async () => {
+                if (!ctx) return;
+                const created = await seedDemoProducts(ctx);
+                toast.success(`Added ${created} sample products.`);
+              }}
+            >
+              <Sparkles className="size-4" /> Add sample products
+            </Button>
+          </section>
+        ) : null}
+
+        <Button
+          variant="outline"
+          className="h-12 w-full text-destructive"
+          onClick={async () => {
+            await signOut();
+            void navigate({ to: "/auth", replace: true });
+          }}
+        >
+          <LogOut className="size-4" /> Sign out
+        </Button>
+
+        <p className="pb-4 text-center text-xs text-muted-foreground">
+          SariPOS works offline. Sales are saved on this device and uploaded when you have signal.
+        </p>
+      </div>
+    </AppShell>
+  );
+}
+
+function ToggleRow({
+  label,
+  description,
+  checked,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  description: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border p-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium">{label}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+      <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
+    </div>
+  );
+}
