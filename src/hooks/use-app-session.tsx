@@ -108,7 +108,7 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     setEmail(session.user.email ?? null);
 
     // 1. Local snapshot first — this is what makes cold offline starts work.
-    const cached = await getSetting<Snapshot | null>(SNAPSHOT_KEY, null);
+    const cached = await readCache();
     if (cached && cached.userId === session.user.id) {
       setSnapshot(cached);
       setStatus(cached.store ? "ready" : "no-store");
