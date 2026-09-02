@@ -303,9 +303,21 @@ export interface CheckoutResult {
 async function nextTransactionNumber(storeId: string): Promise<string> {
   const today = localDayKey();
   const sales = await db().sales.where("store_id").equals(storeId).toArray();
-  const todayCount = sales.filter((s) => localDayKey(s.created_at) === today).length;
-  return makeTransactionNumber(todayCount + 1);
+  const todaysNumbers = new Set(
+    sales.filter((s) => localDayKey(s.created_at) === today).map((s) => s.transaction_number),
+  );
+  // Continue from the highest number already used today (count alone breaks once
+  // cloud sales from another device are pulled in).
+  let sequence = 1;
+  for (const number of todaysNumbers) {
+    const parsed = Number(number.split("-").at(-1));
+    if (Number.isFinite(parsed) && parsed >= sequence) sequence = parsed + 1;
+  }
+  let candidate = makeTransactionNumber(sequence);
+  while (todaysNumbers.has(candidate)) candidate = makeTransactionNumber(++sequence);
+  return candidate;
 }
+
 
 function buildMovement(
   ctx: StoreContext,
