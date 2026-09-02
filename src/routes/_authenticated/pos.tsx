@@ -162,14 +162,21 @@ function PosPage() {
   const cashNumber = Number(cash) || 0;
   const change = cashNumber - total;
 
-  function add(product: LocalProduct) {
-    const current = cart[product.id] ?? 0;
-    if (!store?.allow_negative_stock && current + 1 > product.stock_quantity) {
-      toast.error(`Only ${formatQty(product.stock_quantity)} left of ${product.name}.`);
-      return;
-    }
-    setCart({ ...cart, [product.id]: current + 1 });
-  }
+  const allowNegative = store?.allow_negative_stock ?? false;
+  // Stable identity so memoized product tiles do not re-render on every tap.
+  const add = useCallback(
+    (product: LocalProduct) => {
+      setCart((prev) => {
+        const current = prev[product.id] ?? 0;
+        if (!allowNegative && current + 1 > product.stock_quantity) {
+          toast.error(`Only ${formatQty(product.stock_quantity)} left of ${product.name}.`);
+          return prev;
+        }
+        return { ...prev, [product.id]: current + 1 };
+      });
+    },
+    [allowNegative],
+  );
 
   /**
    * Accepts a barcode/SKU string from any source — typed, pasted, or later a
