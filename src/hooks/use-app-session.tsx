@@ -50,9 +50,23 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
   const [email, setEmail] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const { data } = await supabase.auth.getSession();
-    const session = data.session;
+    let session = null as Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"];
+    try {
+      const { data } = await supabase.auth.getSession();
+      session = data.session;
+    } catch {
+      session = null;
+    }
+
     if (!session) {
+      // Offline (or a token refresh that could not reach the network): fall back
+      // to the last known local snapshot so the store can keep selling.
+      const cached = await getSetting<Snapshot | null>(SNAPSHOT_KEY, null);
+      if (!isOnline() && cached) {
+        setSnapshot(cached);
+        setStatus(cached.store ? "ready" : "no-store");
+        return;
+      }
       setSnapshot(null);
       setStatus("signed-out");
       return;
@@ -65,6 +79,7 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       setSnapshot(cached);
       setStatus(cached.store ? "ready" : "no-store");
     }
+
 
     // 2. Refresh from the cloud when we can reach it.
     if (isOnline()) {
