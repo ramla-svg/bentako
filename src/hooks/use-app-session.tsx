@@ -122,20 +122,28 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       let roles: { role: string }[] = [];
       let reachedCloud = true;
       try {
-        const [profileRes, rolesRes] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("id, full_name, store_id")
-            .eq("id", session.user.id)
-            .maybeSingle(),
-          supabase.from("user_roles").select("role").eq("user_id", session.user.id),
-        ]);
+        const [profileRes, rolesRes] = await withTimeout(
+          Promise.all([
+            supabase
+              .from("profiles")
+              .select("id, full_name, store_id")
+              .eq("id", session.user.id)
+              .maybeSingle(),
+            supabase.from("user_roles").select("role").eq("user_id", session.user.id),
+          ]),
+          10000,
+          [
+            { data: null, error: { message: "timeout" } },
+            { data: null, error: { message: "timeout" } },
+          ] as never,
+        );
         if (profileRes.error || rolesRes.error) reachedCloud = false;
         profile = (profileRes.data as ProfileRow | null) ?? null;
         roles = (rolesRes.data as { role: string }[] | null) ?? [];
       } catch {
         reachedCloud = false;
       }
+
 
       // Network said "online" but the request failed: never downgrade a working
       // offline session (that would bounce the cashier into onboarding).
