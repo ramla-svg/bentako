@@ -11,7 +11,7 @@ import {
 } from "./local-db";
 import { localDayKey } from "./format";
 import { makeTransactionNumber, nowIso, uuid } from "./ids";
-import { enqueue } from "./sync-service";
+import { beginCriticalWork, endCriticalWork, enqueue } from "./sync-service";
 
 export interface StoreContext {
   storeId: string;
