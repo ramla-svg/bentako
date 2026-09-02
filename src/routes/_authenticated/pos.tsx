@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
   Minus,
@@ -82,12 +82,24 @@ function PosPage() {
 
   useEffect(() => {
     if (!draftKey || !cartRestored.current) return;
-    try {
-      if (Object.keys(cart).length === 0) window.localStorage.removeItem(draftKey);
-      else window.localStorage.setItem(draftKey, JSON.stringify({ cart, cash }));
-    } catch {
-      /* storage full / blocked — the sale still works */
-    }
+    // Deferred so the storage write never blocks the tap or the cart opening.
+    const write = () => {
+      try {
+        if (Object.keys(cart).length === 0) window.localStorage.removeItem(draftKey);
+        else window.localStorage.setItem(draftKey, JSON.stringify({ cart, cash }));
+      } catch {
+        /* storage full / blocked — the sale still works */
+      }
+    };
+    const ric = (window as unknown as { requestIdleCallback?: (cb: () => void) => number })
+      .requestIdleCallback;
+    const id = ric ? ric(write) : window.setTimeout(write, 200);
+    return () => {
+      const cic = (window as unknown as { cancelIdleCallback?: (h: number) => void })
+        .cancelIdleCallback;
+      if (ric && cic) cic(id);
+      else window.clearTimeout(id);
+    };
   }, [cart, cash, draftKey]);
 
   const products = useLiveQuery(
@@ -150,14 +162,21 @@ function PosPage() {
   const cashNumber = Number(cash) || 0;
   const change = cashNumber - total;
 
-  function add(product: LocalProduct) {
-    const current = cart[product.id] ?? 0;
-    if (!store?.allow_negative_stock && current + 1 > product.stock_quantity) {
-      toast.error(`Only ${formatQty(product.stock_quantity)} left of ${product.name}.`);
-      return;
-    }
-    setCart({ ...cart, [product.id]: current + 1 });
-  }
+  const allowNegative = store?.allow_negative_stock ?? false;
+  // Stable identity so memoized product tiles do not re-render on every tap.
+  const add = useCallback(
+    (product: LocalProduct) => {
+      setCart((prev) => {
+        const current = prev[product.id] ?? 0;
+        if (!allowNegative && current + 1 > product.stock_quantity) {
+          toast.error(`Only ${formatQty(product.stock_quantity)} left of ${product.name}.`);
+          return prev;
+        }
+        return { ...prev, [product.id]: current + 1 };
+      });
+    },
+    [allowNegative],
+  );
 
   /**
    * Accepts a barcode/SKU string from any source — typed, pasted, or later a
@@ -253,44 +272,15 @@ function PosPage() {
           />
         ) : (
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
-            {filtered.map((p) => {
-              const inCart = cart[p.id] ?? 0;
-              const low = p.stock_quantity <= p.low_stock_threshold;
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => add(p)}
-                  className={cn(
-                    "relative flex min-h-24 flex-col justify-between rounded-2xl border bg-card p-3 text-left transition active:scale-[0.98]",
-                    inCart > 0 && "border-primary ring-1 ring-primary",
-                  )}
-                >
-                  {inCart > 0 ? (
-                    <span className="absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                      {inCart}
-                    </span>
-                  ) : null}
-                  <p className="line-clamp-2 text-sm font-semibold leading-snug">{p.name}</p>
-                  <div className="mt-2">
-                    <p className="tnum font-display text-base font-bold text-primary">
-                      {formatMoney(p.selling_price, currency)}
-                    </p>
-                    <p
-                      className={cn(
-                        "tnum text-[11px]",
-                        p.stock_quantity <= 0
-                          ? "text-destructive"
-                          : low
-                            ? "text-accent-foreground"
-                            : "text-muted-foreground",
-                      )}
-                    >
-                      {p.stock_quantity <= 0 ? "Out of stock" : `${formatQty(p.stock_quantity)} left`}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
+            {filtered.map((p) => (
+              <ProductTile
+                key={p.id}
+                product={p}
+                inCart={cart[p.id] ?? 0}
+                currency={currency}
+                onAdd={add}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -314,7 +304,11 @@ function PosPage() {
       ) : null}
 
       <Sheet open={cartOpen} onOpenChange={setCartOpen}>
-        <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-3xl">
+        <SheetContent
+          forceMount
+          side="bottom"
+          className="max-h-[90vh] overflow-y-auto rounded-t-3xl"
+        >
           <SheetHeader className="px-0">
             <SheetTitle className="font-display">Review sale</SheetTitle>
           </SheetHeader>
@@ -500,6 +494,56 @@ function PosPage() {
     </AppShell>
   );
 }
+
+/** Memoized so tapping one product does not re-render the whole grid. */
+const ProductTile = memo(function ProductTile({
+  product,
+  inCart,
+  currency,
+  onAdd,
+}: {
+  product: LocalProduct;
+  inCart: number;
+  currency: string;
+  onAdd: (product: LocalProduct) => void;
+}) {
+  const low = product.stock_quantity <= product.low_stock_threshold;
+  return (
+    <button
+      onClick={() => onAdd(product)}
+      className={cn(
+        "relative flex min-h-24 flex-col justify-between rounded-2xl border bg-card p-3 text-left",
+        inCart > 0 && "border-primary ring-1 ring-primary",
+      )}
+    >
+      {inCart > 0 ? (
+        <span className="absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+          {inCart}
+        </span>
+      ) : null}
+      <p className="line-clamp-2 text-sm font-semibold leading-snug">{product.name}</p>
+      <div className="mt-2">
+        <p className="tnum font-display text-base font-bold text-primary">
+          {formatMoney(product.selling_price, currency)}
+        </p>
+        <p
+          className={cn(
+            "tnum text-[11px]",
+            product.stock_quantity <= 0
+              ? "text-destructive"
+              : low
+                ? "text-accent-foreground"
+                : "text-muted-foreground",
+          )}
+        >
+          {product.stock_quantity <= 0
+            ? "Out of stock"
+            : `${formatQty(product.stock_quantity)} left`}
+        </p>
+      </div>
+    </button>
+  );
+});
 
 function CategoryChip({
   active,
