@@ -366,7 +366,7 @@ function PosPage() {
                 {receipt.items.map((it) => (
                   <div key={it.id} className="flex justify-between gap-2 py-0.5">
                     <span className="truncate">
-                      {formatQty(it.quantity)}× {it.product_name}
+                      {formatQty(it.quantity)}× {it.product_name_snapshot}
                     </span>
                     <span className="tnum">{formatMoney(it.subtotal, currency)}</span>
                   </div>
