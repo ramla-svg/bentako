@@ -44,15 +44,48 @@ const AppSessionContext = createContext<AppSessionValue | null>(null);
 
 const SNAPSHOT_KEY = "session_snapshot";
 
+/**
+ * Never let a hung promise (Supabase auth lock, blocked IndexedDB) freeze the
+ * splash screen — every await in the boot path is time-boxed.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return new Promise<T>((resolve) => {
+    let settled = false;
+    const done = (value: T) => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
+    const timer = setTimeout(() => done(fallback), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        done(value);
+      },
+      () => {
+        clearTimeout(timer);
+        done(fallback);
+      },
+    );
+  });
+}
+
 export function AppSessionProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>("loading");
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [email, setEmail] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    const readCache = () =>
+      withTimeout<Snapshot | null>(getSetting<Snapshot | null>(SNAPSHOT_KEY, null), 4000, null);
+
     let session = null as Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"];
     try {
-      const { data } = await supabase.auth.getSession();
+      const data = await withTimeout(
+        supabase.auth.getSession().then((r) => r.data),
+        8000,
+        { session: null },
+      );
       session = data.session;
     } catch {
       session = null;
@@ -61,7 +94,7 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     if (!session) {
       // Offline (or a token refresh that could not reach the network): fall back
       // to the last known local snapshot so the store can keep selling.
-      const cached = await getSetting<Snapshot | null>(SNAPSHOT_KEY, null);
+      const cached = await readCache();
       if (!isOnline() && cached) {
         setSnapshot(cached);
         setStatus(cached.store ? "ready" : "no-store");
@@ -71,6 +104,7 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       setStatus("signed-out");
       return;
     }
+
     setEmail(session.user.email ?? null);
 
     // 1. Local snapshot first — this is what makes cold offline starts work.
