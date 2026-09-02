@@ -1,24 +1,49 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { Loader2, Store } from "lucide-react";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+import { useAppSession } from "@/hooks/use-app-session";
+
 export const Route = createFileRoute("/")({
-  component: Index,
+  ssr: false,
+  head: () => ({
+    meta: [
+      { title: "SariPOS — Sari-Sari Store POS that works offline" },
+      {
+        name: "description",
+        content:
+          "Sell fast, track stock, and record expenses in your sari-sari store — even with no internet. SariPOS syncs automatically when you're back online.",
+      },
+      { property: "og:title", content: "SariPOS — Sari-Sari Store POS that works offline" },
+      {
+        property: "og:description",
+        content: "Tap product, enter payment, see change. Built for Philippine sari-sari stores.",
+      },
+    ],
+  }),
+  component: Landing,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+function Landing() {
+  const { status } = useAppSession();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (status === "ready") void navigate({ to: "/dashboard", replace: true });
+    if (status === "no-store") void navigate({ to: "/onboarding", replace: true });
+    if (status === "signed-out") void navigate({ to: "/auth", replace: true });
+  }, [status, navigate]);
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="grid min-h-screen place-items-center bg-background px-6">
+      <div className="text-center">
+        <div className="mx-auto grid size-16 place-items-center rounded-3xl bg-primary text-primary-foreground">
+          <Store className="size-8" />
+        </div>
+        <h1 className="mt-5 font-display text-3xl font-extrabold">SariPOS</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Bilis ng tindahan, kahit walang internet.</p>
+        <Loader2 className="mx-auto mt-6 size-5 animate-spin text-primary" />
+      </div>
     </div>
   );
 }

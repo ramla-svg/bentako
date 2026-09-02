@@ -1,0 +1,147 @@
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+
+import { supabase } from "@/integrations/supabase/client";
+import { db, getSetting, setSetting } from "@/lib/local-db";
+import { pullAll, startSyncEngine, isOnline } from "@/lib/sync-service";
+import type { StoreContext } from "@/lib/repo";
+
+export type Role = "owner" | "cashier";
+
+export interface StoreProfile {
+  id: string;
+  name: string;
+  owner_name: string | null;
+  logo_url: string | null;
+  currency: string;
+  receipt_footer: string | null;
+  allow_negative_stock: boolean;
+  default_low_stock_threshold: number;
+  confirm_void: boolean;
+}
+
+interface Snapshot {
+  userId: string;
+  userName: string | null;
+  role: Role;
+  store: StoreProfile | null;
+}
+
+type Status = "loading" | "signed-out" | "no-store" | "ready";
+
+interface AppSessionValue {
+  status: Status;
+  userId: string | null;
+  userName: string | null;
+  email: string | null;
+  role: Role;
+  store: StoreProfile | null;
+  ctx: StoreContext | null;
+  refresh: () => Promise<void>;
+  signOut: () => Promise<void>;
+}
+
+const AppSessionContext = createContext<AppSessionValue | null>(null);
+
+const SNAPSHOT_KEY = "session_snapshot";
+
+export function AppSessionProvider({ children }: { children: ReactNode }) {
+  const [status, setStatus] = useState<Status>("loading");
+  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    const { data } = await supabase.auth.getSession();
+    const session = data.session;
+    if (!session) {
+      setSnapshot(null);
+      setStatus("signed-out");
+      return;
+    }
+    setEmail(session.user.email ?? null);
+
+    // 1. Local snapshot first — this is what makes cold offline starts work.
+    const cached = await getSetting<Snapshot | null>(SNAPSHOT_KEY, null);
+    if (cached && cached.userId === session.user.id) {
+      setSnapshot(cached);
+      setStatus(cached.store ? "ready" : "no-store");
+    }
+
+    // 2. Refresh from the cloud when we can reach it.
+    if (isOnline()) {
+      const [{ data: profile }, { data: roles }] = await Promise.all([
+        supabase.from("profiles").select("id, full_name, store_id").eq("id", session.user.id).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", session.user.id),
+      ]);
+      let store: StoreProfile | null = null;
+      if (profile?.store_id) {
+        const { data: storeRow } = await supabase
+          .from("stores")
+          .select(
+            "id, name, owner_name, logo_url, currency, receipt_footer, allow_negative_stock, default_low_stock_threshold, confirm_void",
+          )
+          .eq("id", profile.store_id)
+          .maybeSingle();
+        if (storeRow) store = storeRow as StoreProfile;
+      }
+      const role: Role = (roles ?? []).some((r) => r.role === "owner") ? "owner" : "cashier";
+      const fresh: Snapshot = {
+        userId: session.user.id,
+        userName: profile?.full_name || session.user.email || null,
+        role,
+        store,
+      };
+      await setSetting(SNAPSHOT_KEY, fresh);
+      setSnapshot(fresh);
+      setStatus(store ? "ready" : "no-store");
+      if (store) void pullAll(store.id);
+    } else if (!cached) {
+      setStatus("no-store");
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+    const stop = startSyncEngine();
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+        void load();
+      }
+    });
+    return () => {
+      sub.subscription.unsubscribe();
+      stop();
+    };
+  }, [load]);
+
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
+    await db().settings.delete(SNAPSHOT_KEY);
+    setSnapshot(null);
+    setStatus("signed-out");
+  }, []);
+
+  const value = useMemo<AppSessionValue>(
+    () => ({
+      status,
+      userId: snapshot?.userId ?? null,
+      userName: snapshot?.userName ?? null,
+      email,
+      role: snapshot?.role ?? "cashier",
+      store: snapshot?.store ?? null,
+      ctx: snapshot?.store
+        ? { storeId: snapshot.store.id, userId: snapshot.userId, userName: snapshot.userName }
+        : null,
+      refresh: load,
+      signOut,
+    }),
+    [status, snapshot, email, load, signOut],
+  );
+
+  return <AppSessionContext.Provider value={value}>{children}</AppSessionContext.Provider>;
+}
+
+export function useAppSession(): AppSessionValue {
+  const ctx = useContext(AppSessionContext);
+  if (!ctx) throw new Error("useAppSession must be used inside AppSessionProvider");
+  return ctx;
+}
