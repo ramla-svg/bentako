@@ -160,17 +160,19 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       let store: StoreProfile | null = null;
       if (profile?.store_id) {
         const storeRow = await withTimeout(
-          supabase
-            .from("stores")
-            .select(
-              "id, name, owner_name, logo_url, currency, receipt_footer, allow_negative_stock, default_low_stock_threshold, confirm_void",
-            )
-            .eq("id", profile.store_id)
-            .maybeSingle()
-            .then((r) => r.data),
+          Promise.resolve(
+            supabase
+              .from("stores")
+              .select(
+                "id, name, owner_name, logo_url, currency, receipt_footer, allow_negative_stock, default_low_stock_threshold, confirm_void",
+              )
+              .eq("id", profile.store_id)
+              .maybeSingle(),
+          ).then((r) => r.data),
           10000,
           null,
         );
+
         if (storeRow) store = storeRow as StoreProfile;
         else if (cached?.store) store = cached.store; // store row unreachable — keep local copy
       }
