@@ -54,6 +54,13 @@ function PosPage() {
   const [cash, setCash] = useState("");
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState<CheckoutResult | null>(null);
+  const committingRef = useRef(false);
+
+  const closeCart = useCallback(() => setCartOpen(false), []);
+  const closeReceipt = useCallback(() => setReceipt(null), []);
+  // Android back: close the receipt first, then the cart sheet.
+  useBackHandler(receipt !== null, closeReceipt);
+  useBackHandler(cartOpen && receipt === null, closeCart);
 
   const products = useLiveQuery(
     async () =>
