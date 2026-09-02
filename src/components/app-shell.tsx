@@ -82,7 +82,7 @@ export function AppShell({
         </aside>
 
         <div className="min-w-0 flex-1 pb-28 lg:pb-8">
-          <header className="safe-top sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
+          <header className="safe-top sticky top-0 z-20 border-b bg-background">
             <div className="safe-x grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3">
               <div className="min-w-0">
                 <h1 className="truncate font-display text-lg font-bold leading-tight sm:text-xl">
@@ -135,7 +135,7 @@ const MOBILE_NAV = [
 
 function BottomNav({ pathname }: { pathname: string }) {
   return (
-    <nav className="safe-bottom safe-x fixed inset-x-0 bottom-0 z-30 border-t bg-card/95 backdrop-blur lg:hidden">
+    <nav className="safe-bottom safe-x fixed inset-x-0 bottom-0 z-30 border-t bg-card lg:hidden">
       <ul className="mx-auto grid max-w-md grid-cols-5 items-end px-2 pb-1 pt-1.5">
         {MOBILE_NAV.map((item) => {
           const active = pathname.startsWith(item.to);

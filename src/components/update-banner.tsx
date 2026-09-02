@@ -19,7 +19,7 @@ export function UpdateBanner() {
 
   return (
     <div className="safe-bottom pointer-events-none fixed inset-x-0 bottom-24 z-40 px-4 lg:bottom-6">
-      <div className="pointer-events-auto mx-auto flex w-full max-w-md items-center gap-3 rounded-2xl border bg-card/95 p-3 shadow-lg backdrop-blur">
+      <div className="pointer-events-auto mx-auto flex w-full max-w-md items-center gap-3 rounded-2xl border bg-card p-3 shadow-lg">
         <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
           <Download className="size-4" />
         </div>
