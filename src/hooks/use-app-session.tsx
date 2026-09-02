@@ -83,7 +83,8 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
 
     // 2. Refresh from the cloud when we can reach it.
     if (isOnline()) {
-      let profile: { full_name: string | null; store_id: string | null } | null = null;
+      type ProfileRow = { full_name: string | null; store_id: string | null };
+      let profile: ProfileRow | null = null;
       let roles: { role: string }[] = [];
       let reachedCloud = true;
       try {
@@ -96,8 +97,8 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
           supabase.from("user_roles").select("role").eq("user_id", session.user.id),
         ]);
         if (profileRes.error || rolesRes.error) reachedCloud = false;
-        profile = (profileRes.data as typeof profile) ?? null;
-        roles = rolesRes.data ?? [];
+        profile = (profileRes.data as ProfileRow | null) ?? null;
+        roles = (rolesRes.data as { role: string }[] | null) ?? [];
       } catch {
         reachedCloud = false;
       }
