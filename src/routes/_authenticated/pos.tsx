@@ -495,6 +495,56 @@ function PosPage() {
   );
 }
 
+/** Memoized so tapping one product does not re-render the whole grid. */
+const ProductTile = memo(function ProductTile({
+  product,
+  inCart,
+  currency,
+  onAdd,
+}: {
+  product: LocalProduct;
+  inCart: number;
+  currency: string;
+  onAdd: (product: LocalProduct) => void;
+}) {
+  const low = product.stock_quantity <= product.low_stock_threshold;
+  return (
+    <button
+      onClick={() => onAdd(product)}
+      className={cn(
+        "relative flex min-h-24 flex-col justify-between rounded-2xl border bg-card p-3 text-left",
+        inCart > 0 && "border-primary ring-1 ring-primary",
+      )}
+    >
+      {inCart > 0 ? (
+        <span className="absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+          {inCart}
+        </span>
+      ) : null}
+      <p className="line-clamp-2 text-sm font-semibold leading-snug">{product.name}</p>
+      <div className="mt-2">
+        <p className="tnum font-display text-base font-bold text-primary">
+          {formatMoney(product.selling_price, currency)}
+        </p>
+        <p
+          className={cn(
+            "tnum text-[11px]",
+            product.stock_quantity <= 0
+              ? "text-destructive"
+              : low
+                ? "text-accent-foreground"
+                : "text-muted-foreground",
+          )}
+        >
+          {product.stock_quantity <= 0
+            ? "Out of stock"
+            : `${formatQty(product.stock_quantity)} left`}
+        </p>
+      </div>
+    </button>
+  );
+});
+
 function CategoryChip({
   active,
   onClick,
