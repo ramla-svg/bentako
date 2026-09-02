@@ -51,7 +51,7 @@ const MOVEMENT_LABELS: Record<MovementType, string> = {
   damaged: "Damaged",
   expired: "Expired",
   returned: "Returned",
-  void_return: "Void return",
+  void_restore: "Void restore",
 };
 
 function InventoryPage() {
