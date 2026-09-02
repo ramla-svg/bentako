@@ -83,10 +83,37 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
 
     // 2. Refresh from the cloud when we can reach it.
     if (isOnline()) {
-      const [{ data: profile }, { data: roles }] = await Promise.all([
-        supabase.from("profiles").select("id, full_name, store_id").eq("id", session.user.id).maybeSingle(),
-        supabase.from("user_roles").select("role").eq("user_id", session.user.id),
-      ]);
+      let profile: { full_name: string | null; store_id: string | null } | null = null;
+      let roles: { role: string }[] = [];
+      let reachedCloud = true;
+      try {
+        const [profileRes, rolesRes] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("id, full_name, store_id")
+            .eq("id", session.user.id)
+            .maybeSingle(),
+          supabase.from("user_roles").select("role").eq("user_id", session.user.id),
+        ]);
+        if (profileRes.error || rolesRes.error) reachedCloud = false;
+        profile = (profileRes.data as typeof profile) ?? null;
+        roles = rolesRes.data ?? [];
+      } catch {
+        reachedCloud = false;
+      }
+
+      // Network said "online" but the request failed: never downgrade a working
+      // offline session (that would bounce the cashier into onboarding).
+      if (!reachedCloud) {
+        if (cached) {
+          setSnapshot(cached);
+          setStatus(cached.store ? "ready" : "no-store");
+        } else {
+          setStatus("no-store");
+        }
+        return;
+      }
+
       let store: StoreProfile | null = null;
       if (profile?.store_id) {
         const { data: storeRow } = await supabase
@@ -97,8 +124,9 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
           .eq("id", profile.store_id)
           .maybeSingle();
         if (storeRow) store = storeRow as StoreProfile;
+        else if (cached?.store) store = cached.store; // store row unreachable — keep local copy
       }
-      const role: Role = (roles ?? []).some((r) => r.role === "owner") ? "owner" : "cashier";
+      const role: Role = roles.some((r) => r.role === "owner") ? "owner" : "cashier";
       const fresh: Snapshot = {
         userId: session.user.id,
         userName: profile?.full_name || session.user.email || null,
@@ -112,6 +140,7 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     } else if (!cached) {
       setStatus("no-store");
     }
+
   }, []);
 
   useEffect(() => {
