@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
-import { LogOut, RefreshCw, Sparkles } from "lucide-react";
+import { LogOut, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/app-shell";
+import { useConnection } from "@/components/connection-chip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,9 +13,12 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppSession } from "@/hooks/use-app-session";
 import { supabase } from "@/integrations/supabase/client";
-import { db } from "@/lib/local-db";
+import { formatDateTime } from "@/lib/format";
+import { runIntegrityCheck, type IntegrityIssue } from "@/lib/integrity";
+import { getSetting } from "@/lib/local-db";
 import { seedDemoProducts } from "@/lib/repo";
 import { isOnline, syncNow } from "@/lib/sync-service";
+
 
 export const Route = createFileRoute("/_authenticated/settings")({
   ssr: false,
