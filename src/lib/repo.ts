@@ -402,48 +402,58 @@ export async function checkout(
 
   // Single atomic local write: sale, items, stock deduction and movements all
   // land together or not at all — even if the tab closes mid-checkout.
-  const local = db();
-  await local.transaction(
-    "rw",
-    [local.sales, local.sale_items, local.products, local.inventory_movements],
-    async () => {
-      await local.sales.put(sale);
-      await local.sale_items.bulkPut(items);
+  beginCriticalWork();
+  try {
+    const local = db();
+    await local.transaction(
+      "rw",
+      [local.sales, local.sale_items, local.products, local.inventory_movements],
+      async () => {
+        await local.sales.put(sale);
+        await local.sale_items.bulkPut(items);
 
-      for (const line of input.lines) {
-        const product = await local.products.get(line.product_id);
-        if (!product) continue;
-        const newStock = product.stock_quantity - line.quantity;
-        await local.products.update(product.id, {
-          stock_quantity: newStock,
-          updated_at: nowIso(),
-          sync_status: "pending",
-        });
-        touchedProducts.push(product.id);
-        movements.push(
-          buildMovement(ctx, {
-            product_id: product.id,
-            movement_type: "sale",
-            quantity: line.quantity,
-            previous_stock: product.stock_quantity,
-            new_stock: newStock,
-            reference_id: sale.id,
-            notes: sale.transaction_number,
-          }),
-        );
-      }
-      if (movements.length > 0) await local.inventory_movements.bulkPut(movements);
-    },
-  );
+        for (const line of input.lines) {
+          const product = await local.products.get(line.product_id);
+          if (!product) continue;
+          const newStock = product.stock_quantity - line.quantity;
+          await local.products.update(product.id, {
+            stock_quantity: newStock,
+            updated_at: nowIso(),
+            sync_status: "pending",
+          });
+          touchedProducts.push(product.id);
+          movements.push(
+            buildMovement(ctx, {
+              product_id: product.id,
+              movement_type: "sale",
+              quantity: line.quantity,
+              previous_stock: product.stock_quantity,
+              new_stock: newStock,
+              reference_id: sale.id,
+              notes: sale.transaction_number,
+            }),
+          );
+        }
+        if (movements.length > 0) await local.inventory_movements.bulkPut(movements);
+      },
+    );
 
-  // Queue for upload only after the local commit succeeded.
-  for (const productId of touchedProducts) await enqueue("products", productId);
-  await enqueue("sales", sale.id);
-  for (const item of items) await enqueue("sale_items", item.id);
-  for (const movement of movements) await enqueue("inventory_movements", movement.id);
+    // Queue for upload only after the local commit succeeded. One group id ties
+    // the sale, its items and its stock movements together so they sync as a unit.
+    const group = sale.id;
+    for (const productId of touchedProducts)
+      await enqueue("products", productId, { groupId: group });
+    await enqueue("sales", sale.id, { groupId: group });
+    for (const item of items) await enqueue("sale_items", item.id, { groupId: group });
+    for (const movement of movements)
+      await enqueue("inventory_movements", movement.id, { groupId: group });
+  } finally {
+    endCriticalWork();
+  }
 
   return { sale, items };
 }
+
 
 
 export async function voidSale(ctx: StoreContext, saleId: string): Promise<void> {
