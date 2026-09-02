@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
   Minus,
