@@ -29,8 +29,12 @@ export default defineConfig({
           // Client assets are emitted under dist/client but served from the
           // root, so precache URLs must be rewritten or install 404s.
           modifyURLPrefix: { "client/": "/" },
-          // HTML is server-rendered, so there is no index.html to fall back to:
-          // navigations are served by the NetworkFirst page cache below.
+          // TanStack Start renders HTML on the server, so explicitly fetch the
+          // root shell during worker installation and use it for uncached route
+          // navigations. The client router then renders from locally-cached data.
+          additionalManifestEntries: [{ url: "/", revision: null }],
+          navigateFallback: "/",
+          navigateFallbackDenylist: [/^\/api\//, /^\/auth\/callback/],
           skipWaiting: false,
           clientsClaim: true,
           cleanupOutdatedCaches: true,
@@ -43,7 +47,11 @@ export default defineConfig({
               options: {
                 cacheName: "bentako-pages",
                 networkTimeoutSeconds: 4,
-                expiration: { maxEntries: 30 },
+                expiration: {
+                  maxEntries: 80,
+                  maxAgeSeconds: 60 * 60 * 24 * 30,
+                  purgeOnQuotaError: true,
+                },
               },
             },
             {
@@ -52,7 +60,10 @@ export default defineConfig({
                 !url.pathname.startsWith("/api/") &&
                 ["style", "script", "worker", "font", "image"].includes(request.destination),
               handler: "StaleWhileRevalidate",
-              options: { cacheName: "bentako-assets", expiration: { maxEntries: 200 } },
+              options: {
+                cacheName: "bentako-assets",
+                expiration: { maxEntries: 200, purgeOnQuotaError: true },
+              },
             },
             {
               urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\//,
