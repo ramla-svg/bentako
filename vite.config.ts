@@ -17,7 +17,9 @@ export default defineConfig({
     plugins: [
       VitePWA({
         strategies: "generateSW",
-        registerType: "autoUpdate",
+        // "prompt": a new build waits until the user taps "Update when ready",
+        // so a deployment can never interrupt an in-progress sale.
+        registerType: "prompt",
         filename: "sw.js",
         injectRegister: null,
         devOptions: { enabled: false },
@@ -26,6 +28,9 @@ export default defineConfig({
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
           navigateFallback: "/",
           navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//],
+          skipWaiting: false,
+          clientsClaim: true,
+          cleanupOutdatedCaches: true,
           runtimeCaching: [
             {
               // App shell / HTML navigations: always try the network first so a
