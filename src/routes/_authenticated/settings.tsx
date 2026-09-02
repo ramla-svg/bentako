@@ -146,16 +146,78 @@ function SettingsPage() {
         </section>
 
         <section className="space-y-3 rounded-2xl border bg-card p-4">
-          <h2 className="font-display text-sm font-bold">Sync</h2>
+          <h2 className="font-display text-sm font-bold">Offline &amp; Sync</h2>
+          <dl className="space-y-1.5 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-muted-foreground">Connection</dt>
+              <dd className="font-medium">
+                {online ? (connection === "syncing" ? "Syncing" : "Online") : "Offline"}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-muted-foreground">Last successful sync</dt>
+              <dd className="font-medium">
+                {lastSyncAt ? formatDateTime(lastSyncAt) : "Not yet"}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-muted-foreground">Waiting to upload</dt>
+              <dd className="tnum font-medium">{pending}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-muted-foreground">Retrying</dt>
+              <dd className="tnum font-medium">{failed}</dd>
+            </div>
+          </dl>
           <p className="text-sm text-muted-foreground">
             {pending === 0
               ? "Everything on this device is backed up."
-              : `${pending} change${pending > 1 ? "s" : ""} waiting to upload.`}
+              : (lastIssue ??
+                `${pending} change${pending > 1 ? "s" : ""} waiting to upload. They are safe on this device.`)}
           </p>
           <Button variant="outline" className="h-12 w-full" onClick={() => void syncNow()}>
             <RefreshCw className="size-4" /> Sync now
           </Button>
         </section>
+
+        {isOwner ? (
+          <section className="space-y-3 rounded-2xl border bg-card p-4">
+            <h2 className="font-display text-sm font-bold">Data check</h2>
+            <p className="text-sm text-muted-foreground">
+              Looks for sales without items, totals that don&apos;t match, missing stock movements,
+              or stock below zero.
+            </p>
+            {issues === null ? null : issues.length === 0 ? (
+              <p className="text-sm font-medium text-primary">No problems found.</p>
+            ) : (
+              <ul className="space-y-1 text-sm">
+                {issues.slice(0, 8).map((issue, i) => (
+                  <li key={`${issue.kind}-${i}`} className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">{issue.label}</span>
+                    <span className="font-medium">{issue.reference}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Button
+              variant="outline"
+              className="h-12 w-full"
+              onClick={async () => {
+                if (!store) return;
+                const found = await runIntegrityCheck(store.id, {
+                  allowNegativeStock: store.allow_negative_stock ?? false,
+                });
+                setIssues(found);
+                toast.success(
+                  found.length === 0 ? "Your records look complete." : `${found.length} to review.`,
+                );
+              }}
+            >
+              <ShieldCheck className="size-4" /> Check my records
+            </Button>
+          </section>
+        ) : null}
+
 
         {isOwner ? (
           <section className="space-y-3 rounded-2xl border bg-card p-4">
