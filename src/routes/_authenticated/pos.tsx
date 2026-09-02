@@ -269,7 +269,7 @@ function PosPage() {
 
       {/* Cart bar */}
       {itemCount > 0 ? (
-        <div className="safe-bottom fixed inset-x-0 bottom-[4.5rem] z-30 px-4 lg:bottom-4">
+        <div className="safe-nav-offset safe-x fixed inset-x-0 z-30 px-4 lg:bottom-4">
           <button
             onClick={() => setCartOpen(true)}
             className="mx-auto flex w-full max-w-md items-center justify-between rounded-2xl bg-primary px-4 py-3.5 text-primary-foreground shadow-lg shadow-primary/30 active:scale-[0.99]"
@@ -432,6 +432,35 @@ function PosPage() {
                     {store.receipt_footer}
                   </p>
                 ) : null}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  className="h-12"
+                  onClick={() => {
+                    const ok = printReceiptText(
+                      buildReceiptText(receipt, store),
+                      receipt.sale.transaction_number,
+                    );
+                    if (!ok) toast.error("Printing is not available on this device.");
+                  }}
+                >
+                  <Printer className="size-4" /> Print
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-12"
+                  onClick={async () => {
+                    const result = await shareText({
+                      title: `Receipt ${receipt.sale.transaction_number}`,
+                      text: buildReceiptText(receipt, store),
+                    });
+                    if (result === "copied") toast.success("Receipt copied.");
+                    if (result === "unavailable") toast.error("Sharing is not available here.");
+                  }}
+                >
+                  <Share2 className="size-4" /> Share
+                </Button>
               </div>
               <Button className="h-12 w-full" onClick={() => setReceipt(null)}>
                 New sale
