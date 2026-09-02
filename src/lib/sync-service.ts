@@ -148,7 +148,9 @@ export async function syncNow(): Promise<void> {
         a.created_at.localeCompare(b.created_at),
     );
 
+    let networkDown = false;
     for (const item of queue) {
+      if (networkDown) break;
       const local = await readLocal(item.entity, item.entity_id);
       if (!local) {
         await db().sync_queue.delete(item.id);
@@ -156,11 +158,29 @@ export async function syncNow(): Promise<void> {
       }
       // Upsert on the client-generated UUID primary key: retries can never
       // create a duplicate row in the cloud.
-      const { error } = await supabase
-        .from(item.entity)
-        .upsert(stripLocalFields(local) as never, { onConflict: "id" });
+      let error: { message: string } | null = null;
+      try {
+        const res = await supabase
+          .from(item.entity)
+          .upsert(stripLocalFields(local) as never, { onConflict: "id" });
+        error = res.error;
+      } catch (err) {
+        error = { message: err instanceof Error ? err.message : "Network error" };
+      }
 
       if (error) {
+        // A connectivity failure is not a data failure: leave the row pending so
+        // the cashier never sees a scary "failed" badge for a good sale.
+        const offlineish = /fetch|network|Load failed|timeout|ERR_/i.test(error.message);
+        if (offlineish) {
+          networkDown = true;
+          await db().sync_queue.update(item.id, {
+            status: "pending",
+            last_error: error.message,
+            updated_at: nowIso(),
+          });
+          continue;
+        }
         await db().sync_queue.update(item.id, {
           status: "failed",
           retry_count: item.retry_count + 1,
@@ -173,6 +193,7 @@ export async function syncNow(): Promise<void> {
         await db().sync_queue.delete(item.id);
       }
     }
+
 
     const remaining = await db().sync_queue.count();
     const stamp = nowIso();
