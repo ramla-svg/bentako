@@ -1,4 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
+import {
+  isOnline as networkIsOnline,
+  subscribeNetwork,
+} from "@/lib/platform/network-service";
 
 import { db, setSetting, type SyncEntity, type SyncQueueItem } from "./local-db";
 import { nowIso, uuid } from "./ids";
@@ -94,8 +98,9 @@ function isNetworkError(message: string): boolean {
 
 /* ------------------------------------------------------------- connectivity */
 
+/** Connectivity always comes from the network service (Capacitor-swappable). */
 export function isOnline(): boolean {
-  return typeof navigator === "undefined" ? true : navigator.onLine;
+  return networkIsOnline();
 }
 
 /** Checkout sets this so a sync pass never competes with an in-flight sale. */
@@ -433,15 +438,13 @@ export function startSyncEngine(): () => void {
     if (document.visibilityState === "visible" && isOnline()) void syncNow();
   };
 
-  window.addEventListener("online", onOnline);
-  window.addEventListener("offline", onOffline);
+  const unsubscribeNetwork = subscribeNetwork((online) => (online ? onOnline() : onOffline()));
   document.addEventListener("visibilitychange", onVisible);
   const timer = window.setInterval(() => void syncNow(), 30_000);
   void syncNow();
 
   return () => {
-    window.removeEventListener("online", onOnline);
-    window.removeEventListener("offline", onOffline);
+    unsubscribeNetwork();
     document.removeEventListener("visibilitychange", onVisible);
     window.clearTimeout(stabilizeTimer);
     window.clearInterval(timer);

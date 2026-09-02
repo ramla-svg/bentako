@@ -1,7 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useMemo, useState } from "react";
-import { Check, Minus, Plus, Search, ShoppingBasket, Trash2, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Check,
+  Minus,
+  Plus,
+  Printer,
+  Search,
+  Share2,
+  ShoppingBasket,
+  Trash2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell, EmptyState } from "@/components/app-shell";
@@ -10,9 +20,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAppSession } from "@/hooks/use-app-session";
+import { useBackHandler } from "@/hooks/use-back-handler";
 import { formatMoney, formatQty } from "@/lib/format";
 import { db, type LocalProduct } from "@/lib/local-db";
-import { checkout, type CartLine, type CheckoutResult } from "@/lib/repo";
+import { printReceiptText } from "@/lib/platform/print-service";
+import { shareText } from "@/lib/platform/share-service";
+import { buildReceiptText } from "@/lib/receipt";
+import { checkout, matchProductByCode, type CartLine, type CheckoutResult } from "@/lib/repo";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/pos")({
@@ -40,6 +54,41 @@ function PosPage() {
   const [cash, setCash] = useState("");
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState<CheckoutResult | null>(null);
+  const committingRef = useRef(false);
+  const cartRestored = useRef(false);
+
+  const closeCart = useCallback(() => setCartOpen(false), []);
+  const closeReceipt = useCallback(() => setReceipt(null), []);
+  // Android back: close the receipt first, then the cart sheet.
+  useBackHandler(receipt !== null, closeReceipt);
+  useBackHandler(cartOpen && receipt === null, closeCart);
+
+  // Lifecycle safety: Android may suspend or kill the app mid-sale, so the
+  // in-progress cart is mirrored to local storage and restored on relaunch.
+  const draftKey = storeId ? `bentako.cart-draft.${storeId}` : "";
+  useEffect(() => {
+    if (!draftKey || cartRestored.current) return;
+    cartRestored.current = true;
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      if (!raw) return;
+      const draft = JSON.parse(raw) as { cart?: Record<string, number>; cash?: string };
+      if (draft.cart && Object.keys(draft.cart).length > 0) setCart(draft.cart);
+      if (typeof draft.cash === "string") setCash(draft.cash);
+    } catch {
+      /* a bad draft must never block the POS */
+    }
+  }, [draftKey]);
+
+  useEffect(() => {
+    if (!draftKey || !cartRestored.current) return;
+    try {
+      if (Object.keys(cart).length === 0) window.localStorage.removeItem(draftKey);
+      else window.localStorage.setItem(draftKey, JSON.stringify({ cart, cash }));
+    } catch {
+      /* storage full / blocked — the sale still works */
+    }
+  }, [cart, cash, draftKey]);
 
   const products = useLiveQuery(
     async () =>
@@ -110,6 +159,20 @@ function PosPage() {
     setCart({ ...cart, [product.id]: current + 1 });
   }
 
+  /**
+   * Accepts a barcode/SKU string from any source — typed, pasted, or later a
+   * native scanner — and adds the matching product to the cart.
+   */
+  function scanCode(code: string) {
+    const product = matchProductByCode(products ?? [], code);
+    if (!product) {
+      toast.error("No product matches that code.");
+      return;
+    }
+    add(product);
+    setSearch("");
+  }
+
   function setQty(productId: string, qty: number) {
     if (qty <= 0) {
       const next = { ...cart };
@@ -122,10 +185,13 @@ function PosPage() {
 
   async function handleCheckout() {
     if (!ctx || lines.length === 0) return;
+    // Guard against a double tap / re-entrant submit creating two sales.
+    if (committingRef.current) return;
     if (cashNumber < total) {
       toast.error("Cash received is less than the total.");
       return;
     }
+    committingRef.current = true;
     setBusy(true);
     try {
       const result = await checkout(ctx, { lines, cash_received: cashNumber });
@@ -136,6 +202,7 @@ function PosPage() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Checkout failed.");
     } finally {
+      committingRef.current = false;
       setBusy(false);
     }
   }
@@ -148,11 +215,20 @@ function PosPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && search.trim()) {
+                e.preventDefault();
+                scanCode(search);
+              }
+            }}
             placeholder="Search product or scan code"
             className="h-12 pl-9"
             inputMode="search"
+            enterKeyHint="search"
+            autoComplete="off"
           />
         </div>
+
 
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
           <CategoryChip active={categoryId === "all"} onClick={() => setCategoryId("all")}>
@@ -221,7 +297,7 @@ function PosPage() {
 
       {/* Cart bar */}
       {itemCount > 0 ? (
-        <div className="safe-bottom fixed inset-x-0 bottom-[4.5rem] z-30 px-4 lg:bottom-4">
+        <div className="safe-nav-offset safe-x fixed inset-x-0 z-30 px-4">
           <button
             onClick={() => setCartOpen(true)}
             className="mx-auto flex w-full max-w-md items-center justify-between rounded-2xl bg-primary px-4 py-3.5 text-primary-foreground shadow-lg shadow-primary/30 active:scale-[0.99]"
@@ -384,6 +460,35 @@ function PosPage() {
                     {store.receipt_footer}
                   </p>
                 ) : null}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  className="h-12"
+                  onClick={() => {
+                    const ok = printReceiptText(
+                      buildReceiptText(receipt, store),
+                      receipt.sale.transaction_number,
+                    );
+                    if (!ok) toast.error("Printing is not available on this device.");
+                  }}
+                >
+                  <Printer className="size-4" /> Print
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-12"
+                  onClick={async () => {
+                    const result = await shareText({
+                      title: `Receipt ${receipt.sale.transaction_number}`,
+                      text: buildReceiptText(receipt, store),
+                    });
+                    if (result === "copied") toast.success("Receipt copied.");
+                    if (result === "unavailable") toast.error("Sharing is not available here.");
+                  }}
+                >
+                  <Share2 className="size-4" /> Share
+                </Button>
               </div>
               <Button className="h-12 w-full" onClick={() => setReceipt(null)}>
                 New sale

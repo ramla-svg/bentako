@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
-import { LogOut, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
+import { Download, LogOut, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/app-shell";
@@ -16,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime } from "@/lib/format";
 import { runIntegrityCheck, type IntegrityIssue } from "@/lib/integrity";
 import { getSetting } from "@/lib/local-db";
+import { promptInstall, useInstallState } from "@/lib/platform/install-service";
+import { platformLabel } from "@/lib/platform/platform-service";
 import { seedDemoProducts } from "@/lib/repo";
 import { isOnline, syncNow } from "@/lib/sync-service";
 
@@ -47,6 +49,7 @@ function SettingsPage() {
   const [busy, setBusy] = useState(false);
 
   const [issues, setIssues] = useState<IntegrityIssue[] | null>(null);
+  const install = useInstallState();
   const { connection, pending, failed, lastIssue } = useConnection();
   const online = connection !== "offline" && isOnline();
   const lastSyncAt = useLiveQuery(async () => await getSetting<string | null>("last_sync_at", null), [
@@ -183,6 +186,31 @@ function SettingsPage() {
           <Button variant="outline" className="h-12 w-full" onClick={() => void syncNow()}>
             <RefreshCw className="size-4" /> Sync now
           </Button>
+        </section>
+
+        <section className="space-y-3 rounded-2xl border bg-card p-4">
+          <h2 className="font-display text-sm font-bold">Install BentaKo</h2>
+          <p className="text-sm text-muted-foreground">
+            {install.installed
+              ? `BentaKo is installed on this device (${platformLabel()}). It opens straight to the POS, even without signal.`
+              : install.available
+                ? "Add BentaKo to your home screen so it opens like an app and works offline."
+                : install.hint}
+          </p>
+          {!install.installed && install.available ? (
+            <Button
+              className="h-12 w-full"
+              onClick={async () => {
+                const outcome = await promptInstall();
+                if (outcome === "accepted") toast.success("BentaKo is being installed.");
+                if (outcome === "unavailable")
+                  toast.error("Your browser did not offer an install prompt.");
+              }}
+            >
+              <Download className="size-4" /> Install BentaKo
+            </Button>
+          ) : null}
+          <p className="text-xs text-muted-foreground">Running as: {platformLabel()}</p>
         </section>
 
         {isOwner ? (

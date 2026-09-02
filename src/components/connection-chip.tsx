@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, Cloud, CloudOff, RefreshCw, UploadCloud } from "lucide-react";
 
+import { subscribeNetwork } from "@/lib/platform/network-service";
 import { getSyncState, isOnline, subscribeSync, syncNow } from "@/lib/sync-service";
 import { cn } from "@/lib/utils";
 
@@ -9,14 +10,11 @@ export function useConnection() {
   useEffect(() => {
     const update = () => setState({ ...getSyncState() });
     update();
-    const unsub = subscribeSync(update);
-    const onNet = () => update();
-    window.addEventListener("online", onNet);
-    window.addEventListener("offline", onNet);
+    const unsubSync = subscribeSync(update);
+    const unsubNet = subscribeNetwork(update);
     return () => {
-      unsub();
-      window.removeEventListener("online", onNet);
-      window.removeEventListener("offline", onNet);
+      unsubSync();
+      unsubNet();
     };
   }, []);
   return state;

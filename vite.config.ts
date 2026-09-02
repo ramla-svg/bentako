@@ -17,15 +17,23 @@ export default defineConfig({
     plugins: [
       VitePWA({
         strategies: "generateSW",
-        registerType: "autoUpdate",
+        // "prompt": a new build waits until the user taps "Update when ready",
+        // so a deployment can never interrupt an in-progress sale.
+        registerType: "prompt",
         filename: "sw.js",
         injectRegister: null,
         devOptions: { enabled: false },
         manifest: false, // public/manifest.webmanifest is maintained by hand
         workbox: {
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-          navigateFallback: "/",
-          navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//],
+          // Client assets are emitted under dist/client but served from the
+          // root, so precache URLs must be rewritten or install 404s.
+          modifyURLPrefix: { "client/": "/" },
+          // HTML is server-rendered, so there is no index.html to fall back to:
+          // navigations are served by the NetworkFirst page cache below.
+          skipWaiting: false,
+          clientsClaim: true,
+          cleanupOutdatedCaches: true,
           runtimeCaching: [
             {
               // App shell / HTML navigations: always try the network first so a

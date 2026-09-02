@@ -575,3 +575,35 @@ export async function seedDemoProducts(ctx: StoreContext): Promise<number> {
   }
   return created;
 }
+
+/* ------------------------------------------------------- barcode / code lookup */
+
+/**
+ * Resolves a scanned or typed code (barcode or SKU) to a product from the local
+ * cache. Barcode readiness: a future camera/native scanner only needs to pass
+ * its string value here — no POS logic changes required.
+ */
+export async function findProductByCode(
+  storeId: string,
+  code: string,
+): Promise<LocalProduct | null> {
+  const needle = code.trim();
+  if (!needle) return null;
+  const products = await db().products.where("store_id").equals(storeId).toArray();
+  return matchProductByCode(products, needle);
+}
+
+/** Pure matcher so screens with products already in memory can reuse it. */
+export function matchProductByCode(
+  products: LocalProduct[],
+  code: string,
+): LocalProduct | null {
+  const needle = code.trim().toLowerCase();
+  if (!needle) return null;
+  const active = products.filter((p) => p.is_active);
+  return (
+    active.find((p) => (p.barcode ?? "").toLowerCase() === needle) ??
+    active.find((p) => (p.sku ?? "").toLowerCase() === needle) ??
+    null
+  );
+}
