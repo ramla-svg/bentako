@@ -1,8 +1,9 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3,
   Boxes,
   LayoutGrid,
+  LogOut,
   MoreHorizontal,
   Package,
   Receipt,
@@ -11,6 +12,7 @@ import {
   Store,
   Wallet,
 } from "lucide-react";
+
 import type { ReactNode } from "react";
 
 import { ConnectionChip, useConnection } from "@/components/connection-chip";
@@ -39,7 +41,9 @@ export function AppShell({
   action?: ReactNode | undefined;
   children: ReactNode;
 }) {
-  const { store } = useAppSession();
+  const { store, signOut } = useAppSession();
+  const navigate = useNavigate();
+
   const { connection } = useConnection();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -91,7 +95,19 @@ export function AppShell({
               <div className="flex shrink-0 items-center gap-2">
                 {action}
                 <ConnectionChip />
+                <button
+                  type="button"
+                  aria-label="Sign out"
+                  onClick={async () => {
+                    await signOut();
+                    void navigate({ to: "/auth", replace: true });
+                  }}
+                  className="grid size-9 place-items-center rounded-xl border text-muted-foreground active:bg-accent/10"
+                >
+                  <LogOut className="size-4" />
+                </button>
               </div>
+
             </div>
             {connection === "offline" ? (
               <p className="bg-warning/15 px-4 py-1.5 text-center text-xs font-medium text-accent-foreground">
