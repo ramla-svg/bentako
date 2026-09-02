@@ -146,9 +146,15 @@ function ProductsPage() {
 
   async function submit() {
     if (!ctx) return;
-    if (!form.name.trim()) return toast.error("Product name is required.");
+    if (!form.name.trim()) {
+      toast.error("Product name is required.");
+      return;
+    }
     const selling = Number(form.selling_price);
-    if (!selling || selling <= 0) return toast.error("Enter a selling price.");
+    if (!selling || selling <= 0) {
+      toast.error("Enter a selling price.");
+      return;
+    }
     setBusy(true);
     try {
       let categoryId: string | null = form.category_id === "none" ? null : form.category_id;
