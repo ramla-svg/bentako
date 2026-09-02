@@ -158,14 +158,20 @@ export type SyncEntity =
   | "expenses"
   | "audit_logs";
 
+export type SyncQueueStatus = "pending" | "syncing" | "synced" | "failed";
+
 export interface SyncQueueItem {
   id: string;
   entity: SyncEntity;
   entity_id: string;
   operation: "upsert";
+  /** Snapshot of the row at enqueue time (fallback if the local row is gone). */
   payload: Record<string, unknown>;
-  status: "pending" | "failed";
+  /** Sale header + items + movements share one group so they retry together. */
+  group_id: string | null;
+  status: SyncQueueStatus;
   retry_count: number;
+  last_attempt_at: string | null;
   last_error: string | null;
   created_at: string;
   updated_at: string;
@@ -201,8 +207,25 @@ class BentakoDatabase extends Dexie {
       sync_queue: "id, entity, entity_id, status, created_at",
       settings: "key",
     });
+    // v2 adds group/attempt tracking to the queue. Upgrades never drop rows:
+    // pending offline sales survive an app update.
+    this.version(2)
+      .stores({
+        sync_queue: "id, entity, entity_id, status, group_id, created_at",
+      })
+      .upgrade(async (tx) =>
+        tx
+          .table("sync_queue")
+          .toCollection()
+          .modify((item: Partial<SyncQueueItem>) => {
+            item.group_id = item.group_id ?? null;
+            item.last_attempt_at = item.last_attempt_at ?? null;
+            if (item.status === "syncing") item.status = "pending";
+          }),
+      );
   }
 }
+
 
 let instance: BentakoDatabase | null = null;
 
