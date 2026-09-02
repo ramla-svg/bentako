@@ -55,12 +55,40 @@ function PosPage() {
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState<CheckoutResult | null>(null);
   const committingRef = useRef(false);
+  const cartRestored = useRef(false);
 
   const closeCart = useCallback(() => setCartOpen(false), []);
   const closeReceipt = useCallback(() => setReceipt(null), []);
   // Android back: close the receipt first, then the cart sheet.
   useBackHandler(receipt !== null, closeReceipt);
   useBackHandler(cartOpen && receipt === null, closeCart);
+
+  // Lifecycle safety: Android may suspend or kill the app mid-sale, so the
+  // in-progress cart is mirrored to local storage and restored on relaunch.
+  const draftKey = storeId ? `bentako.cart-draft.${storeId}` : "";
+  useEffect(() => {
+    if (!draftKey || cartRestored.current) return;
+    cartRestored.current = true;
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      if (!raw) return;
+      const draft = JSON.parse(raw) as { cart?: Record<string, number>; cash?: string };
+      if (draft.cart && Object.keys(draft.cart).length > 0) setCart(draft.cart);
+      if (typeof draft.cash === "string") setCash(draft.cash);
+    } catch {
+      /* a bad draft must never block the POS */
+    }
+  }, [draftKey]);
+
+  useEffect(() => {
+    if (!draftKey || !cartRestored.current) return;
+    try {
+      if (Object.keys(cart).length === 0) window.localStorage.removeItem(draftKey);
+      else window.localStorage.setItem(draftKey, JSON.stringify({ cart, cash }));
+    } catch {
+      /* storage full / blocked — the sale still works */
+    }
+  }, [cart, cash, draftKey]);
 
   const products = useLiveQuery(
     async () =>
