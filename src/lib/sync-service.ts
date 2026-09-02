@@ -107,6 +107,13 @@ async function markSynced(entity: SyncEntity, id: string) {
 
 let running = false;
 
+/** Exponential backoff so a permanently-failing row can't hammer the network. */
+function isBackedOff(item: SyncQueueItem): boolean {
+  if (item.status !== "failed" || item.retry_count === 0) return false;
+  const waitMs = Math.min(5 * 60_000, 5_000 * 2 ** Math.min(item.retry_count - 1, 6));
+  return Date.now() - new Date(item.updated_at).getTime() < waitMs;
+}
+
 /** Drain the pending queue. Safe to call often; never throws to the caller. */
 export async function syncNow(): Promise<void> {
   if (typeof window === "undefined" || running) return;
@@ -114,12 +121,21 @@ export async function syncNow(): Promise<void> {
     emit({ connection: "offline" });
     return;
   }
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (!sessionData.session) return;
+  let hasSession = false;
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    hasSession = !!sessionData.session;
+  } catch {
+    hasSession = false;
+  }
+  if (!hasSession) {
+    await refreshPending();
+    return;
+  }
 
   running = true;
   try {
-    const queue = await db().sync_queue.toArray();
+    const queue = (await db().sync_queue.toArray()).filter((item) => !isBackedOff(item));
     if (queue.length === 0) {
       await refreshPending();
       return;
@@ -169,6 +185,7 @@ export async function syncNow(): Promise<void> {
     void refreshPending();
   }
 }
+
 
 function coerce(row: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...row, sync_status: "synced" };
