@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
 import { Route as AuthenticatedPosRouteImport } from './routes/_authenticated/pos'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
@@ -43,6 +44,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedExpensesRoute = AuthenticatedExpensesRouteImport.update({
+  id: '/expenses',
+  path: '/expenses',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/onboarding': typeof OnboardingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/expenses': typeof AuthenticatedExpensesRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/pos': typeof AuthenticatedPosRoute
   '/products': typeof AuthenticatedProductsRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/onboarding': typeof OnboardingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/expenses': typeof AuthenticatedExpensesRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/pos': typeof AuthenticatedPosRoute
   '/products': typeof AuthenticatedProductsRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/onboarding': typeof OnboardingRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
   '/_authenticated/pos': typeof AuthenticatedPosRoute
   '/_authenticated/products': typeof AuthenticatedProductsRoute
@@ -103,6 +112,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/onboarding'
     | '/dashboard'
+    | '/expenses'
     | '/inventory'
     | '/pos'
     | '/products'
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/onboarding'
     | '/dashboard'
+    | '/expenses'
     | '/inventory'
     | '/pos'
     | '/products'
@@ -124,6 +135,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/onboarding'
     | '/_authenticated/dashboard'
+    | '/_authenticated/expenses'
     | '/_authenticated/inventory'
     | '/_authenticated/pos'
     | '/_authenticated/products'
@@ -174,6 +186,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/expenses': {
+      id: '/_authenticated/expenses'
+      path: '/expenses'
+      fullPath: '/expenses'
+      preLoaderRoute: typeof AuthenticatedExpensesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/inventory': {
       id: '/_authenticated/inventory'
       path: '/inventory'
@@ -207,6 +226,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
   AuthenticatedPosRoute: typeof AuthenticatedPosRoute
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRoute
@@ -215,6 +235,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
   AuthenticatedPosRoute: AuthenticatedPosRoute,
   AuthenticatedProductsRoute: AuthenticatedProductsRoute,
