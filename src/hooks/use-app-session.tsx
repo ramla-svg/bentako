@@ -171,15 +171,16 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       let store: StoreProfile | null = null;
       if (profile?.store_id) {
         const storeRow = await withTimeout(
-          Promise.resolve(
-            supabase
+          Promise.resolve().then(async () => {
+            const result = await supabase
               .from("stores")
               .select(
                 "id, name, owner_name, logo_url, currency, receipt_footer, allow_negative_stock, default_low_stock_threshold, confirm_void",
               )
-              .eq("id", profile.store_id)
-              .maybeSingle(),
-          ).then((r) => r.data),
+              .eq("id", profile.store_id!)
+              .maybeSingle();
+            return result.data;
+          }),
           10000,
           null,
         );
