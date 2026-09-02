@@ -185,6 +185,31 @@ function SettingsPage() {
           </Button>
         </section>
 
+        <section className="space-y-3 rounded-2xl border bg-card p-4">
+          <h2 className="font-display text-sm font-bold">Install BentaKo</h2>
+          <p className="text-sm text-muted-foreground">
+            {install.installed
+              ? `BentaKo is installed on this device (${platformLabel()}). It opens straight to the POS, even without signal.`
+              : install.available
+                ? "Add BentaKo to your home screen so it opens like an app and works offline."
+                : install.hint}
+          </p>
+          {!install.installed && install.available ? (
+            <Button
+              className="h-12 w-full"
+              onClick={async () => {
+                const outcome = await promptInstall();
+                if (outcome === "accepted") toast.success("BentaKo is being installed.");
+                if (outcome === "unavailable")
+                  toast.error("Your browser did not offer an install prompt.");
+              }}
+            >
+              <Download className="size-4" /> Install BentaKo
+            </Button>
+          ) : null}
+          <p className="text-xs text-muted-foreground">Running as: {platformLabel()}</p>
+        </section>
+
         {isOwner ? (
           <section className="space-y-3 rounded-2xl border bg-card p-4">
             <h2 className="font-display text-sm font-bold">Data check</h2>
