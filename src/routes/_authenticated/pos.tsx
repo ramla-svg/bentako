@@ -304,11 +304,7 @@ function PosPage() {
       ) : null}
 
       <Sheet open={cartOpen} onOpenChange={setCartOpen}>
-        <SheetContent
-          forceMount
-          side="bottom"
-          className="max-h-[90vh] overflow-y-auto rounded-t-3xl"
-        >
+        <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-3xl">
           <SheetHeader className="px-0">
             <SheetTitle className="font-display">Review sale</SheetTitle>
           </SheetHeader>
