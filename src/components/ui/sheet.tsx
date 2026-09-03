@@ -20,10 +20,7 @@ const SheetOverlay = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Overlay
-    className={cn(
-      "fixed inset-0 z-50 bg-black/50 data-[state=closed]:hidden",
-      className,
-    )}
+    className={cn("fixed inset-0 z-50 bg-black/50", className)}
     {...props}
     ref={ref}
   />
