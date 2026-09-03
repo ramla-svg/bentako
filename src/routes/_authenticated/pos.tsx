@@ -18,7 +18,7 @@ import { AppShell, EmptyState } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAppSession } from "@/hooks/use-app-session";
 import { useBackHandler } from "@/hooks/use-back-handler";
 import { formatMoney, formatQty } from "@/lib/format";
@@ -285,25 +285,26 @@ function PosPage() {
         )}
       </div>
 
-      {/* Cart bar */}
-      {itemCount > 0 ? (
-        <div className="safe-nav-offset safe-x fixed inset-x-0 z-30 px-4">
-          <button
-            onClick={() => setCartOpen(true)}
-            className="mx-auto flex w-full max-w-md items-center justify-between rounded-2xl bg-primary px-4 py-3.5 text-primary-foreground shadow-lg shadow-primary/30 active:scale-[0.99]"
-          >
-            <span className="flex items-center gap-2 text-sm font-semibold">
-              <ShoppingBasket className="size-4" />
-              {itemCount} item{itemCount > 1 ? "s" : ""}
-            </span>
-            <span className="tnum font-display text-lg font-bold">
-              {formatMoney(total, currency)}
-            </span>
-          </button>
-        </div>
-      ) : null}
-
       <Sheet open={cartOpen} onOpenChange={setCartOpen}>
+        {itemCount > 0 ? (
+          <div className="safe-nav-offset safe-x fixed inset-x-0 z-30 px-4">
+            <SheetTrigger asChild>
+              <Button
+                type="button"
+                className="mx-auto flex h-auto w-full max-w-md items-center justify-between rounded-2xl px-4 py-3.5 shadow-lg shadow-primary/30 active:scale-[0.99]"
+              >
+                <span className="flex items-center gap-2 text-sm font-semibold">
+                  <ShoppingBasket className="size-4" />
+                  {itemCount} item{itemCount > 1 ? "s" : ""}
+                </span>
+                <span className="tnum font-display text-lg font-bold">
+                  {formatMoney(total, currency)}
+                </span>
+              </Button>
+            </SheetTrigger>
+          </div>
+        ) : null}
+
         <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-3xl">
           <SheetHeader className="px-0">
             <SheetTitle className="font-display">Review sale</SheetTitle>
