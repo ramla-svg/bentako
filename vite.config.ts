@@ -7,12 +7,39 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { VitePWA } from "vite-plugin-pwa";
 
+// The Android (Capacitor) build sets BENTAKO_APK=1 so TanStack Start prerenders
+// static HTML shells. Those shells are what gets bundled inside the APK, so the
+// app can boot with zero network. The normal web build is untouched.
+const APK = process.env["BENTAKO_APK"] === "1";
+
+const APK_PAGES = [
+  "/",
+  "/auth",
+  "/onboarding",
+  "/dashboard",
+  "/pos",
+  "/products",
+  "/inventory",
+  "/sales",
+  "/expenses",
+  "/reports",
+  "/settings",
+  "/more",
+].map((path) => ({ path }));
+
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
+    ...(APK
+      ? {
+          prerender: { enabled: true, crawlLinks: false, autoSubfolderIndex: true },
+          pages: APK_PAGES,
+        }
+      : {}),
   },
+
   vite: {
     plugins: [
       VitePWA({
