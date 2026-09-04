@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">BentaKo</string>
+    <string name="title_activity_main">BentaKo</string>
+    <string name="package_name">ph.bentako.app</string>
+    <string name="custom_url_scheme">ph.bentako.app</string>
+</resources>

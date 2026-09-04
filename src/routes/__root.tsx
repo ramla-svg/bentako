@@ -15,6 +15,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppSessionProvider } from "@/hooks/use-app-session";
 import { registerServiceWorker } from "@/lib/register-sw";
+import { initNativeBridge } from "@/lib/platform/native-bridge";
 
 
 function NotFoundComponent() {
@@ -135,6 +136,7 @@ function RootComponent() {
 
   useEffect(() => {
     registerServiceWorker();
+    initNativeBridge();
   }, []);
 
 
