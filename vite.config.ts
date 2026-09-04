@@ -42,15 +42,24 @@ export default defineConfig({
 
   vite: {
     plugins: [
-      VitePWA({
-        strategies: "generateSW",
-        // "prompt": a new build waits until the user taps "Update when ready",
-        // so a deployment can never interrupt an in-progress sale.
-        registerType: "prompt",
-        filename: "sw.js",
-        injectRegister: null,
-        devOptions: { enabled: false },
-        manifest: false, // public/manifest.webmanifest is maintained by hand
+      // The APK ships its own offline bundle inside the app, so no service
+      // worker is generated for it (Capacitor does not use one anyway).
+      ...(APK
+        ? []
+        : [
+            VitePWA({
+              strategies: "generateSW",
+              // "prompt": a new build waits until the user taps "Update when ready",
+              // so a deployment can never interrupt an in-progress sale.
+              registerType: "prompt",
+              filename: "sw.js",
+              // sw.js must sit next to the served client assets, otherwise
+              // /sw.js 404s and the PWA never installs.
+              outDir: "dist/client",
+              injectRegister: null,
+              devOptions: { enabled: false },
+              manifest: false, // public/manifest.webmanifest is maintained by hand
+
         workbox: {
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
           // Client assets are emitted under dist/client but served from the
