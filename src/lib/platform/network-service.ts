@@ -8,9 +8,23 @@ type Listener = (online: boolean) => void;
 
 const listeners = new Set<Listener>();
 
+/**
+ * Capacitor Network status, when the native bridge supplies it. On Android the
+ * WebView's `navigator.onLine` is unreliable, so the native value wins.
+ */
+let nativeOnline: boolean | null = null;
+
 export function isOnline(): boolean {
+  if (nativeOnline !== null) return nativeOnline;
   if (typeof navigator === "undefined") return true;
   return navigator.onLine !== false;
+}
+
+/** Called by the Capacitor bridge only. Web/PWA never touches this. */
+export function setNativeOnline(online: boolean): void {
+  if (nativeOnline === online) return;
+  nativeOnline = online;
+  notify();
 }
 
 function notify(): void {

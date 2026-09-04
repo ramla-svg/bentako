@@ -19,6 +19,20 @@ export async function shareText(options: {
 }): Promise<ShareResult> {
   if (typeof navigator === "undefined") return "unavailable";
 
+  // Android (Capacitor): native share sheet.
+  if (isNative()) {
+    try {
+      const { Share } = await import("@capacitor/share");
+      await Share.share({
+        ...(options.title ? { title: options.title, dialogTitle: options.title } : {}),
+        text: options.text,
+      });
+      return "shared";
+    } catch {
+      /* cancelled or plugin unavailable — fall through to web/clipboard */
+    }
+  }
+
   if (typeof navigator.share === "function") {
     try {
       await navigator.share({

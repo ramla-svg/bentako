@@ -9,7 +9,10 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "build:apk": "BENTAKO_APK=1 vite build",
+    "cap:sync": "BENTAKO_APK=1 vite build && cap sync android",
+    "cap:open": "cap open android"
   },
   "overrides": {
     "rolldown": "1.2.1"
