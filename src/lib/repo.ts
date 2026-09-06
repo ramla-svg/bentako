@@ -1,12 +1,18 @@
 import {
   DEFAULT_CATEGORIES,
   db,
+  type CashTxnType,
+  type LocalCashTransaction,
+  type LocalCustomer,
+  type LocalCustomerPayment,
   type LocalExpense,
   type LocalMovement,
   type LocalProduct,
   type LocalSale,
   type LocalSaleItem,
   type MovementType,
+  type PaymentMethod,
+  type ServiceProvider,
   type UnitType,
 } from "./local-db";
 import { localDayKey } from "./format";
