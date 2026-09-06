@@ -70,6 +70,17 @@ export interface LocalProduct {
   sync_status: SyncStatus;
 }
 
+export type PaymentMethod = "cash" | "gcash" | "maya" | "bank" | "other" | "utang";
+
+export const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
+  { value: "cash", label: "Cash" },
+  { value: "gcash", label: "GCash" },
+  { value: "maya", label: "Maya" },
+  { value: "bank", label: "Bank" },
+  { value: "utang", label: "Utang" },
+  { value: "other", label: "Other" },
+];
+
 export interface LocalSale {
   id: string;
   store_id: string;
@@ -79,7 +90,7 @@ export interface LocalSale {
   subtotal: number;
   discount: number;
   total: number;
-  payment_method: "cash" | "gcash" | "maya" | "bank" | "other";
+  payment_method: PaymentMethod;
   cash_received: number;
   change_amount: number;
   status: "completed" | "voided";
@@ -149,13 +160,84 @@ export interface LocalAudit {
   sync_status: SyncStatus;
 }
 
+/* ------------------------------------------------------------ cash ledger */
+
+export type CashTxnType = "cash_in" | "cash_out";
+
+/** `other` means the shop's own drawer; the rest are e-wallet/remittance services. */
+export type ServiceProvider = "gcash" | "maya" | "bank" | "remittance" | "other";
+
+export const CASH_PROVIDERS: { value: ServiceProvider; label: string }[] = [
+  { value: "other", label: "Drawer" },
+  { value: "gcash", label: "GCash" },
+  { value: "maya", label: "Maya" },
+  { value: "bank", label: "Bank" },
+  { value: "remittance", label: "Remittance" },
+];
+
+export interface LocalCashTransaction {
+  id: string;
+  store_id: string;
+  transaction_type: CashTxnType;
+  provider: ServiceProvider;
+  customer_name: string | null;
+  customer_mobile_number: string | null;
+  amount: number;
+  service_fee: number;
+  reference_number: string | null;
+  wallet_before: number | null;
+  wallet_after: number | null;
+  cash_before: number | null;
+  cash_after: number | null;
+  status: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  sync_status: SyncStatus;
+}
+
+/* ---------------------------------------------------------- credit ledger */
+
+export interface LocalCustomer {
+  id: string;
+  store_id: string;
+  name: string;
+  mobile_number: string | null;
+  notes: string | null;
+  /** Mirror of the derived balance, kept for the cloud copy. */
+  credit_balance: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  sync_status: SyncStatus;
+}
+
+/**
+ * A ledger row against a customer. Positive `amount` is money received
+ * (utang payment); negative `amount` is a manual charge added by the store.
+ */
+export interface LocalCustomerPayment {
+  id: string;
+  store_id: string;
+  customer_id: string;
+  sale_id: string | null;
+  amount: number;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  sync_status: SyncStatus;
+}
+
 export type SyncEntity =
   | "products"
   | "categories"
+  | "customers"
   | "sales"
   | "sale_items"
   | "inventory_movements"
   | "expenses"
+  | "cash_transactions"
+  | "customer_payments"
   | "audit_logs";
 
 export type SyncQueueStatus = "pending" | "syncing" | "synced" | "failed";
@@ -191,6 +273,9 @@ class BentakoDatabase extends Dexie {
   inventory_movements!: Table<LocalMovement, string>;
   expenses!: Table<LocalExpense, string>;
   audit_logs!: Table<LocalAudit, string>;
+  cash_transactions!: Table<LocalCashTransaction, string>;
+  customers!: Table<LocalCustomer, string>;
+  customer_payments!: Table<LocalCustomerPayment, string>;
   sync_queue!: Table<SyncQueueItem, string>;
   settings!: Table<SettingRow, string>;
 
@@ -223,6 +308,13 @@ class BentakoDatabase extends Dexie {
             if (item.status === "syncing") item.status = "pending";
           }),
       );
+    // v3 adds the cash / credit / payment ledgers. Purely additive: existing
+    // rows and any pending offline queue survive untouched.
+    this.version(3).stores({
+      cash_transactions: "id, store_id, created_at, transaction_type, provider, sync_status",
+      customers: "id, store_id, name, is_active, sync_status",
+      customer_payments: "id, store_id, customer_id, created_at, sync_status",
+    });
   }
 }
 

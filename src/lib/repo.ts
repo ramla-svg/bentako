@@ -1,12 +1,18 @@
 import {
   DEFAULT_CATEGORIES,
   db,
+  type CashTxnType,
+  type LocalCashTransaction,
+  type LocalCustomer,
+  type LocalCustomerPayment,
   type LocalExpense,
   type LocalMovement,
   type LocalProduct,
   type LocalSale,
   type LocalSaleItem,
   type MovementType,
+  type PaymentMethod,
+  type ServiceProvider,
   type UnitType,
 } from "./local-db";
 import { localDayKey } from "./format";
@@ -353,13 +359,25 @@ function buildMovement(
 
 export async function checkout(
   ctx: StoreContext,
-  input: { lines: CartLine[]; cash_received: number; discount?: number; notes?: string | null },
+  input: {
+    lines: CartLine[];
+    cash_received: number;
+    discount?: number;
+    notes?: string | null;
+    payment_method?: PaymentMethod;
+    customer_id?: string | null;
+  },
 ): Promise<CheckoutResult> {
   if (input.lines.length === 0) throw new Error("Cart is empty");
+
+  const method: PaymentMethod = input.payment_method ?? "cash";
+  const customerId = method === "utang" ? (input.customer_id ?? null) : null;
+  if (method === "utang" && !customerId) throw new Error("Choose a customer for this utang.");
 
   const subtotal = input.lines.reduce((sum, l) => sum + l.quantity * l.selling_price, 0);
   const discount = input.discount ?? 0;
   const total = Math.max(0, subtotal - discount);
+  const cashReceived = method === "cash" ? input.cash_received : 0;
   const createdAt = nowIso();
 
   const sale: LocalSale = {
@@ -371,11 +389,11 @@ export async function checkout(
     subtotal,
     discount,
     total,
-    payment_method: "cash",
-    cash_received: input.cash_received,
-    change_amount: Math.max(0, input.cash_received - total),
+    payment_method: method,
+    cash_received: cashReceived,
+    change_amount: Math.max(0, cashReceived - total),
     status: "completed",
-    customer_id: null,
+    customer_id: customerId,
     notes: input.notes ?? null,
     created_at: createdAt,
     updated_at: createdAt,
@@ -407,7 +425,14 @@ export async function checkout(
     const local = db();
     await local.transaction(
       "rw",
-      [local.sales, local.sale_items, local.products, local.inventory_movements, local.sync_queue],
+      [
+        local.sales,
+        local.sale_items,
+        local.products,
+        local.inventory_movements,
+        local.customers,
+        local.sync_queue,
+      ],
       async () => {
         await local.sales.put(sale);
         await local.sale_items.bulkPut(items);
@@ -436,11 +461,25 @@ export async function checkout(
         }
         if (movements.length > 0) await local.inventory_movements.bulkPut(movements);
 
+        // Utang: the customer owes this sale. The balance mirror moves in the
+        // same commit as the sale, so the two can never disagree on device.
+        if (customerId) {
+          const customer = await local.customers.get(customerId);
+          if (customer) {
+            await local.customers.update(customerId, {
+              credit_balance: customer.credit_balance + total,
+              updated_at: nowIso(),
+              sync_status: "pending",
+            });
+          }
+        }
+
         // Queue intent is part of this same local commit. An app close directly
         // after checkout cannot leave a saved sale undiscoverable by sync.
         const group = sale.id;
         for (const productId of touchedProducts)
           await enqueue("products", productId, { groupId: group });
+        if (customerId) await enqueue("customers", customerId, { groupId: group });
         await enqueue("sales", sale.id, { groupId: group });
         for (const item of items) await enqueue("sale_items", item.id, { groupId: group });
         for (const movement of movements)
