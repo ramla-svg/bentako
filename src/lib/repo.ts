@@ -359,13 +359,25 @@ function buildMovement(
 
 export async function checkout(
   ctx: StoreContext,
-  input: { lines: CartLine[]; cash_received: number; discount?: number; notes?: string | null },
+  input: {
+    lines: CartLine[];
+    cash_received: number;
+    discount?: number;
+    notes?: string | null;
+    payment_method?: PaymentMethod;
+    customer_id?: string | null;
+  },
 ): Promise<CheckoutResult> {
   if (input.lines.length === 0) throw new Error("Cart is empty");
+
+  const method: PaymentMethod = input.payment_method ?? "cash";
+  const customerId = method === "utang" ? (input.customer_id ?? null) : null;
+  if (method === "utang" && !customerId) throw new Error("Choose a customer for this utang.");
 
   const subtotal = input.lines.reduce((sum, l) => sum + l.quantity * l.selling_price, 0);
   const discount = input.discount ?? 0;
   const total = Math.max(0, subtotal - discount);
+  const cashReceived = method === "cash" ? input.cash_received : 0;
   const createdAt = nowIso();
 
   const sale: LocalSale = {
@@ -377,11 +389,11 @@ export async function checkout(
     subtotal,
     discount,
     total,
-    payment_method: "cash",
-    cash_received: input.cash_received,
-    change_amount: Math.max(0, input.cash_received - total),
+    payment_method: method,
+    cash_received: cashReceived,
+    change_amount: Math.max(0, cashReceived - total),
     status: "completed",
-    customer_id: null,
+    customer_id: customerId,
     notes: input.notes ?? null,
     created_at: createdAt,
     updated_at: createdAt,
