@@ -273,6 +273,9 @@ class BentakoDatabase extends Dexie {
   inventory_movements!: Table<LocalMovement, string>;
   expenses!: Table<LocalExpense, string>;
   audit_logs!: Table<LocalAudit, string>;
+  cash_transactions!: Table<LocalCashTransaction, string>;
+  customers!: Table<LocalCustomer, string>;
+  customer_payments!: Table<LocalCustomerPayment, string>;
   sync_queue!: Table<SyncQueueItem, string>;
   settings!: Table<SettingRow, string>;
 
