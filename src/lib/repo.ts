@@ -461,11 +461,25 @@ export async function checkout(
         }
         if (movements.length > 0) await local.inventory_movements.bulkPut(movements);
 
+        // Utang: the customer owes this sale. The balance mirror moves in the
+        // same commit as the sale, so the two can never disagree on device.
+        if (customerId) {
+          const customer = await local.customers.get(customerId);
+          if (customer) {
+            await local.customers.update(customerId, {
+              credit_balance: customer.credit_balance + total,
+              updated_at: nowIso(),
+              sync_status: "pending",
+            });
+          }
+        }
+
         // Queue intent is part of this same local commit. An app close directly
         // after checkout cannot leave a saved sale undiscoverable by sync.
         const group = sale.id;
         for (const productId of touchedProducts)
           await enqueue("products", productId, { groupId: group });
+        if (customerId) await enqueue("customers", customerId, { groupId: group });
         await enqueue("sales", sale.id, { groupId: group });
         for (const item of items) await enqueue("sale_items", item.id, { groupId: group });
         for (const movement of movements)
