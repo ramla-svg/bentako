@@ -425,7 +425,14 @@ export async function checkout(
     const local = db();
     await local.transaction(
       "rw",
-      [local.sales, local.sale_items, local.products, local.inventory_movements, local.sync_queue],
+      [
+        local.sales,
+        local.sale_items,
+        local.products,
+        local.inventory_movements,
+        local.customers,
+        local.sync_queue,
+      ],
       async () => {
         await local.sales.put(sale);
         await local.sale_items.bulkPut(items);
