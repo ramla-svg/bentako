@@ -160,13 +160,84 @@ export interface LocalAudit {
   sync_status: SyncStatus;
 }
 
+/* ------------------------------------------------------------ cash ledger */
+
+export type CashTxnType = "cash_in" | "cash_out";
+
+/** `other` means the shop's own drawer; the rest are e-wallet/remittance services. */
+export type ServiceProvider = "gcash" | "maya" | "bank" | "remittance" | "other";
+
+export const CASH_PROVIDERS: { value: ServiceProvider; label: string }[] = [
+  { value: "other", label: "Drawer" },
+  { value: "gcash", label: "GCash" },
+  { value: "maya", label: "Maya" },
+  { value: "bank", label: "Bank" },
+  { value: "remittance", label: "Remittance" },
+];
+
+export interface LocalCashTransaction {
+  id: string;
+  store_id: string;
+  transaction_type: CashTxnType;
+  provider: ServiceProvider;
+  customer_name: string | null;
+  customer_mobile_number: string | null;
+  amount: number;
+  service_fee: number;
+  reference_number: string | null;
+  wallet_before: number | null;
+  wallet_after: number | null;
+  cash_before: number | null;
+  cash_after: number | null;
+  status: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  sync_status: SyncStatus;
+}
+
+/* ---------------------------------------------------------- credit ledger */
+
+export interface LocalCustomer {
+  id: string;
+  store_id: string;
+  name: string;
+  mobile_number: string | null;
+  notes: string | null;
+  /** Mirror of the derived balance, kept for the cloud copy. */
+  credit_balance: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  sync_status: SyncStatus;
+}
+
+/**
+ * A ledger row against a customer. Positive `amount` is money received
+ * (utang payment); negative `amount` is a manual charge added by the store.
+ */
+export interface LocalCustomerPayment {
+  id: string;
+  store_id: string;
+  customer_id: string;
+  sale_id: string | null;
+  amount: number;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  sync_status: SyncStatus;
+}
+
 export type SyncEntity =
   | "products"
   | "categories"
+  | "customers"
   | "sales"
   | "sale_items"
   | "inventory_movements"
   | "expenses"
+  | "cash_transactions"
+  | "customer_payments"
   | "audit_logs";
 
 export type SyncQueueStatus = "pending" | "syncing" | "synced" | "failed";
