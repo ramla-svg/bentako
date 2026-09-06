@@ -15,6 +15,13 @@
       "when": 1788386826461,
       "tag": "0001_allow_idempotent_movement_audit_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788656446028,
+      "tag": "0002_add_utang_payment_method",
+      "breakpoints": true
     }
   ]
 }

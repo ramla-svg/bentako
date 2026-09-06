@@ -693,7 +693,7 @@ export type Database = {
         | "cashout_related"
         | "supplier_purchase"
         | "void_restore"
-      payment_method: "cash" | "gcash" | "maya" | "bank" | "other"
+      payment_method: "cash" | "gcash" | "maya" | "bank" | "other" | "utang"
       sale_status: "completed" | "voided"
       service_provider: "gcash" | "maya" | "bank" | "remittance" | "other"
       unit_type:
@@ -849,7 +849,7 @@ export const Constants = {
         "supplier_purchase",
         "void_restore",
       ],
-      payment_method: ["cash", "gcash", "maya", "bank", "other"],
+      payment_method: ["cash", "gcash", "maya", "bank", "other", "utang"],
       sale_status: ["completed", "voided"],
       service_provider: ["gcash", "maya", "bank", "remittance", "other"],
       unit_type: [
