@@ -70,6 +70,17 @@ export interface LocalProduct {
   sync_status: SyncStatus;
 }
 
+export type PaymentMethod = "cash" | "gcash" | "maya" | "bank" | "other" | "utang";
+
+export const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
+  { value: "cash", label: "Cash" },
+  { value: "gcash", label: "GCash" },
+  { value: "maya", label: "Maya" },
+  { value: "bank", label: "Bank" },
+  { value: "utang", label: "Utang" },
+  { value: "other", label: "Other" },
+];
+
 export interface LocalSale {
   id: string;
   store_id: string;
@@ -79,7 +90,7 @@ export interface LocalSale {
   subtotal: number;
   discount: number;
   total: number;
-  payment_method: "cash" | "gcash" | "maya" | "bank" | "other";
+  payment_method: PaymentMethod;
   cash_received: number;
   change_amount: number;
   status: "completed" | "voided";
