@@ -308,6 +308,13 @@ class BentakoDatabase extends Dexie {
             if (item.status === "syncing") item.status = "pending";
           }),
       );
+    // v3 adds the cash / credit / payment ledgers. Purely additive: existing
+    // rows and any pending offline queue survive untouched.
+    this.version(3).stores({
+      cash_transactions: "id, store_id, created_at, transaction_type, provider, sync_status",
+      customers: "id, store_id, name, is_active, sync_status",
+      customer_payments: "id, store_id, customer_id, created_at, sync_status",
+    });
   }
 }
 
