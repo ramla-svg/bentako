@@ -671,6 +671,8 @@ export interface CashTransactionInput {
   customer_name?: string | null;
   customer_mobile_number?: string | null;
   reference_number?: string | null;
+  /** Optional receipt/screenshot kept on this device only. */
+  photo?: Blob | null;
 }
 
 /**
