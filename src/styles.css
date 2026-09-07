@@ -150,9 +150,10 @@
 
   html {
     -webkit-tap-highlight-color: transparent;
-    /* The page itself never scrolls or rubber-bands sideways: only opted-in
-       rails (filter chips) may pan horizontally. */
-    overflow-x: hidden;
+    /* The page itself never drifts sideways, but must always scroll vertically.
+       overflow-x: clip trims horizontal overflow without creating a scroll
+       container that can trap vertical scrolling in Android WebView. */
+    overflow-x: clip;
     overscroll-behavior-x: none;
   }
 
@@ -163,9 +164,10 @@
     -webkit-font-smoothing: antialiased;
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden;
-    overscroll-behavior: none;
+    overflow-x: clip;
+    overscroll-behavior-x: none;
   }
+
 
   h1,
   h2,
