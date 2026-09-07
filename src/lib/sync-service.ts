@@ -12,10 +12,13 @@ import { nowIso, uuid } from "./ids";
 const ENTITY_ORDER: SyncEntity[] = [
   "categories",
   "products",
+  "customers",
   "sales",
   "sale_items",
   "inventory_movements",
   "expenses",
+  "cash_transactions",
+  "customer_payments",
   "audit_logs",
 ];
 
@@ -36,6 +39,12 @@ const NUMERIC_FIELDS = new Set([
   "cost_price_snapshot",
   "selling_price_snapshot",
   "amount",
+  "service_fee",
+  "credit_balance",
+  "wallet_before",
+  "wallet_after",
+  "cash_before",
+  "cash_after",
   "sort_order",
 ]);
 
