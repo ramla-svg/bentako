@@ -194,8 +194,10 @@ export function registerServiceWorker(): void {
   if (supportsServiceWorker()) {
     // Register immediately instead of waiting for every remote font/image. This
     // gives the worker the best chance to cache the shell during first setup.
+    // updateViaCache "none": the worker script itself is never taken from the
+    // HTTP cache, so a new deployment is noticed on the next open.
     void navigator.serviceWorker
-      .register(SW_URL, { scope: "/" })
+      .register(SW_URL, { scope: "/", updateViaCache: "none" })
       .then((registration) => trackRegistration(registration))
       .catch(() => {
         /* offline app shell is best-effort */
