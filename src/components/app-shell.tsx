@@ -48,8 +48,8 @@ export function AppShell({
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto flex w-full max-w-6xl">
+    <div className="app-pan-y min-h-screen w-full max-w-full overflow-x-hidden bg-background">
+      <div className="mx-auto flex w-full max-w-6xl min-w-0">
         {/* Desktop sidebar */}
         <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col gap-1 border-r bg-sidebar p-4 lg:flex">
           <div className="mb-4 flex items-center gap-2">
