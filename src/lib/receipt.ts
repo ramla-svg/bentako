@@ -24,8 +24,14 @@ export function buildReceiptText(
 
   lines.push("--------------------------------");
   lines.push(`TOTAL   ${formatMoney(result.sale.total, currency)}`);
-  lines.push(`CASH    ${formatMoney(result.sale.cash_received, currency)}`);
-  lines.push(`CHANGE  ${formatMoney(result.sale.change_amount, currency)}`);
+  if (result.sale.payment_method === "utang") {
+    lines.push("UNPAID  — charged to utang");
+  } else if (result.sale.payment_method === "cash") {
+    lines.push(`CASH    ${formatMoney(result.sale.cash_received, currency)}`);
+    lines.push(`CHANGE  ${formatMoney(result.sale.change_amount, currency)}`);
+  } else {
+    lines.push(`PAID    ${result.sale.payment_method.toUpperCase()}`);
+  }
 
   if (store?.receipt_footer) {
     lines.push("");
