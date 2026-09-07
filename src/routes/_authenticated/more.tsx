@@ -1,5 +1,15 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { BarChart3, Boxes, ChevronRight, LogOut, Settings, Wallet } from "lucide-react";
+import {
+  Banknote,
+  BarChart3,
+  Boxes,
+  ChevronRight,
+  Coins,
+  HandCoins,
+  LogOut,
+  Settings,
+  Wallet,
+} from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
 import { useAppSession } from "@/hooks/use-app-session";
