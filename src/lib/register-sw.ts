@@ -31,45 +31,100 @@ async function unregisterAppWorker(): Promise<void> {
 /* -------------------------------------------------------- update coordination */
 
 let waitingWorker: ServiceWorker | null = null;
+let newerBuildOnServer = false;
+let applying = false;
 const updateListeners = new Set<(available: boolean) => void>();
 
+function updateAvailable(): boolean {
+  return waitingWorker !== null || newerBuildOnServer;
+}
+
 function emitUpdate(): void {
-  const available = waitingWorker !== null;
+  const available = updateAvailable();
   for (const fn of updateListeners) fn(available);
 }
 
-/** Subscribe to "a newer BentaKo build is downloaded and waiting". */
+/** Subscribe to "a newer BentaKo build is available". */
 export function subscribeAppUpdate(fn: (available: boolean) => void): () => void {
   updateListeners.add(fn);
-  fn(waitingWorker !== null);
+  fn(updateAvailable());
   return () => updateListeners.delete(fn);
 }
 
 /**
- * Activates the waiting build and reloads. Only ever called from an explicit
- * user action, so an in-progress sale is never interrupted. IndexedDB is
- * untouched: pending offline sales survive the swap.
+ * Activates the newest build and reloads. Never interrupts a sale: if a
+ * checkout write is in flight, the swap waits until it finishes. IndexedDB is
+ * untouched, so pending offline sales and the sync queue survive the swap.
  */
 export function applyAppUpdate(): void {
-  const worker = waitingWorker;
-  if (!worker) {
-    window.location.reload();
-    return;
-  }
-  let reloaded = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (reloaded) return;
-    reloaded = true;
-    window.location.reload();
-  });
-  worker.postMessage({ type: "SKIP_WAITING" });
-  // Fallback in case the worker never claims this client.
-  window.setTimeout(() => {
-    if (!reloaded) {
+  if (applying) return;
+  applying = true;
+  onCriticalWorkIdle(() => {
+    const worker = waitingWorker;
+    if (!worker) {
+      // No waiting worker (e.g. plain WebView wrapper): reload past any cache.
+      const url = new URL(window.location.href);
+      url.searchParams.set("_bk", String(Date.now()));
+      window.location.replace(url.toString());
+      return;
+    }
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (reloaded) return;
       reloaded = true;
       window.location.reload();
-    }
-  }, 3000);
+    });
+    worker.postMessage({ type: "SKIP_WAITING" });
+    // Fallback in case the worker never claims this client.
+    window.setTimeout(() => {
+      if (!reloaded) {
+        reloaded = true;
+        window.location.reload();
+      }
+    }, 3000);
+  });
+}
+
+/**
+ * Asks the server whether a newer build was published. Works even without a
+ * service worker, which is what makes a link-wrapped Android APK notice new
+ * features. Returns true when a newer build exists.
+ */
+export async function checkForAppUpdate(): Promise<boolean> {
+  try {
+    const registration = await navigator.serviceWorker?.getRegistration(SW_URL);
+    await registration?.update();
+  } catch {
+    /* best effort */
+  }
+  const serverBuild = await fetchServerBuildId();
+  if (serverBuild && serverBuild !== runningBuildId()) {
+    newerBuildOnServer = true;
+    emitUpdate();
+    return true;
+  }
+  return updateAvailable();
+}
+
+/**
+ * Background watcher: checks on open, whenever the app returns to the
+ * foreground, and hourly. When a newer build exists it is applied right away
+ * unless a sale is in progress, in which case it applies after checkout.
+ */
+function startUpdateWatcher(): void {
+  let lastCheck = 0;
+  const check = async () => {
+    if (Date.now() - lastCheck < 15_000) return;
+    lastCheck = Date.now();
+    const available = await checkForAppUpdate();
+    if (available) applyAppUpdate();
+  };
+  void check();
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") void check();
+  });
+  window.addEventListener("online", () => void check());
+  window.setInterval(() => void check(), 60 * 60 * 1000);
 }
 
 function trackRegistration(registration: ServiceWorkerRegistration): void {
@@ -77,6 +132,7 @@ function trackRegistration(registration: ServiceWorkerRegistration): void {
     if (registration.waiting && navigator.serviceWorker.controller) {
       waitingWorker = registration.waiting;
       emitUpdate();
+      applyAppUpdate();
     }
   };
   check();
@@ -87,37 +143,36 @@ function trackRegistration(registration: ServiceWorkerRegistration): void {
       if (installing.state === "installed") check();
     });
   });
-  // Periodic check so a store left open for days still learns about updates.
-  window.setInterval(() => void registration.update().catch(() => {}), 60 * 60 * 1000);
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") void registration.update().catch(() => {});
-  });
 }
 
 /**
  * Registers the offline app-shell service worker. Refuses in dev, in the Lovable
  * editor preview, inside iframes, and when `?sw=off` is present — and cleans up
- * any stale registration in those cases.
+ * any stale registration in those cases. The version watcher still runs in
+ * production so a wrapped APK without a worker also picks up new builds.
  */
 export function registerServiceWorker(): void {
-  if (!supportsServiceWorker()) return;
-
   const killSwitch = new URLSearchParams(window.location.search).get("sw") === "off";
   const inIframe = window.self !== window.top;
   const refuse =
     !import.meta.env.PROD || inIframe || isPreviewHost(window.location.hostname) || killSwitch;
 
   if (refuse) {
-    void unregisterAppWorker();
+    if (supportsServiceWorker()) void unregisterAppWorker();
     return;
   }
 
-  // Register immediately instead of waiting for every remote font/image. This
-  // gives the worker the best chance to cache the shell during first setup.
-  void navigator.serviceWorker
-    .register(SW_URL, { scope: "/" })
-    .then((registration) => trackRegistration(registration))
-    .catch(() => {
-      /* offline app shell is best-effort */
-    });
+  if (supportsServiceWorker()) {
+    // Register immediately instead of waiting for every remote font/image. This
+    // gives the worker the best chance to cache the shell during first setup.
+    void navigator.serviceWorker
+      .register(SW_URL, { scope: "/" })
+      .then((registration) => trackRegistration(registration))
+      .catch(() => {
+        /* offline app shell is best-effort */
+      });
+  }
+
+  startUpdateWatcher();
 }
+
