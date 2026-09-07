@@ -505,6 +505,19 @@ export async function voidSale(ctx: StoreContext, saleId: string): Promise<void>
   });
   await enqueue("sales", saleId);
 
+  // Voiding an utang sale gives the customer their balance back.
+  if (sale.payment_method === "utang" && sale.customer_id) {
+    const customer = await db().customers.get(sale.customer_id);
+    if (customer) {
+      await db().customers.update(sale.customer_id, {
+        credit_balance: customer.credit_balance - sale.total,
+        updated_at: nowIso(),
+        sync_status: "pending",
+      });
+      await enqueue("customers", sale.customer_id);
+    }
+  }
+
   const items = await db().sale_items.where("sale_id").equals(saleId).toArray();
   for (const item of items) {
     if (!item.product_id) continue;
