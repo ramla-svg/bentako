@@ -116,7 +116,7 @@ export function AppShell({
             ) : null}
           </header>
 
-          <main className="safe-x px-4 py-4">{children}</main>
+          <main className="safe-x min-w-0 max-w-full px-4 py-4">{children}</main>
         </div>
       </div>
 
