@@ -49,6 +49,7 @@ function SettingsPage() {
   const [negative, setNegative] = useState(store?.allow_negative_stock ?? false);
   const [confirmVoid, setConfirmVoid] = useState(store?.confirm_void ?? true);
   const [busy, setBusy] = useState(false);
+  const [checking, setChecking] = useState(false);
 
   const [issues, setIssues] = useState<IntegrityIssue[] | null>(null);
   const install = useInstallState();
