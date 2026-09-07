@@ -1,4 +1,6 @@
+import { fetchServerBuildId, runningBuildId } from "@/lib/build-info";
 import { supportsServiceWorker } from "@/lib/platform/platform-service";
+import { onCriticalWorkIdle } from "@/lib/sync-service";
 
 const SW_URL = "/sw.js";
 
