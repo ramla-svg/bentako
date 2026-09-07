@@ -12,6 +12,10 @@ import { VitePWA } from "vite-plugin-pwa";
 // app can boot with zero network. The normal web build is untouched.
 const APK = process.env["BENTAKO_APK"] === "1";
 
+// One id per build. Stamped into the HTML (<meta name="bentako-build">) and used
+// as the precache revision of the app shell so every deployment refreshes it.
+const BUILD_ID = process.env["BENTAKO_BUILD_ID"] ?? new Date().toISOString();
+
 const APK_PAGES = [
   "/",
   "/auth",
@@ -45,9 +49,7 @@ export default defineConfig({
     // A running copy (browser, installed PWA, or link-wrapped APK) compares this
     // with the server's value and updates itself when they differ.
     define: {
-      __BENTAKO_BUILD__: JSON.stringify(
-        process.env["BENTAKO_BUILD_ID"] ?? new Date().toISOString(),
-      ),
+      __BENTAKO_BUILD__: JSON.stringify(BUILD_ID),
     },
     plugins: [
       // The APK ships its own offline bundle inside the app, so no service
@@ -73,29 +75,37 @@ export default defineConfig({
                 // Client assets are emitted under dist/client but served from the
                 // root, so precache URLs must be rewritten or install 404s.
                 modifyURLPrefix: { "client/": "/" },
-                // TanStack Start renders HTML on the server, so explicitly fetch the
-                // root shell during worker installation and use it for uncached route
-                // navigations. The client router then renders from locally-cached data.
-                additionalManifestEntries: [{ url: "/", revision: null }],
-                navigateFallback: "/",
-                navigateFallbackDenylist: [/^\/api\//, /^\/auth/],
+                // TanStack Start renders HTML on the server, so the root shell is
+                // precached explicitly and used when a navigation cannot reach the
+                // network. It is keyed by BUILD_ID: a `revision: null` entry is fetched
+                // once and then kept forever — even across worker updates — which left
+                // devices booting a stale shell whose scripts no longer existed
+                // (a blank white/black screen after any full page load, such as the
+                // return from Google sign-in).
+                additionalManifestEntries: [{ url: "/", revision: BUILD_ID }],
+                // No NavigationRoute on purpose: it would be matched before the
+                // NetworkFirst rule below and serve the precached shell for every
+                // navigation, so a deployment would never be picked up online.
+                navigateFallback: null,
                 skipWaiting: false,
                 clientsClaim: true,
                 cleanupOutdatedCaches: true,
                 runtimeCaching: [
                   {
-                    // App shell / HTML navigations: always try the network first so a
-                    // new deployment is picked up immediately.
+                    // HTML navigations: network first so a new deployment is picked up
+                    // immediately; a short-lived copy for flaky connections; and the
+                    // current build's precached shell when fully offline.
                     urlPattern: ({ request }) => request.mode === "navigate",
                     handler: "NetworkFirst",
                     options: {
-                      cacheName: "bentako-pages",
+                      cacheName: "bentako-pages-v2",
                       networkTimeoutSeconds: 4,
                       expiration: {
-                        maxEntries: 80,
-                        maxAgeSeconds: 60 * 60 * 24 * 30,
+                        maxEntries: 20,
+                        maxAgeSeconds: 60 * 60 * 24,
                         purgeOnQuotaError: true,
                       },
+                      precacheFallback: { fallbackURL: "/" },
                     },
                   },
                   {
