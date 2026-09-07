@@ -214,7 +214,7 @@ function CashPage() {
           <SummaryCard label="Money out" value={formatMoney(moneyOut, currency)} />
         </div>
 
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+        <div className="scroll-rail -mx-4 flex gap-2 px-4 pb-1">
           {FILTERS.map((f) => (
             <button
               key={f.key}
