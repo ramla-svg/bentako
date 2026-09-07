@@ -1,7 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo, useState } from "react";
-import { ArrowDownLeft, ArrowUpRight, Coins, Plus } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  ChevronRight,
+  Coins,
+  FileText,
+  MoreHorizontal,
+  Plus,
+  Send,
+  Smartphone,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell, EmptyState } from "@/components/app-shell";
@@ -24,13 +34,12 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppSession } from "@/hooks/use-app-session";
-import { formatDateTime, formatMoney } from "@/lib/format";
+import { formatDateTime, formatMoney, localDayKey } from "@/lib/format";
 import {
   CASH_PROVIDERS,
   db,
   type CashTxnType,
   type LocalCashTransaction,
-  type LocalSale,
   type ServiceProvider,
 } from "@/lib/local-db";
 import { saveCashTransaction } from "@/lib/repo";
@@ -40,27 +49,27 @@ export const Route = createFileRoute("/_authenticated/cash")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Cash ledger — BentaKo" },
+      { title: "GCash & E-Wallet — BentaKo" },
       {
         name: "description",
         content: "Track every peso in and out of your drawer, GCash, Maya and bank.",
       },
-      { property: "og:title", content: "Cash ledger — BentaKo" },
-      { property: "og:description", content: "Drawer and e-wallet movements in one running list." },
+      { property: "og:title", content: "GCash & E-Wallet — BentaKo" },
+      { property: "og:description", content: "Cash in/out, load, bills and more in one list." },
     ],
   }),
   component: CashPage,
 });
 
 type RangeKey = "today" | "7d" | "30d";
-type FilterKey = "all" | "drawer" | "wallet" | "in" | "out";
+type FilterKey = "all" | "in" | "out" | "wallet" | "drawer";
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "All" },
-  { key: "drawer", label: "Drawer" },
+  { key: "in", label: "Cash In" },
+  { key: "out", label: "Cash Out" },
   { key: "wallet", label: "GCash/Maya" },
-  { key: "in", label: "Money in" },
-  { key: "out", label: "Money out" },
+  { key: "drawer", label: "Drawer" },
 ];
 
 function rangeStart(range: RangeKey): number {
@@ -73,6 +82,66 @@ function rangeStart(range: RangeKey): number {
   const days = range === "7d" ? 7 : 30;
   return now.getTime() - days * 24 * 60 * 60 * 1000;
 }
+
+type Preset = {
+  key: string;
+  label: string;
+  icon: typeof ArrowDownLeft;
+  tint: string;
+  direction: CashTxnType;
+  provider: ServiceProvider;
+};
+
+const PRESETS: Preset[] = [
+  {
+    key: "in",
+    label: "Cash In",
+    icon: ArrowDownLeft,
+    tint: "bg-tile-mint text-tile-mint-ink",
+    direction: "cash_in",
+    provider: "gcash",
+  },
+  {
+    key: "out",
+    label: "Cash Out",
+    icon: ArrowUpRight,
+    tint: "bg-tile-rose text-tile-rose-ink",
+    direction: "cash_out",
+    provider: "gcash",
+  },
+  {
+    key: "send",
+    label: "Send Money",
+    icon: Send,
+    tint: "bg-tile-sky text-tile-sky-ink",
+    direction: "cash_out",
+    provider: "gcash",
+  },
+  {
+    key: "load",
+    label: "Buy Load",
+    icon: Smartphone,
+    tint: "bg-tile-lavender text-tile-lavender-ink",
+    direction: "cash_out",
+    provider: "gcash",
+  },
+  {
+    key: "bills",
+    label: "Pay Bills",
+    icon: FileText,
+    tint: "bg-tile-peach text-tile-peach-ink",
+    direction: "cash_out",
+    provider: "gcash",
+  },
+  {
+    key: "more",
+    label: "More",
+    icon: MoreHorizontal,
+    tint: "bg-tile-blue text-tile-blue-ink",
+    direction: "cash_in",
+    provider: "other",
+  },
+];
 
 function CashPage() {
   const { store, ctx } = useAppSession();
@@ -102,40 +171,33 @@ function CashPage() {
     [] as LocalCashTransaction[],
   );
 
-  const sales = useLiveQuery(
-    async () =>
-      storeId ? await db().sales.where("store_id").equals(storeId).toArray() : [],
-    [storeId],
-    [] as LocalSale[],
-  );
-
   const from = rangeStart(range);
+  const today = localDayKey();
 
   const inRange = useMemo(
     () => (entries ?? []).filter((e) => new Date(e.created_at).getTime() >= from),
     [entries, from],
   );
 
-  const cashFromSales = useMemo(
-    () =>
-      (sales ?? [])
-        .filter(
-          (s) =>
-            s.status === "completed" &&
-            s.payment_method === "cash" &&
-            new Date(s.created_at).getTime() >= from,
-        )
-        .reduce((sum, s) => sum + s.total, 0),
-    [sales, from],
-  );
+  const wallet = useMemo(() => (entries ?? []).filter((e) => e.provider !== "other"), [entries]);
 
-  const moneyIn = inRange
+  const walletBalance =
+    wallet
+      .filter((e) => e.transaction_type === "cash_in")
+      .reduce((s, e) => s + e.amount, 0) -
+    wallet.filter((e) => e.transaction_type === "cash_out").reduce((s, e) => s + e.amount, 0);
+
+  const todayEntries = useMemo(
+    () => (entries ?? []).filter((e) => localDayKey(e.created_at) === today),
+    [entries, today],
+  );
+  const cashInToday = todayEntries
     .filter((e) => e.transaction_type === "cash_in")
-    .reduce((s, e) => s + e.amount + e.service_fee, 0);
-  const moneyOut = inRange
+    .reduce((s, e) => s + e.amount, 0);
+  const cashOutToday = todayEntries
     .filter((e) => e.transaction_type === "cash_out")
     .reduce((s, e) => s + e.amount, 0);
-  const runningCash = cashFromSales + moneyIn - moneyOut;
+  const feesToday = todayEntries.reduce((s, e) => s + e.service_fee, 0);
 
   const filtered = useMemo(
     () =>
@@ -149,9 +211,9 @@ function CashPage() {
     [inRange, filter],
   );
 
-  function openNew() {
-    setDirection("cash_in");
-    setProvider("other");
+  function openNew(preset?: Preset) {
+    setDirection(preset?.direction ?? "cash_in");
+    setProvider(preset?.provider ?? "other");
     setAmount("");
     setFee("");
     setCustomerName("");
@@ -191,15 +253,50 @@ function CashPage() {
 
   return (
     <AppShell
-      title="Cash ledger"
-      subtitle={`Cash on hand ${formatMoney(runningCash, currency)}`}
-      action={
-        <Button size="sm" className="h-10" onClick={openNew}>
-          <Plus className="size-4" /> Add
-        </Button>
-      }
+      back
+      title="GCash & E-Wallet"
+      subtitle="Cash in/out, load, bills and more"
     >
-      <div className="space-y-3">
+      <div className="space-y-4">
+        {/* Wallet balance */}
+        <div className="min-w-0 rounded-3xl bg-wallet p-4 text-wallet-foreground sm:p-5">
+          <div className="flex items-center gap-3">
+            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-wallet-foreground/20">
+              <Smartphone className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold opacity-90">E-Wallet Balance</p>
+              <p className="tnum truncate font-display text-fluid-amount font-extrabold">
+                {formatMoney(walletBalance, currency)}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+            <WalletStat label="Cash In Today" value={formatMoney(cashInToday, currency)} />
+            <WalletStat label="Cash Out Today" value={formatMoney(cashOutToday, currency)} />
+            <WalletStat label="Fees Earned" value={formatMoney(feesToday, currency)} />
+            <WalletStat label="Transactions" value={String(todayEntries.length)} />
+          </div>
+        </div>
+
+        {/* Action tiles */}
+        <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-6">
+          {PRESETS.map((p) => (
+            <button
+              key={p.key}
+              type="button"
+              onClick={() => openNew(p)}
+              className={cn(
+                "flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-2xl px-1 text-center active:opacity-90",
+                p.tint,
+              )}
+            >
+              <p.icon className="size-5" />
+              <span className="font-display text-xs font-bold leading-tight">{p.label}</span>
+            </button>
+          ))}
+        </div>
+
         <Tabs value={range} onValueChange={(v) => setRange(v as RangeKey)}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="today">Today</TabsTrigger>
@@ -207,12 +304,6 @@ function CashPage() {
             <TabsTrigger value="30d">30 days</TabsTrigger>
           </TabsList>
         </Tabs>
-
-        <div className="grid grid-cols-3 gap-2">
-          <SummaryCard label="From sales" value={formatMoney(cashFromSales, currency)} />
-          <SummaryCard label="Money in" value={formatMoney(moneyIn, currency)} />
-          <SummaryCard label="Money out" value={formatMoney(moneyOut, currency)} />
-        </div>
 
         <div className="scroll-rail -mx-4 flex gap-2 px-4 pb-1">
           {FILTERS.map((f) => (
@@ -230,28 +321,31 @@ function CashPage() {
           ))}
         </div>
 
+        <h2 className="font-display text-base font-bold">Recent transactions</h2>
+
         {filtered.length === 0 ? (
           <EmptyState
             icon={Coins}
-            title="No cash entries yet"
-            description="Record starting cash, withdrawals, deposits or a GCash cash-in."
-            action={<Button onClick={openNew}>Add entry</Button>}
+            title="No entries yet"
+            description="Record a cash-in, cash-out, load, bill payment or drawer movement."
+            action={<Button onClick={() => openNew()}>Add entry</Button>}
           />
         ) : (
           <ul className="space-y-2">
             {filtered.map((e) => {
               const isIn = e.transaction_type === "cash_in";
-              const label =
-                CASH_PROVIDERS.find((p) => p.value === e.provider)?.label ?? "Drawer";
+              const label = CASH_PROVIDERS.find((p) => p.value === e.provider)?.label ?? "Drawer";
               return (
                 <li
                   key={e.id}
-                  className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border bg-card p-3"
+                  className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 rounded-2xl border bg-card p-3"
                 >
                   <span
                     className={cn(
-                      "grid size-10 shrink-0 place-items-center rounded-xl",
-                      isIn ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive",
+                      "grid size-10 shrink-0 place-items-center rounded-full",
+                      isIn
+                        ? "bg-tile-mint text-tile-mint-ink"
+                        : "bg-tile-rose text-tile-rose-ink",
                     )}
                   >
                     {isIn ? (
@@ -262,14 +356,19 @@ function CashPage() {
                   </span>
                   <div className="min-w-0">
                     <p className="truncate font-semibold">
-                      {label}
+                      {isIn ? "Cash In" : "Cash Out"} · {label}
                       {e.customer_name ? ` · ${e.customer_name}` : ""}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {formatDateTime(e.created_at)}
-                      {e.service_fee > 0 ? ` · fee ${formatMoney(e.service_fee, currency)}` : ""}
-                      {e.reference_number ? ` · ${e.reference_number}` : ""}
                     </p>
+                    {e.reference_number || e.service_fee > 0 ? (
+                      <p className="truncate text-xs text-muted-foreground">
+                        {e.reference_number ? `Ref: ${e.reference_number}` : ""}
+                        {e.reference_number && e.service_fee > 0 ? " · " : ""}
+                        {e.service_fee > 0 ? `Fee: ${formatMoney(e.service_fee, currency)}` : ""}
+                      </p>
+                    ) : null}
                   </div>
                   <span
                     className={cn(
@@ -280,11 +379,16 @@ function CashPage() {
                     {isIn ? "+" : "−"}
                     {formatMoney(e.amount, currency)}
                   </span>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
                 </li>
               );
             })}
           </ul>
         )}
+
+        <Button className="h-14 w-full text-base" onClick={() => openNew()}>
+          <Plus className="size-5" /> New e-wallet transaction
+        </Button>
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -302,10 +406,7 @@ function CashPage() {
 
             <div className="space-y-1.5">
               <Label>Type</Label>
-              <Select
-                value={provider}
-                onValueChange={(v) => setProvider(v as ServiceProvider)}
-              >
+              <Select value={provider} onValueChange={(v) => setProvider(v as ServiceProvider)}>
                 <SelectTrigger className="h-12">
                   <SelectValue />
                 </SelectTrigger>
@@ -381,11 +482,11 @@ function CashPage() {
   );
 }
 
-function SummaryCard({ label, value }: { label: string; value: string }) {
+function WalletStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border bg-card p-3">
-      <p className="truncate text-[11px] font-medium text-muted-foreground">{label}</p>
-      <p className="tnum truncate font-display text-base font-bold">{value}</p>
+    <div className="min-w-0 rounded-xl bg-wallet-foreground/15 px-2 py-2">
+      <p className="truncate opacity-90">{label}</p>
+      <p className="tnum truncate font-display text-sm font-bold">{value}</p>
     </div>
   );
 }
