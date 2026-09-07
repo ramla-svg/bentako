@@ -213,6 +213,45 @@ function SettingsPage() {
           <p className="text-xs text-muted-foreground">Running as: {platformLabel()}</p>
         </section>
 
+        <section className="space-y-3 rounded-2xl border bg-card p-4">
+          <h2 className="font-display text-sm font-bold">App version</h2>
+          <p className="text-sm text-muted-foreground">
+            BentaKo updates itself when a new version is published. If this device still shows old
+            features, tap below to check now — your products, stock and saved sales are never
+            cleared by an update.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Installed version: <span className="tnum">{runningBuildId()}</span>
+          </p>
+          <Button
+            variant="outline"
+            className="h-12 w-full"
+            disabled={checking}
+            onClick={async () => {
+              setChecking(true);
+              try {
+                const available = await checkForAppUpdate();
+                if (available) {
+                  toast.success("New version found — updating now.");
+                  applyAppUpdate();
+                } else {
+                  toast.success("You already have the newest version.");
+                }
+              } finally {
+                setChecking(false);
+              }
+            }}
+          >
+            <RefreshCw className="size-4" /> {checking ? "Checking…" : "Check for updates"}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            If you use a wrapper app around the BentaKo link, turn off its own &quot;offline
+            mode&quot; or page caching so it can always reach the newest version.
+          </p>
+        </section>
+
+
+
         {isOwner ? (
           <section className="space-y-3 rounded-2xl border bg-card p-4">
             <h2 className="font-display text-sm font-bold">Data check</h2>
