@@ -390,48 +390,126 @@ function PosPage() {
           </div>
 
           <div className="mt-4 space-y-2">
-            <label className="text-sm font-medium" htmlFor="cash">
-              Cash received
-            </label>
-            <Input
-              id="cash"
-              value={cash}
-              onChange={(e) => setCash(e.target.value.replace(/[^0-9.]/g, ""))}
-              inputMode="decimal"
-              placeholder="0.00"
-              className="tnum h-14 text-xl font-bold"
-            />
+            <p className="text-sm font-medium">Payment</p>
             <div className="flex flex-wrap gap-2">
-              {[total, 20, 50, 100, 200, 500, 1000].map((amount, i) => (
-                <Button
-                  key={`${amount}-${i}`}
+              {PAYMENT_METHODS.map((m) => (
+                <button
+                  key={m.value}
                   type="button"
-                  variant="outline"
-                  className="h-10 flex-1 min-w-16"
-                  onClick={() => setCash(String(amount))}
+                  onClick={() => setMethod(m.value)}
+                  className={cn(
+                    "rounded-full border px-3.5 py-2 text-sm font-medium",
+                    method === m.value ? "bg-primary text-primary-foreground" : "bg-card",
+                  )}
                 >
-                  {i === 0 ? "Exact" : `₱${amount}`}
-                </Button>
+                  {m.label}
+                </button>
               ))}
             </div>
-            {cashNumber > 0 ? (
-              <p
-                className={cn(
-                  "tnum text-sm font-semibold",
-                  change < 0 ? "text-destructive" : "text-primary",
-                )}
-              >
-                {change < 0
-                  ? `Short by ${formatMoney(Math.abs(change), currency)}`
-                  : `Change: ${formatMoney(change, currency)}`}
-              </p>
-            ) : null}
           </div>
+
+          {method === "utang" ? (
+            <div className="mt-4 space-y-2">
+              <p className="text-sm font-medium">Customer</p>
+              {(customers ?? []).length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {(customers ?? []).map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setCustomerId(c.id)}
+                      className={cn(
+                        "rounded-full border px-3.5 py-2 text-sm font-medium",
+                        customerId === c.id ? "bg-primary text-primary-foreground" : "bg-card",
+                      )}
+                    >
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              <div className="flex gap-2">
+                <Input
+                  value={newCustomer}
+                  onChange={(e) => setNewCustomer(e.target.value)}
+                  placeholder="New customer name"
+                  className="h-12"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 shrink-0"
+                  onClick={async () => {
+                    if (!ctx || !newCustomer.trim()) return;
+                    try {
+                      const created = await saveCustomer(ctx, { name: newCustomer });
+                      setCustomerId(created.id);
+                      setNewCustomer("");
+                      toast.success("Customer added.");
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : "Could not add customer.");
+                    }
+                  }}
+                >
+                  <Plus className="size-4" /> Add
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Nothing is received now — this amount is added to their utang.
+              </p>
+            </div>
+          ) : null}
+
+          {method === "cash" ? (
+            <div className="mt-4 space-y-2">
+              <label className="text-sm font-medium" htmlFor="cash">
+                Cash received
+              </label>
+              <Input
+                id="cash"
+                value={cash}
+                onChange={(e) => setCash(e.target.value.replace(/[^0-9.]/g, ""))}
+                inputMode="decimal"
+                placeholder="0.00"
+                className="tnum h-14 text-xl font-bold"
+              />
+              <div className="flex flex-wrap gap-2">
+                {[total, 20, 50, 100, 200, 500, 1000].map((amount, i) => (
+                  <Button
+                    key={`${amount}-${i}`}
+                    type="button"
+                    variant="outline"
+                    className="h-10 flex-1 min-w-16"
+                    onClick={() => setCash(String(amount))}
+                  >
+                    {i === 0 ? "Exact" : `₱${amount}`}
+                  </Button>
+                ))}
+              </div>
+              {cashNumber > 0 ? (
+                <p
+                  className={cn(
+                    "tnum text-sm font-semibold",
+                    change < 0 ? "text-destructive" : "text-primary",
+                  )}
+                >
+                  {change < 0
+                    ? `Short by ${formatMoney(Math.abs(change), currency)}`
+                    : `Change: ${formatMoney(change, currency)}`}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           <Button
             className="mt-4 h-14 w-full text-base"
             onClick={() => void handleCheckout()}
-            disabled={busy || lines.length === 0 || cashNumber < total}
+            disabled={
+              busy ||
+              lines.length === 0 ||
+              (method === "cash" && cashNumber < total) ||
+              (method === "utang" && !customerId)
+            }
           >
             <Check className="size-5" /> Complete sale
           </Button>
