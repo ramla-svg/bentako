@@ -200,6 +200,15 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   useEffect(() => {
+    // Startup succeeded: hide the static boot panel and clear the retry guard.
+    window.dispatchEvent(new Event("bentako:ready"));
+    const boot = document.getElementById("bentako-boot");
+    if (boot) boot.style.display = "none";
+    try {
+      sessionStorage.removeItem("bentako_boot_retry");
+    } catch {
+      /* storage unavailable */
+    }
     registerServiceWorker();
     initNativeBridge();
   }, []);
