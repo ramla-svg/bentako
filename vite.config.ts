@@ -78,7 +78,7 @@ export default defineConfig({
                 // navigations. The client router then renders from locally-cached data.
                 additionalManifestEntries: [{ url: "/", revision: null }],
                 navigateFallback: "/",
-                navigateFallbackDenylist: [/^\/api\//, /^\/auth\/callback/],
+                navigateFallbackDenylist: [/^\/api\//, /^\/auth/],
                 skipWaiting: false,
                 clientsClaim: true,
                 cleanupOutdatedCaches: true,
