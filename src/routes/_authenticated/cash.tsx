@@ -256,11 +256,6 @@ function CashPage() {
       back
       title="GCash & E-Wallet"
       subtitle="Cash in/out, load, bills and more"
-      action={
-        <Button size="sm" className="h-10" onClick={() => openNew()}>
-          <Plus className="size-4" /> Add
-        </Button>
-      }
     >
       <div className="space-y-4">
         {/* Wallet balance */}

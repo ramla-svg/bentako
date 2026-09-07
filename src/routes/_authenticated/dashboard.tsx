@@ -126,7 +126,7 @@ function Dashboard() {
     <AppShell
       brand
       alerts={alerts}
-      title={`Kumusta, ${userName?.split(" ")[0] ?? "boss"}! 👋`}
+      title={`Kumusta, ${userName?.split(" ")[0] ?? "boss"}!`}
       subtitle={`${userName ?? store?.name ?? ""} · ${role === "owner" ? "Owner" : "Cashier"}`}
     >
       <div className="space-y-5">
