@@ -84,6 +84,9 @@ function AuthPage() {
     setBusy(true);
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
+      // Always show the Google account chooser so a signed-out user can pick a
+      // different account instead of being silently re-logged-in to the last one.
+      extraParams: { prompt: "select_account" },
     });
     if (result.error) {
       toast.error("Google sign-in did not complete. Please try again.");
