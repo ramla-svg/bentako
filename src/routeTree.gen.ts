@@ -24,6 +24,7 @@ import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated/sales'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedUtangRouteImport } from './routes/_authenticated/utang'
+import { Route as AuthenticatedUtangCustomerIdRouteImport } from './routes/_authenticated/utang.$customerId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -99,6 +100,12 @@ const AuthenticatedUtangRoute = AuthenticatedUtangRouteImport.update({
   path: '/utang',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedUtangCustomerIdRoute =
+  AuthenticatedUtangCustomerIdRouteImport.update({
+    id: '/$customerId',
+    path: '/$customerId',
+    getParentRoute: () => AuthenticatedUtangRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -114,7 +121,8 @@ export interface FileRoutesByFullPath {
   '/reports': typeof AuthenticatedReportsRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/utang': typeof AuthenticatedUtangRoute
+  '/utang': typeof AuthenticatedUtangRouteWithChildren
+  '/utang/$customerId': typeof AuthenticatedUtangCustomerIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -130,7 +138,8 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthenticatedReportsRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/utang': typeof AuthenticatedUtangRoute
+  '/utang': typeof AuthenticatedUtangRouteWithChildren
+  '/utang/$customerId': typeof AuthenticatedUtangCustomerIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -148,7 +157,8 @@ export interface FileRoutesById {
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/sales': typeof AuthenticatedSalesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
-  '/_authenticated/utang': typeof AuthenticatedUtangRoute
+  '/_authenticated/utang': typeof AuthenticatedUtangRouteWithChildren
+  '/_authenticated/utang/$customerId': typeof AuthenticatedUtangCustomerIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/sales'
     | '/settings'
     | '/utang'
+    | '/utang/$customerId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/sales'
     | '/settings'
     | '/utang'
+    | '/utang/$customerId'
   id:
     | '__root__'
     | '/'
@@ -200,6 +212,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sales'
     | '/_authenticated/settings'
     | '/_authenticated/utang'
+    | '/_authenticated/utang/$customerId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -316,8 +329,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUtangRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/utang/$customerId': {
+      id: '/_authenticated/utang/$customerId'
+      path: '/$customerId'
+      fullPath: '/utang/$customerId'
+      preLoaderRoute: typeof AuthenticatedUtangCustomerIdRouteImport
+      parentRoute: typeof AuthenticatedUtangRoute
+    }
   }
 }
+
+interface AuthenticatedUtangRouteChildren {
+  AuthenticatedUtangCustomerIdRoute: typeof AuthenticatedUtangCustomerIdRoute
+}
+
+const AuthenticatedUtangRouteChildren: AuthenticatedUtangRouteChildren = {
+  AuthenticatedUtangCustomerIdRoute: AuthenticatedUtangCustomerIdRoute,
+}
+
+const AuthenticatedUtangRouteWithChildren =
+  AuthenticatedUtangRoute._addFileChildren(AuthenticatedUtangRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedCashRoute: typeof AuthenticatedCashRoute
@@ -330,7 +361,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSalesRoute: typeof AuthenticatedSalesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-  AuthenticatedUtangRoute: typeof AuthenticatedUtangRoute
+  AuthenticatedUtangRoute: typeof AuthenticatedUtangRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -344,7 +375,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSalesRoute: AuthenticatedSalesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
-  AuthenticatedUtangRoute: AuthenticatedUtangRoute,
+  AuthenticatedUtangRoute: AuthenticatedUtangRouteWithChildren,
 }
 
 const AuthenticatedRouteRouteWithChildren =
