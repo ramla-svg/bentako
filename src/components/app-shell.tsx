@@ -112,7 +112,7 @@ export function AppShell({
         <div className="min-w-0 max-w-full flex-1 overflow-x-clip pb-28 lg:pb-8">
           <header className="safe-top sticky top-0 z-30 w-full border-b bg-background">
             {brand ? (
-              <div className="safe-x flex items-center gap-2.5 px-3 pt-2 sm:gap-3 sm:px-4 sm:pt-3">
+              <div className="safe-x flex items-center gap-2.5 px-4 pt-2.5 sm:gap-3 sm:px-6 sm:pt-3">
                 <img
                   src={brandMark}
                   alt="BentaKo"
@@ -148,7 +148,7 @@ export function AppShell({
                 </button>
               </div>
             ) : null}
-            <div className="safe-x grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3">
+            <div className="safe-x grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-4 py-2.5 sm:gap-3 sm:px-6 sm:py-3">
               <div className="flex min-w-0 items-center gap-2">
                 {back ? (
                   <button
@@ -210,7 +210,7 @@ const MOBILE_NAV = [
 function BottomNav({ pathname }: { pathname: string }) {
   return (
     <nav className="safe-bottom safe-x fixed inset-x-0 bottom-0 z-30 border-t bg-card lg:hidden">
-      <ul className="mx-auto grid max-w-md grid-cols-5 items-end px-2 pb-1 pt-1.5">
+      <ul className="mx-auto grid max-w-md grid-cols-5 items-end px-3 pb-1.5 pt-1.5 sm:px-4">
         {MOBILE_NAV.map((item) => {
           const active = pathname.startsWith(item.to);
           if (item.to === "/pos") {
