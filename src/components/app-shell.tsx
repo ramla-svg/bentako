@@ -190,7 +190,7 @@ export function AppShell({
           </header>
 
 
-          <main className="safe-x min-w-0 max-w-full px-3 py-3 sm:px-4 sm:py-4">{children}</main>
+          <main className="safe-x min-w-0 max-w-full px-4 py-4 sm:px-6 sm:py-5">{children}</main>
         </div>
       </div>
 
