@@ -40,6 +40,14 @@ function AuthPage() {
     if (status === "no-store") void navigate({ to: "/onboarding", replace: true });
   }, [status, navigate]);
 
+  // The form is always rendered below, so a stuck session check can never leave
+  // the user staring at nothing — but never sign in twice while it settles.
+  useEffect(() => {
+    if (status !== "loading") return;
+    const timer = window.setTimeout(() => setBusy(false), 4000);
+    return () => window.clearTimeout(timer);
+  }, [status]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
