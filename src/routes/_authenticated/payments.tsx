@@ -159,7 +159,7 @@ function PaymentsPage() {
           ))}
         </div>
 
-        <div className="scroll-rail -mx-4 flex gap-2 px-4 pb-1">
+        <div className="scroll-rail -mx-4 flex gap-2 px-4 pb-1 sm:-mx-6 sm:px-6">
           {FILTERS.map((f) => (
             <button
               key={f}

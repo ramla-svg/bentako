@@ -2,6 +2,7 @@ import {
   DEFAULT_CATEGORIES,
   db,
   type CashTxnType,
+  type LocalCashPhoto,
   type LocalCashTransaction,
   type LocalCustomer,
   type LocalCustomerPayment,
@@ -670,6 +671,8 @@ export interface CashTransactionInput {
   customer_name?: string | null;
   customer_mobile_number?: string | null;
   reference_number?: string | null;
+  /** Optional receipt/screenshot kept on this device only. */
+  photo?: Blob | null;
 }
 
 /**
@@ -704,6 +707,7 @@ export async function saveCashTransaction(
     sync_status: "pending",
   };
   await db().cash_transactions.put(row);
+  if (input.photo) await putCashPhoto(ctx.storeId, row.id, input.photo);
   await enqueue("cash_transactions", row.id);
   await logAudit(ctx, "cash.recorded", "cash_transaction", row.id, {
     transaction_type: row.transaction_type,
@@ -713,7 +717,96 @@ export async function saveCashTransaction(
   return row;
 }
 
+/* ------------------------------------------- device-only receipt photos */
+
+/** Stores (or replaces) the photo attached to a cash transaction. Local only. */
+export async function putCashPhoto(
+  storeId: string,
+  cashTransactionId: string,
+  blob: Blob,
+): Promise<LocalCashPhoto> {
+  const existing = await db()
+    .cash_photos.where("cash_transaction_id")
+    .equals(cashTransactionId)
+    .toArray();
+  if (existing.length) await db().cash_photos.bulkDelete(existing.map((p) => p.id));
+  const row: LocalCashPhoto = {
+    id: uuid(),
+    store_id: storeId,
+    cash_transaction_id: cashTransactionId,
+    blob,
+    content_type: blob.type || "image/jpeg",
+    size: blob.size,
+    created_at: nowIso(),
+  };
+  await db().cash_photos.put(row);
+  return row;
+}
+
+export async function getCashPhoto(cashTransactionId: string): Promise<LocalCashPhoto | null> {
+  const rows = await db()
+    .cash_photos.where("cash_transaction_id")
+    .equals(cashTransactionId)
+    .toArray();
+  return rows[0] ?? null;
+}
+
+/** Ids of every cash transaction on this device that has a photo attached. */
+export async function listCashPhotoIds(storeId: string): Promise<string[]> {
+  const rows = await db().cash_photos.where("store_id").equals(storeId).toArray();
+  return rows.map((r) => r.cash_transaction_id);
+}
+
+export async function deleteCashPhoto(cashTransactionId: string): Promise<void> {
+  const rows = await db()
+    .cash_photos.where("cash_transaction_id")
+    .equals(cashTransactionId)
+    .toArray();
+  if (rows.length) await db().cash_photos.bulkDelete(rows.map((r) => r.id));
+}
+
+/* ------------------------------------------------- manual wallet balance */
+
+/** Current e-wallet balance derived from all non-drawer cash entries. */
+export async function walletBalance(storeId: string): Promise<number> {
+  const rows = await db().cash_transactions.where("store_id").equals(storeId).toArray();
+  return rows
+    .filter((r) => r.provider !== "other" && r.status !== "voided")
+    .reduce((sum, r) => sum + (r.transaction_type === "cash_in" ? r.amount : -r.amount), 0);
+}
+
+export interface WalletAdjustmentInput {
+  /** `set` makes the balance equal `amount`; `delta` adds/subtracts `amount`. */
+  mode: "set" | "delta";
+  amount: number;
+  provider?: ServiceProvider;
+  label?: string;
+}
+
+/**
+ * Lets the owner match BentaKo's e-wallet balance to the real GCash app.
+ * Written as an ordinary ledger entry so the running total stays honest.
+ */
+export async function saveWalletAdjustment(
+  ctx: StoreContext,
+  input: WalletAdjustmentInput,
+): Promise<LocalCashTransaction | null> {
+  const provider = input.provider && input.provider !== "other" ? input.provider : "gcash";
+  const target = Number(input.amount);
+  if (!Number.isFinite(target)) throw new Error("Enter an amount.");
+  const current = await walletBalance(ctx.storeId);
+  const delta = input.mode === "set" ? target - current : target;
+  if (Math.abs(delta) < 0.005) return null;
+  return saveCashTransaction(ctx, {
+    transaction_type: delta > 0 ? "cash_in" : "cash_out",
+    provider,
+    amount: Math.abs(Number(delta.toFixed(2))),
+    reference_number: input.label ?? (input.mode === "set" ? "Balance correction" : "Balance top-up"),
+  });
+}
+
 /* ---------------------------------------------------------- credit ledger */
+
 
 export interface CustomerInput {
   id?: string;

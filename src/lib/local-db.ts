@@ -196,6 +196,21 @@ export interface LocalCashTransaction {
   sync_status: SyncStatus;
 }
 
+/**
+ * A photo (usually a GCash screenshot) attached to a cash transaction.
+ * Device-only: never added to `SyncEntity`, never enqueued, never uploaded.
+ */
+export interface LocalCashPhoto {
+  id: string;
+  store_id: string;
+  cash_transaction_id: string;
+  blob: Blob;
+  content_type: string;
+  size: number;
+  created_at: string;
+}
+
+
 /* ---------------------------------------------------------- credit ledger */
 
 export interface LocalCustomer {
@@ -276,6 +291,7 @@ class BentakoDatabase extends Dexie {
   cash_transactions!: Table<LocalCashTransaction, string>;
   customers!: Table<LocalCustomer, string>;
   customer_payments!: Table<LocalCustomerPayment, string>;
+  cash_photos!: Table<LocalCashPhoto, string>;
   sync_queue!: Table<SyncQueueItem, string>;
   settings!: Table<SettingRow, string>;
 
@@ -314,6 +330,11 @@ class BentakoDatabase extends Dexie {
       cash_transactions: "id, store_id, created_at, transaction_type, provider, sync_status",
       customers: "id, store_id, name, is_active, sync_status",
       customer_payments: "id, store_id, customer_id, created_at, sync_status",
+    });
+    // v4 adds device-only receipt photos for cash transactions. Additive; the
+    // table is never synced so nothing is ever uploaded.
+    this.version(4).stores({
+      cash_photos: "id, store_id, cash_transaction_id, created_at",
     });
   }
 }
