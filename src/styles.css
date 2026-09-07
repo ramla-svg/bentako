@@ -139,9 +139,24 @@
 @theme inline {
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-wallet: var(--wallet);
+  --color-wallet-foreground: var(--wallet-foreground);
+  --color-tile-mint: var(--tile-mint);
+  --color-tile-mint-ink: var(--tile-mint-ink);
+  --color-tile-sky: var(--tile-sky);
+  --color-tile-sky-ink: var(--tile-sky-ink);
+  --color-tile-rose: var(--tile-rose);
+  --color-tile-rose-ink: var(--tile-rose-ink);
+  --color-tile-lavender: var(--tile-lavender);
+  --color-tile-lavender-ink: var(--tile-lavender-ink);
+  --color-tile-peach: var(--tile-peach);
+  --color-tile-peach-ink: var(--tile-peach-ink);
+  --color-tile-blue: var(--tile-blue);
+  --color-tile-blue-ink: var(--tile-blue-ink);
   --font-sans: var(--font-body);
   --font-display: var(--font-display);
 }
+
 
 @layer base {
   * {
