@@ -82,9 +82,9 @@ function Dashboard() {
       subtitle={`${store?.name ?? ""} · ${role === "owner" ? "Owner" : "Cashier"}`}
     >
       <div className="space-y-4">
-        <div className="rounded-3xl bg-primary p-5 text-primary-foreground">
+        <div className="min-w-0 rounded-3xl bg-primary p-4 text-primary-foreground sm:p-5">
           <p className="text-xs font-medium uppercase tracking-wide opacity-80">Sales today</p>
-          <p className="tnum font-display text-4xl font-extrabold">
+          <p className="tnum truncate font-display text-fluid-amount font-extrabold">
             {formatMoney(data?.revenue ?? 0, currency)}
           </p>
           <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
@@ -99,7 +99,7 @@ function Dashboard() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <StatCard
             to="/expenses"
             icon={Wallet}
