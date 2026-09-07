@@ -119,6 +119,32 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+/**
+ * Every BentaKo route is client-rendered, so a failed script load would leave a
+ * blank white page with no way out. This static panel ships in the HTML itself:
+ * it is hidden the moment React mounts, and stays visible (with one automatic
+ * cache-busting reload) if startup fails.
+ */
+const BOOT_FALLBACK_SCRIPT = `(function(){
+  var el=document.getElementById('bentako-boot');
+  if(!el)return;
+  var hide=function(){ if(el&&el.parentNode) el.style.display='none'; };
+  window.addEventListener('bentako:ready',hide);
+  var t=setTimeout(function(){ el.style.visibility='visible'; },1200);
+  var reloaded=false;
+  var recover=function(msg){
+    if(reloaded)return; 
+    if(!/chunk|dynamically imported module|Importing a module script failed|Failed to fetch/i.test(String(msg||'')))return;
+    var k='bentako_boot_retry';
+    try{ if(sessionStorage.getItem(k)){ el.style.visibility='visible'; return; } sessionStorage.setItem(k,'1'); }catch(e){}
+    reloaded=true; clearTimeout(t);
+    var u=new URL(window.location.href); u.searchParams.set('_bk',String(Date.now()));
+    window.location.replace(u.toString());
+  };
+  window.addEventListener('error',function(e){ recover((e&&e.message)||(e&&e.target&&e.target.src)); });
+  window.addEventListener('unhandledrejection',function(e){ recover(e&&e.reason&&(e.reason.message||e.reason)); });
+})();`;
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
@@ -126,6 +152,43 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        <div
+          id="bentako-boot"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            visibility: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "12px",
+            background: "#ffffff",
+            color: "#1f2937",
+            font: "500 15px/1.4 system-ui, -apple-system, sans-serif",
+            textAlign: "center",
+            padding: "24px",
+          }}
+        >
+          <div style={{ fontSize: "20px", fontWeight: 800 }}>BentaKo</div>
+          <div>Starting BentaKo…</div>
+          <a
+            href="/"
+            style={{
+              marginTop: "8px",
+              padding: "10px 18px",
+              borderRadius: "10px",
+              background: "#1f5f47",
+              color: "#ffffff",
+              textDecoration: "none",
+              fontWeight: 600,
+            }}
+          >
+            Reload
+          </a>
+        </div>
+        <script dangerouslySetInnerHTML={{ __html: BOOT_FALLBACK_SCRIPT }} />
         {children}
         <Scripts />
       </body>
