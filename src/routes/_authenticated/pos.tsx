@@ -519,6 +519,8 @@ function PosPage() {
             onClick={() => {
               setCart({});
               setCash("");
+              setMethod("cash");
+              setCustomerId("");
               setCartOpen(false);
             }}
           >
@@ -535,9 +537,16 @@ function PosPage() {
           {receipt ? (
             <div className="space-y-3">
               <div className="rounded-2xl bg-primary/10 p-4 text-center">
-                <p className="text-xs font-medium text-muted-foreground">Change</p>
+                <p className="text-xs font-medium text-muted-foreground">
+                  {receipt.sale.payment_method === "utang" ? "Unpaid — utang" : "Change"}
+                </p>
                 <p className="tnum font-display text-4xl font-extrabold text-primary">
-                  {formatMoney(receipt.sale.change_amount, currency)}
+                  {formatMoney(
+                    receipt.sale.payment_method === "utang"
+                      ? receipt.sale.total
+                      : receipt.sale.change_amount,
+                    currency,
+                  )}
                 </p>
               </div>
               <div className="rounded-2xl border p-4 text-sm">
@@ -558,8 +567,20 @@ function PosPage() {
                   <span className="tnum">{formatMoney(receipt.sale.total, currency)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Cash</span>
-                  <span className="tnum">{formatMoney(receipt.sale.cash_received, currency)}</span>
+                  <span>
+                    {receipt.sale.payment_method === "cash"
+                      ? "Cash"
+                      : receipt.sale.payment_method === "utang"
+                        ? "Utang"
+                        : "Paid"}
+                  </span>
+                  <span className="tnum">
+                    {receipt.sale.payment_method === "cash"
+                      ? formatMoney(receipt.sale.cash_received, currency)
+                      : receipt.sale.payment_method === "utang"
+                        ? "Unpaid"
+                        : formatMoney(receipt.sale.total, currency)}
+                  </span>
                 </div>
                 {store?.receipt_footer ? (
                   <p className="mt-3 text-center text-xs text-muted-foreground">
