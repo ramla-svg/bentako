@@ -1,8 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3,
+  Bell,
   Boxes,
+  ChevronLeft,
   LayoutGrid,
   LogOut,
   MoreHorizontal,
@@ -16,9 +18,11 @@ import {
 
 import type { ReactNode } from "react";
 
+import brandMark from "@/assets/bentako-mark.png";
 import { ConnectionChip, useConnection } from "@/components/connection-chip";
 import { useAppSession } from "@/hooks/use-app-session";
 import { cn } from "@/lib/utils";
+
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutGrid },
