@@ -41,6 +41,14 @@ export default defineConfig({
   },
 
   vite: {
+    // Stamped into every build and echoed in the HTML as <meta name="bentako-build">.
+    // A running copy (browser, installed PWA, or link-wrapped APK) compares this
+    // with the server's value and updates itself when they differ.
+    define: {
+      __BENTAKO_BUILD__: JSON.stringify(
+        process.env["BENTAKO_BUILD_ID"] ?? new Date().toISOString(),
+      ),
+    },
     plugins: [
       // The APK ships its own offline bundle inside the app, so no service
       // worker is generated for it (Capacitor does not use one anyway).
