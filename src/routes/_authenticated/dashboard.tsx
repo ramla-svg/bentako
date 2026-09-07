@@ -129,19 +129,19 @@ function Dashboard() {
       title={`Kumusta, ${userName?.split(" ")[0] ?? "boss"}!`}
       subtitle={`${userName ?? store?.name ?? ""} · ${role === "owner" ? "Owner" : "Cashier"}`}
     >
-      <div className="space-y-5">
+      <div className="space-y-3 sm:space-y-5">
         {/* Sales today */}
-        <div className="min-w-0 rounded-3xl bg-primary p-4 text-primary-foreground sm:p-5">
+        <div className="min-w-0 rounded-2xl bg-primary p-3 text-primary-foreground sm:rounded-3xl sm:p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] opacity-80">
                 Sales today
               </p>
-              <p className="tnum truncate font-display text-fluid-amount font-extrabold">
+              <p className="tnum truncate font-display text-xl font-extrabold sm:text-fluid-amount">
                 {formatMoney(revenue, currency)}
               </p>
               {change === null ? null : (
-                <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold opacity-90">
+                <p className="mt-0.5 flex items-center gap-1 text-[10px] font-semibold opacity-90 sm:text-xs">
                   {change >= 0 ? (
                     <TrendingUp className="size-3.5" />
                   ) : (
@@ -154,14 +154,14 @@ function Dashboard() {
             </div>
             <Link
               to="/sales"
-              className="flex shrink-0 items-center gap-1 rounded-full bg-primary-foreground/15 px-2.5 py-1 text-xs font-medium"
+              className="flex shrink-0 items-center gap-1 rounded-full bg-primary-foreground/15 px-2 py-1 text-[10px] font-medium sm:px-2.5 sm:text-xs"
             >
               {formatDate(new Date().toISOString())}
               <ChevronRight className="size-3.5" />
             </Link>
           </div>
 
-          <div className="mt-3 flex h-10 items-end gap-1.5 opacity-40" aria-hidden>
+          <div className="mt-2 flex h-6 items-end gap-1.5 opacity-40 sm:mt-3 sm:h-10" aria-hidden>
             {(data?.series ?? []).map((v, i) => (
               <span
                 key={i}
@@ -171,7 +171,7 @@ function Dashboard() {
             ))}
           </div>
 
-          <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+          <div className="mt-2 grid grid-cols-3 gap-1.5 text-[10px] sm:mt-3 sm:gap-2 sm:text-xs">
             <MiniStat label="Profit" value={formatMoney(data?.profit ?? 0, currency)} />
             <MiniStat label="Transactions" value={String(data?.transactions ?? 0)} />
             <MiniStat label="Items Sold" value={formatQty(data?.itemsSold ?? 0)} />
@@ -179,16 +179,16 @@ function Dashboard() {
 
           <Link
             to="/pos"
-            className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary-foreground font-display text-base font-bold text-primary active:opacity-90"
+            className="mt-2.5 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary-foreground font-display text-sm font-bold text-primary active:opacity-90 sm:mt-4 sm:h-12 sm:rounded-2xl sm:text-base"
           >
-            <ShoppingCart className="size-5" /> New Sale
+            <ShoppingCart className="size-4.5 sm:size-5" /> New Sale
           </Link>
         </div>
 
         {/* Today at a glance */}
         <section>
           <SectionHead title="Today at a glance" to="/reports" />
-          <div className="scroll-rail -mx-4 mt-2 flex gap-2 px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-4 sm:px-0">
+          <div className="mt-1.5 grid grid-cols-4 gap-1.5 sm:mt-2 sm:gap-2">
             <GlanceCard
               to="/expenses"
               icon={Wallet}
@@ -224,7 +224,7 @@ function Dashboard() {
         {/* Quick actions */}
         <section>
           <SectionHead title="Quick actions" to="/more" label="See all" />
-          <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="mt-1.5 grid grid-cols-4 gap-1.5 sm:mt-2 sm:gap-3">
             <ActionTile to="/products" icon={Package} tint="mint" label="Products" />
             <ActionTile to="/inventory" icon={Boxes} tint="sky" label="Inventory" />
             <ActionTile to="/cash" icon={Smartphone} tint="blue" label="GCash Cash In/Out" />
@@ -316,7 +316,7 @@ function SectionHead({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <h2 className="truncate font-display text-base font-bold">{title}</h2>
+      <h2 className="truncate font-display text-sm font-bold sm:text-base">{title}</h2>
       <Link to={to} className="flex shrink-0 items-center gap-0.5 text-xs font-semibold text-primary">
         {label}
         <ChevronRight className="size-3.5" />
@@ -338,9 +338,9 @@ const TINT: Record<Tint, string> = {
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-xl bg-primary-foreground/15 px-2 py-2">
+    <div className="min-w-0 rounded-lg bg-primary-foreground/15 px-1.5 py-1.5 sm:rounded-xl sm:px-2 sm:py-2">
       <p className="truncate opacity-80">{label}</p>
-      <p className="tnum truncate font-display text-sm font-bold">{value}</p>
+      <p className="tnum truncate font-display text-xs font-bold sm:text-sm">{value}</p>
     </div>
   );
 }
@@ -366,16 +366,16 @@ function GlanceCard({
     <Link
       to={to}
       className={cn(
-        "flex w-40 shrink-0 items-center gap-2.5 rounded-2xl border bg-card p-3 sm:w-auto",
+        "flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl border bg-card px-1 py-2 text-center sm:flex-row sm:gap-2.5 sm:rounded-2xl sm:p-3 sm:text-left",
         highlight && "border-warning/50 bg-warning/10",
       )}
     >
-      <span className={cn("grid size-9 shrink-0 place-items-center rounded-full", TINT[tint])}>
-        <Icon className="size-4.5" />
+      <span className={cn("grid size-7 shrink-0 place-items-center rounded-lg sm:size-9 sm:rounded-full", TINT[tint])}>
+        <Icon className="size-3.5 sm:size-4.5" />
       </span>
       <span className="min-w-0">
-        <span className="block truncate text-xs text-muted-foreground">{label}</span>
-        <span className="tnum block truncate font-display text-sm font-bold">{value}</span>
+        <span className="block truncate text-[9px] text-muted-foreground sm:text-xs">{label}</span>
+        <span className="tnum block truncate font-display text-[10px] font-bold sm:text-sm">{value}</span>
       </span>
     </Link>
   );
@@ -398,12 +398,12 @@ function ActionTile({
     <Link
       to={to}
       className={cn(
-        "flex min-h-24 min-w-0 flex-col justify-between rounded-2xl p-3.5 active:opacity-90",
+        "flex min-h-16 min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl px-1 py-2 text-center active:opacity-90 sm:min-h-24 sm:items-start sm:justify-between sm:rounded-2xl sm:p-3.5 sm:text-left",
         TINT[tint],
       )}
     >
-      <Icon className="size-6" />
-      <span className="font-display text-sm font-bold leading-tight">{label}</span>
+      <Icon className="size-4.5 shrink-0 sm:size-6" />
+      <span className="line-clamp-2 font-display text-[9px] font-bold leading-tight sm:text-sm">{label}</span>
     </Link>
   );
 }
