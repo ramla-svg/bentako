@@ -154,6 +154,7 @@ function RootShell({ children }: { children: ReactNode }) {
       <body>
         <div
           id="bentako-boot"
+          suppressHydrationWarning
           style={{
             position: "fixed",
             inset: 0,
