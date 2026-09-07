@@ -112,28 +112,28 @@ export function AppShell({
         <div className="min-w-0 max-w-full flex-1 overflow-x-clip pb-28 lg:pb-8">
           <header className="safe-top sticky top-0 z-30 w-full border-b bg-background">
             {brand ? (
-              <div className="safe-x flex items-center gap-3 px-4 pt-3">
+              <div className="safe-x flex items-center gap-2.5 px-3 pt-2 sm:gap-3 sm:px-4 sm:pt-3">
                 <img
                   src={brandMark}
                   alt="BentaKo"
                   width={40}
                   height={40}
-                  className="size-10 shrink-0 rounded-xl"
+                  className="size-9 shrink-0 rounded-lg sm:size-10 sm:rounded-xl"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-display text-xl font-extrabold leading-none">
+                  <p className="truncate font-display text-lg font-extrabold leading-none sm:text-xl">
                     BentaKo
                   </p>
-                  <p className="truncate text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="truncate text-[8px] font-semibold uppercase tracking-[0.14em] text-muted-foreground sm:text-[9px]">
                     Simple business. Bigger tomorrow.
                   </p>
                 </div>
                 <Link
                   to="/inventory"
                   aria-label={alerts > 0 ? `${alerts} stock alerts` : "Stock alerts"}
-                  className="relative grid size-10 shrink-0 place-items-center rounded-xl text-muted-foreground"
+                  className="relative grid size-9 shrink-0 place-items-center rounded-lg text-muted-foreground sm:size-10 sm:rounded-xl"
                 >
-                  <Bell className="size-5" />
+                    <Bell className="size-4.5 sm:size-5" />
                   {alerts > 0 ? (
                     <span className="absolute right-2 top-2 size-2 rounded-full bg-destructive" />
                   ) : null}
@@ -142,13 +142,13 @@ export function AppShell({
                   type="button"
                   aria-label="Sign out"
                   onClick={() => void handleSignOut()}
-                  className="grid size-10 shrink-0 place-items-center rounded-full bg-secondary font-display text-xs font-bold text-secondary-foreground"
+                  className="grid size-9 shrink-0 place-items-center rounded-full bg-secondary font-display text-[11px] font-bold text-secondary-foreground sm:size-10 sm:text-xs"
                 >
                   {initials}
                 </button>
               </div>
             ) : null}
-            <div className="safe-x grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3">
+            <div className="safe-x grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3">
               <div className="flex min-w-0 items-center gap-2">
                 {back ? (
                   <button
@@ -161,9 +161,9 @@ export function AppShell({
                   </button>
                 ) : null}
                 <div className="min-w-0">
-                  <h1 className="truncate font-display text-fluid-title font-bold">{title}</h1>
+                  <h1 className="truncate font-display text-base font-bold sm:text-fluid-title">{title}</h1>
                   {subtitle ? (
-                    <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
+                    <p className="truncate text-[10px] text-muted-foreground sm:text-xs">{subtitle}</p>
                   ) : null}
                 </div>
               </div>
@@ -190,7 +190,7 @@ export function AppShell({
           </header>
 
 
-          <main className="safe-x min-w-0 max-w-full px-4 py-4">{children}</main>
+          <main className="safe-x min-w-0 max-w-full px-3 py-3 sm:px-4 sm:py-4">{children}</main>
         </div>
       </div>
 
