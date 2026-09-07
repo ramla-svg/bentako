@@ -101,7 +101,24 @@
   --sidebar-accent-foreground: oklch(0.31 0.05 155);
   --sidebar-border: oklch(0.9 0.02 105);
   --sidebar-ring: oklch(0.47 0.11 158);
+
+  /* E-wallet blue card + pastel action tiles (mockup palette) */
+  --wallet: oklch(0.55 0.22 265);
+  --wallet-foreground: oklch(0.99 0.01 250);
+  --tile-mint: oklch(0.95 0.04 158);
+  --tile-mint-ink: oklch(0.45 0.11 158);
+  --tile-sky: oklch(0.95 0.035 235);
+  --tile-sky-ink: oklch(0.52 0.14 245);
+  --tile-rose: oklch(0.95 0.035 20);
+  --tile-rose-ink: oklch(0.55 0.19 22);
+  --tile-lavender: oklch(0.95 0.04 300);
+  --tile-lavender-ink: oklch(0.52 0.17 300);
+  --tile-peach: oklch(0.96 0.045 70);
+  --tile-peach-ink: oklch(0.6 0.15 55);
+  --tile-blue: oklch(0.94 0.05 255);
+  --tile-blue-ink: oklch(0.52 0.2 262);
 }
+
 
 
 .dark {
