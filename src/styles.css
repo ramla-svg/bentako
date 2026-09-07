@@ -150,6 +150,10 @@
 
   html {
     -webkit-tap-highlight-color: transparent;
+    /* The page itself never scrolls or rubber-bands sideways: only opted-in
+       rails (filter chips) may pan horizontally. */
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
   }
 
   body {
@@ -157,6 +161,10 @@
     color: var(--color-foreground);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    overscroll-behavior: none;
   }
 
   h1,
@@ -170,6 +178,36 @@
 
 @utility tnum {
   font-variant-numeric: tabular-nums;
+}
+
+/* Vertical-only dragging for the app body, so the shell can never slide. */
+@utility app-pan-y {
+  touch-action: pan-y;
+}
+
+/* Horizontal chip rails: the only place sideways dragging is allowed. */
+@utility scroll-rail {
+  overflow-x: auto;
+  overflow-y: hidden;
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.scroll-rail::-webkit-scrollbar {
+  display: none;
+}
+
+/* Headings and totals scale with the screen instead of fixed sizes. */
+@utility text-fluid-title {
+  font-size: clamp(1.05rem, 1.6vw + 0.75rem, 1.4rem);
+  line-height: 1.15;
+}
+
+@utility text-fluid-amount {
+  font-size: clamp(1.35rem, 3vw + 0.8rem, 2rem);
+  line-height: 1.1;
 }
 
 /* Snappy UI: no decorative motion on low-end Android devices.
