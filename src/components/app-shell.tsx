@@ -81,11 +81,11 @@ export function AppShell({
           })}
         </aside>
 
-        <div className="min-w-0 flex-1 pb-28 lg:pb-8">
-          <header className="safe-top sticky top-0 z-20 border-b bg-background">
+        <div className="min-w-0 max-w-full flex-1 overflow-x-hidden pb-28 lg:pb-8">
+          <header className="safe-top sticky top-0 z-30 w-full border-b bg-background">
             <div className="safe-x grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3">
               <div className="min-w-0">
-                <h1 className="truncate font-display text-lg font-bold leading-tight sm:text-xl">
+                <h1 className="truncate font-display text-fluid-title font-bold">
                   {title}
                 </h1>
                 {subtitle ? (
