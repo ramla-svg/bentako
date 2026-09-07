@@ -1,4 +1,5 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   Banknote,
   BarChart3,
@@ -39,7 +40,7 @@ const LINKS = [
 
 function MorePage() {
   const { store, role, signOut } = useAppSession();
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   return (
     <AppShell title="More" subtitle={`${store?.name ?? ""} · ${role === "owner" ? "Owner" : "Cashier"}`}>
@@ -68,8 +69,9 @@ function MorePage() {
       <button
         type="button"
         onClick={async () => {
+          await queryClient.cancelQueries();
+          queryClient.clear();
           await signOut();
-          void navigate({ to: "/auth", replace: true });
         }}
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border p-4 font-semibold text-destructive active:bg-accent/10"
       >

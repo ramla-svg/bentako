@@ -233,10 +233,19 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     // Remove offline access before notifying Supabase, so an auth event racing
     // this call cannot reopen the cached store after an intentional logout.
-    await db().settings.delete(SNAPSHOT_KEY);
+    await withTimeout(
+      db().settings.delete(SNAPSHOT_KEY).then(() => undefined),
+      4000,
+      undefined,
+    );
     setSnapshot(null);
     setStatus("signed-out");
     await withTimeout(supabase.auth.signOut().then(() => undefined), 8000, undefined);
+    // Hard load the sign-in screen: a clean boot avoids any half-torn-down
+    // state (stale caches, dead script chunks) that showed up as a white page.
+    if (typeof window !== "undefined") {
+      window.location.replace(`/auth?_bk=${Date.now()}`);
+    }
   }, []);
 
   const value = useMemo<AppSessionValue>(

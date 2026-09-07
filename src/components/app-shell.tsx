@@ -1,4 +1,5 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { Link, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3,
   Boxes,
@@ -42,7 +43,7 @@ export function AppShell({
   children: ReactNode;
 }) {
   const { store, signOut } = useAppSession();
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { connection } = useConnection();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -99,8 +100,9 @@ export function AppShell({
                   type="button"
                   aria-label="Sign out"
                   onClick={async () => {
+                    await queryClient.cancelQueries();
+                    queryClient.clear();
                     await signOut();
-                    void navigate({ to: "/auth", replace: true });
                   }}
                   className="grid size-9 place-items-center rounded-xl border text-muted-foreground active:bg-accent/10"
                 >
