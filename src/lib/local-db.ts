@@ -331,6 +331,11 @@ class BentakoDatabase extends Dexie {
       customers: "id, store_id, name, is_active, sync_status",
       customer_payments: "id, store_id, customer_id, created_at, sync_status",
     });
+    // v4 adds device-only receipt photos for cash transactions. Additive; the
+    // table is never synced so nothing is ever uploaded.
+    this.version(4).stores({
+      cash_photos: "id, store_id, cash_transaction_id, created_at",
+    });
   }
 }
 
