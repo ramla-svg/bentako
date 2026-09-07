@@ -19,6 +19,9 @@ export const Route = createFileRoute("/_authenticated/more")({
 
 const LINKS = [
   { to: "/inventory", label: "Inventory", description: "Stock in, adjust, and history", icon: Boxes },
+  { to: "/cash", label: "Cash ledger", description: "Drawer, GCash, Maya, bank", icon: Coins },
+  { to: "/utang", label: "Utang", description: "Who owes you and how much", icon: HandCoins },
+  { to: "/payments", label: "Payments", description: "Everything you received", icon: Banknote },
   { to: "/expenses", label: "Expenses", description: "Daily store costs", icon: Wallet },
   { to: "/reports", label: "Reports", description: "Sales, profit, best sellers", icon: BarChart3 },
   { to: "/settings", label: "Settings", description: "Store details, sync, account", icon: Settings },
