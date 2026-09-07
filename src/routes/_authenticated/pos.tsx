@@ -22,11 +22,23 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useAppSession } from "@/hooks/use-app-session";
 import { useBackHandler } from "@/hooks/use-back-handler";
 import { formatMoney, formatQty } from "@/lib/format";
-import { db, type LocalProduct } from "@/lib/local-db";
+import {
+  PAYMENT_METHODS,
+  db,
+  type LocalCustomer,
+  type LocalProduct,
+  type PaymentMethod,
+} from "@/lib/local-db";
 import { printReceiptText } from "@/lib/platform/print-service";
 import { shareText } from "@/lib/platform/share-service";
 import { buildReceiptText } from "@/lib/receipt";
-import { checkout, matchProductByCode, type CartLine, type CheckoutResult } from "@/lib/repo";
+import {
+  checkout,
+  matchProductByCode,
+  saveCustomer,
+  type CartLine,
+  type CheckoutResult,
+} from "@/lib/repo";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/pos")({
@@ -52,6 +64,9 @@ function PosPage() {
   const [cart, setCart] = useState<Record<string, number>>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [cash, setCash] = useState("");
+  const [method, setMethod] = useState<PaymentMethod>("cash");
+  const [customerId, setCustomerId] = useState<string>("");
+  const [newCustomer, setNewCustomer] = useState("");
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState<CheckoutResult | null>(null);
   const committingRef = useRef(false);
@@ -101,6 +116,17 @@ function PosPage() {
       else window.clearTimeout(id);
     };
   }, [cart, cash, draftKey]);
+
+  const customers = useLiveQuery(
+    async () =>
+      storeId
+        ? (await db().customers.where("store_id").equals(storeId).toArray())
+            .filter((c) => c.is_active)
+            .sort((a, b) => a.name.localeCompare(b.name))
+        : [],
+    [storeId],
+    [] as LocalCustomer[],
+  );
 
   const products = useLiveQuery(
     async () =>
@@ -206,17 +232,28 @@ function PosPage() {
     if (!ctx || lines.length === 0) return;
     // Guard against a double tap / re-entrant submit creating two sales.
     if (committingRef.current) return;
-    if (cashNumber < total) {
+    if (method === "cash" && cashNumber < total) {
       toast.error("Cash received is less than the total.");
+      return;
+    }
+    if (method === "utang" && !customerId) {
+      toast.error("Choose a customer for this utang.");
       return;
     }
     committingRef.current = true;
     setBusy(true);
     try {
-      const result = await checkout(ctx, { lines, cash_received: cashNumber });
+      const result = await checkout(ctx, {
+        lines,
+        cash_received: method === "cash" ? cashNumber : 0,
+        payment_method: method,
+        customer_id: method === "utang" ? customerId : null,
+      });
       setReceipt(result);
       setCart({});
       setCash("");
+      setMethod("cash");
+      setCustomerId("");
       setCartOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Checkout failed.");
@@ -353,48 +390,126 @@ function PosPage() {
           </div>
 
           <div className="mt-4 space-y-2">
-            <label className="text-sm font-medium" htmlFor="cash">
-              Cash received
-            </label>
-            <Input
-              id="cash"
-              value={cash}
-              onChange={(e) => setCash(e.target.value.replace(/[^0-9.]/g, ""))}
-              inputMode="decimal"
-              placeholder="0.00"
-              className="tnum h-14 text-xl font-bold"
-            />
+            <p className="text-sm font-medium">Payment</p>
             <div className="flex flex-wrap gap-2">
-              {[total, 20, 50, 100, 200, 500, 1000].map((amount, i) => (
-                <Button
-                  key={`${amount}-${i}`}
+              {PAYMENT_METHODS.map((m) => (
+                <button
+                  key={m.value}
                   type="button"
-                  variant="outline"
-                  className="h-10 flex-1 min-w-16"
-                  onClick={() => setCash(String(amount))}
+                  onClick={() => setMethod(m.value)}
+                  className={cn(
+                    "rounded-full border px-3.5 py-2 text-sm font-medium",
+                    method === m.value ? "bg-primary text-primary-foreground" : "bg-card",
+                  )}
                 >
-                  {i === 0 ? "Exact" : `₱${amount}`}
-                </Button>
+                  {m.label}
+                </button>
               ))}
             </div>
-            {cashNumber > 0 ? (
-              <p
-                className={cn(
-                  "tnum text-sm font-semibold",
-                  change < 0 ? "text-destructive" : "text-primary",
-                )}
-              >
-                {change < 0
-                  ? `Short by ${formatMoney(Math.abs(change), currency)}`
-                  : `Change: ${formatMoney(change, currency)}`}
-              </p>
-            ) : null}
           </div>
+
+          {method === "utang" ? (
+            <div className="mt-4 space-y-2">
+              <p className="text-sm font-medium">Customer</p>
+              {(customers ?? []).length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {(customers ?? []).map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setCustomerId(c.id)}
+                      className={cn(
+                        "rounded-full border px-3.5 py-2 text-sm font-medium",
+                        customerId === c.id ? "bg-primary text-primary-foreground" : "bg-card",
+                      )}
+                    >
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              <div className="flex gap-2">
+                <Input
+                  value={newCustomer}
+                  onChange={(e) => setNewCustomer(e.target.value)}
+                  placeholder="New customer name"
+                  className="h-12"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 shrink-0"
+                  onClick={async () => {
+                    if (!ctx || !newCustomer.trim()) return;
+                    try {
+                      const created = await saveCustomer(ctx, { name: newCustomer });
+                      setCustomerId(created.id);
+                      setNewCustomer("");
+                      toast.success("Customer added.");
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : "Could not add customer.");
+                    }
+                  }}
+                >
+                  <Plus className="size-4" /> Add
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Nothing is received now — this amount is added to their utang.
+              </p>
+            </div>
+          ) : null}
+
+          {method === "cash" ? (
+            <div className="mt-4 space-y-2">
+              <label className="text-sm font-medium" htmlFor="cash">
+                Cash received
+              </label>
+              <Input
+                id="cash"
+                value={cash}
+                onChange={(e) => setCash(e.target.value.replace(/[^0-9.]/g, ""))}
+                inputMode="decimal"
+                placeholder="0.00"
+                className="tnum h-14 text-xl font-bold"
+              />
+              <div className="flex flex-wrap gap-2">
+                {[total, 20, 50, 100, 200, 500, 1000].map((amount, i) => (
+                  <Button
+                    key={`${amount}-${i}`}
+                    type="button"
+                    variant="outline"
+                    className="h-10 flex-1 min-w-16"
+                    onClick={() => setCash(String(amount))}
+                  >
+                    {i === 0 ? "Exact" : `₱${amount}`}
+                  </Button>
+                ))}
+              </div>
+              {cashNumber > 0 ? (
+                <p
+                  className={cn(
+                    "tnum text-sm font-semibold",
+                    change < 0 ? "text-destructive" : "text-primary",
+                  )}
+                >
+                  {change < 0
+                    ? `Short by ${formatMoney(Math.abs(change), currency)}`
+                    : `Change: ${formatMoney(change, currency)}`}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           <Button
             className="mt-4 h-14 w-full text-base"
             onClick={() => void handleCheckout()}
-            disabled={busy || lines.length === 0 || cashNumber < total}
+            disabled={
+              busy ||
+              lines.length === 0 ||
+              (method === "cash" && cashNumber < total) ||
+              (method === "utang" && !customerId)
+            }
           >
             <Check className="size-5" /> Complete sale
           </Button>
@@ -404,6 +519,8 @@ function PosPage() {
             onClick={() => {
               setCart({});
               setCash("");
+              setMethod("cash");
+              setCustomerId("");
               setCartOpen(false);
             }}
           >
@@ -420,9 +537,16 @@ function PosPage() {
           {receipt ? (
             <div className="space-y-3">
               <div className="rounded-2xl bg-primary/10 p-4 text-center">
-                <p className="text-xs font-medium text-muted-foreground">Change</p>
+                <p className="text-xs font-medium text-muted-foreground">
+                  {receipt.sale.payment_method === "utang" ? "Unpaid — utang" : "Change"}
+                </p>
                 <p className="tnum font-display text-4xl font-extrabold text-primary">
-                  {formatMoney(receipt.sale.change_amount, currency)}
+                  {formatMoney(
+                    receipt.sale.payment_method === "utang"
+                      ? receipt.sale.total
+                      : receipt.sale.change_amount,
+                    currency,
+                  )}
                 </p>
               </div>
               <div className="rounded-2xl border p-4 text-sm">
@@ -443,8 +567,20 @@ function PosPage() {
                   <span className="tnum">{formatMoney(receipt.sale.total, currency)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Cash</span>
-                  <span className="tnum">{formatMoney(receipt.sale.cash_received, currency)}</span>
+                  <span>
+                    {receipt.sale.payment_method === "cash"
+                      ? "Cash"
+                      : receipt.sale.payment_method === "utang"
+                        ? "Utang"
+                        : "Paid"}
+                  </span>
+                  <span className="tnum">
+                    {receipt.sale.payment_method === "cash"
+                      ? formatMoney(receipt.sale.cash_received, currency)
+                      : receipt.sale.payment_method === "utang"
+                        ? "Unpaid"
+                        : formatMoney(receipt.sale.total, currency)}
+                  </span>
                 </div>
                 {store?.receipt_footer ? (
                   <p className="mt-3 text-center text-xs text-muted-foreground">
