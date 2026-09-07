@@ -117,6 +117,7 @@ export function isOnline(): boolean {
 
 /** Checkout sets this so a sync pass never competes with an in-flight sale. */
 let criticalDepth = 0;
+const criticalIdleListeners = new Set<() => void>();
 
 export function beginCriticalWork(): void {
   criticalDepth += 1;
@@ -124,7 +125,29 @@ export function beginCriticalWork(): void {
 
 export function endCriticalWork(): void {
   criticalDepth = Math.max(0, criticalDepth - 1);
-  if (criticalDepth === 0) void syncNow();
+  if (criticalDepth === 0) {
+    void syncNow();
+    for (const fn of [...criticalIdleListeners]) fn();
+  }
+}
+
+/** True while a sale/checkout write is in flight — never interrupt it. */
+export function isCriticalWork(): boolean {
+  return criticalDepth > 0;
+}
+
+/** Runs once as soon as no sale write is in flight (immediately if idle). */
+export function onCriticalWorkIdle(fn: () => void): () => void {
+  if (criticalDepth === 0) {
+    fn();
+    return () => {};
+  }
+  const wrapped = () => {
+    criticalIdleListeners.delete(wrapped);
+    fn();
+  };
+  criticalIdleListeners.add(wrapped);
+  return () => criticalIdleListeners.delete(wrapped);
 }
 
 async function countQueue() {

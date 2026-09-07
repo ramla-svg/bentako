@@ -82,9 +82,9 @@ function Dashboard() {
       subtitle={`${store?.name ?? ""} · ${role === "owner" ? "Owner" : "Cashier"}`}
     >
       <div className="space-y-4">
-        <div className="rounded-3xl bg-primary p-5 text-primary-foreground">
+        <div className="min-w-0 rounded-3xl bg-primary p-4 text-primary-foreground sm:p-5">
           <p className="text-xs font-medium uppercase tracking-wide opacity-80">Sales today</p>
-          <p className="tnum font-display text-4xl font-extrabold">
+          <p className="tnum truncate font-display text-fluid-amount font-extrabold">
             {formatMoney(data?.revenue ?? 0, currency)}
           </p>
           <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
@@ -99,7 +99,7 @@ function Dashboard() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <StatCard
             to="/expenses"
             icon={Wallet}
@@ -180,9 +180,9 @@ function Dashboard() {
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-primary-foreground/15 py-2">
-      <p className="opacity-80">{label}</p>
-      <p className="tnum font-display text-sm font-bold">{value}</p>
+    <div className="min-w-0 rounded-xl bg-primary-foreground/15 px-1 py-2">
+      <p className="truncate opacity-80">{label}</p>
+      <p className="tnum truncate font-display text-sm font-bold">{value}</p>
     </div>
   );
 }
@@ -204,13 +204,13 @@ function StatCard({
     <Link
       to={to}
       className={cn(
-        "rounded-2xl border bg-card p-4 transition-colors active:bg-accent/10",
+        "min-w-0 rounded-2xl border bg-card p-4 transition-colors active:bg-accent/10",
         tone === "warning" && "border-warning/50 bg-warning/10",
       )}
     >
       <Icon className={cn("size-5", tone === "warning" ? "text-accent-foreground" : "text-primary")} />
-      <p className="mt-2 text-xs text-muted-foreground">{label}</p>
-      <p className="tnum font-display text-lg font-bold">{value}</p>
+      <p className="mt-2 truncate text-xs text-muted-foreground">{label}</p>
+      <p className="tnum truncate font-display text-lg font-bold">{value}</p>
     </Link>
   );
 }
@@ -227,13 +227,13 @@ function Shortcut({
   return (
     <Link
       to={to}
-      className="flex items-center justify-between rounded-2xl border bg-card p-4 text-sm font-semibold"
+      className="flex min-w-0 items-center justify-between gap-2 rounded-2xl border bg-card p-4 text-sm font-semibold"
     >
-      <span className="flex items-center gap-2">
-        <Icon className="size-4 text-primary" />
-        {label}
+      <span className="flex min-w-0 items-center gap-2">
+        <Icon className="size-4 shrink-0 text-primary" />
+        <span className="truncate">{label}</span>
       </span>
-      <ArrowUpRight className="size-4 text-muted-foreground" />
+      <ArrowUpRight className="size-4 shrink-0 text-muted-foreground" />
     </Link>
   );
 }

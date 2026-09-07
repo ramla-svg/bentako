@@ -13,8 +13,10 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppSession } from "@/hooks/use-app-session";
 import { supabase } from "@/integrations/supabase/client";
+import { runningBuildId } from "@/lib/build-info";
 import { formatDateTime } from "@/lib/format";
 import { runIntegrityCheck, type IntegrityIssue } from "@/lib/integrity";
+import { applyAppUpdate, checkForAppUpdate } from "@/lib/register-sw";
 import { getSetting } from "@/lib/local-db";
 import { promptInstall, useInstallState } from "@/lib/platform/install-service";
 import { platformLabel } from "@/lib/platform/platform-service";
@@ -47,6 +49,7 @@ function SettingsPage() {
   const [negative, setNegative] = useState(store?.allow_negative_stock ?? false);
   const [confirmVoid, setConfirmVoid] = useState(store?.confirm_void ?? true);
   const [busy, setBusy] = useState(false);
+  const [checking, setChecking] = useState(false);
 
   const [issues, setIssues] = useState<IntegrityIssue[] | null>(null);
   const install = useInstallState();
@@ -212,6 +215,45 @@ function SettingsPage() {
           ) : null}
           <p className="text-xs text-muted-foreground">Running as: {platformLabel()}</p>
         </section>
+
+        <section className="space-y-3 rounded-2xl border bg-card p-4">
+          <h2 className="font-display text-sm font-bold">App version</h2>
+          <p className="text-sm text-muted-foreground">
+            BentaKo updates itself when a new version is published. If this device still shows old
+            features, tap below to check now — your products, stock and saved sales are never
+            cleared by an update.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Installed version: <span className="tnum">{runningBuildId()}</span>
+          </p>
+          <Button
+            variant="outline"
+            className="h-12 w-full"
+            disabled={checking}
+            onClick={async () => {
+              setChecking(true);
+              try {
+                const available = await checkForAppUpdate();
+                if (available) {
+                  toast.success("New version found — updating now.");
+                  applyAppUpdate();
+                } else {
+                  toast.success("You already have the newest version.");
+                }
+              } finally {
+                setChecking(false);
+              }
+            }}
+          >
+            <RefreshCw className="size-4" /> {checking ? "Checking…" : "Check for updates"}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            If you use a wrapper app around the BentaKo link, turn off its own &quot;offline
+            mode&quot; or page caching so it can always reach the newest version.
+          </p>
+        </section>
+
+
 
         {isOwner ? (
           <section className="space-y-3 rounded-2xl border bg-card p-4">

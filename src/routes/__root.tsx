@@ -15,6 +15,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppSessionProvider } from "@/hooks/use-app-session";
 import { registerServiceWorker } from "@/lib/register-sw";
+import { BUILD_ID, BUILD_META_NAME } from "@/lib/build-info";
 import { initNativeBridge } from "@/lib/platform/native-bridge";
 
 
@@ -90,6 +91,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "BentaKo is a fast, offline-first point of sale and inventory app made for Philippine sari-sari stores.",
       },
       { name: "theme-color", content: "#1f5f47" },
+      { name: BUILD_META_NAME, content: BUILD_ID },
       { property: "og:title", content: "BentaKo — Offline Sari-Sari Store POS" },
       {
         property: "og:description",
