@@ -102,16 +102,39 @@ export async function checkForAppUpdate(): Promise<boolean> {
   const serverBuild = await fetchServerBuildId();
   if (serverBuild && serverBuild !== runningBuildId()) {
     newerBuildOnServer = true;
+    pendingServerBuild = serverBuild;
     emitUpdate();
     return true;
   }
   return updateAvailable();
 }
 
+/** Remembers which server build was auto-applied, so a reload can never loop. */
+let pendingServerBuild: string | null = null;
+const AUTO_APPLIED_KEY = "bentako:auto-applied-build";
+
+function alreadyAutoApplied(build: string): boolean {
+  try {
+    return window.sessionStorage.getItem(AUTO_APPLIED_KEY) === build;
+  } catch {
+    return false;
+  }
+}
+
+function markAutoApplied(build: string): void {
+  try {
+    window.sessionStorage.setItem(AUTO_APPLIED_KEY, build);
+  } catch {
+    /* private mode: the manual banner still works */
+  }
+}
+
 /**
  * Background watcher: checks on open, whenever the app returns to the
  * foreground, and hourly. When a newer build exists it is applied right away
  * unless a sale is in progress, in which case it applies after checkout.
+ * A given build is only auto-applied once per session; after that the visible
+ * update notice takes over instead of reloading repeatedly.
  */
 function startUpdateWatcher(): void {
   let lastCheck = 0;
@@ -119,7 +142,11 @@ function startUpdateWatcher(): void {
     if (Date.now() - lastCheck < 15_000) return;
     lastCheck = Date.now();
     const available = await checkForAppUpdate();
-    if (available) applyAppUpdate();
+    if (!available) return;
+    const target = pendingServerBuild ?? "waiting-worker";
+    if (alreadyAutoApplied(target)) return;
+    markAutoApplied(target);
+    applyAppUpdate();
   };
   void check();
   document.addEventListener("visibilitychange", () => {
