@@ -150,10 +150,9 @@
 
   html {
     -webkit-tap-highlight-color: transparent;
-    /* The page itself never drifts sideways, but must always scroll vertically.
-       overflow-x: clip trims horizontal overflow without creating a scroll
-       container that can trap vertical scrolling in Android WebView. */
-    overflow-x: clip;
+    /* The viewport itself must stay freely scrollable vertically: any overflow
+       rule here (hidden or clip) stops the page scrolling in Android WebView.
+       Sideways drift is trimmed on <body> instead. */
     overscroll-behavior-x: none;
   }
 
@@ -165,8 +164,10 @@
     width: 100%;
     max-width: 100%;
     overflow-x: clip;
+    overflow-y: visible;
     overscroll-behavior-x: none;
   }
+
 
 
   h1,
