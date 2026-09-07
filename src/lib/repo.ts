@@ -646,3 +646,183 @@ export function matchProductByCode(
     null
   );
 }
+
+/* ------------------------------------------------------------ cash ledger */
+
+export interface CashTransactionInput {
+  transaction_type: CashTxnType;
+  provider: ServiceProvider;
+  amount: number;
+  service_fee?: number;
+  customer_name?: string | null;
+  customer_mobile_number?: string | null;
+  reference_number?: string | null;
+}
+
+/**
+ * Records a drawer or e-wallet movement. The row, its audit entry and the
+ * upload intent all land in one local commit so a crash cannot split them.
+ */
+export async function saveCashTransaction(
+  ctx: StoreContext,
+  input: CashTransactionInput,
+): Promise<LocalCashTransaction> {
+  const amount = Number(input.amount);
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Enter an amount.");
+  const now = nowIso();
+  const row: LocalCashTransaction = {
+    id: uuid(),
+    store_id: ctx.storeId,
+    transaction_type: input.transaction_type,
+    provider: input.provider,
+    customer_name: input.customer_name?.trim() || null,
+    customer_mobile_number: input.customer_mobile_number?.trim() || null,
+    amount,
+    service_fee: Number(input.service_fee ?? 0) || 0,
+    reference_number: input.reference_number?.trim() || null,
+    wallet_before: null,
+    wallet_after: null,
+    cash_before: null,
+    cash_after: null,
+    status: "completed",
+    created_by: ctx.userId,
+    created_at: now,
+    updated_at: now,
+    sync_status: "pending",
+  };
+  await db().cash_transactions.put(row);
+  await enqueue("cash_transactions", row.id);
+  await logAudit(ctx, "cash.recorded", "cash_transaction", row.id, {
+    transaction_type: row.transaction_type,
+    provider: row.provider,
+    amount: row.amount,
+  });
+  return row;
+}
+
+/* ---------------------------------------------------------- credit ledger */
+
+export interface CustomerInput {
+  id?: string;
+  name: string;
+  mobile_number?: string | null;
+  notes?: string | null;
+}
+
+export async function saveCustomer(
+  ctx: StoreContext,
+  input: CustomerInput,
+): Promise<LocalCustomer> {
+  const name = input.name.trim();
+  if (!name) throw new Error("Enter the customer's name.");
+  const existing = input.id ? await db().customers.get(input.id) : undefined;
+  const row: LocalCustomer = {
+    id: existing?.id ?? uuid(),
+    store_id: ctx.storeId,
+    name,
+    mobile_number: input.mobile_number?.trim() || null,
+    notes: input.notes?.trim() || null,
+    credit_balance: existing?.credit_balance ?? 0,
+    is_active: existing?.is_active ?? true,
+    created_at: existing?.created_at ?? nowIso(),
+    updated_at: nowIso(),
+    sync_status: "pending",
+  };
+  await db().customers.put(row);
+  await enqueue("customers", row.id);
+  await logAudit(ctx, existing ? "customer.updated" : "customer.created", "customer", row.id, {
+    name: row.name,
+  });
+  return row;
+}
+
+async function writeCustomerLedger(
+  ctx: StoreContext,
+  customerId: string,
+  /** Positive = payment received, negative = manual charge. */
+  amount: number,
+  notes: string | null,
+  action: string,
+): Promise<LocalCustomerPayment> {
+  const row: LocalCustomerPayment = {
+    id: uuid(),
+    store_id: ctx.storeId,
+    customer_id: customerId,
+    sale_id: null,
+    amount,
+    notes,
+    created_by: ctx.userId,
+    created_at: nowIso(),
+    sync_status: "pending",
+  };
+
+  beginCriticalWork();
+  try {
+    const local = db();
+    await local.transaction(
+      "rw",
+      [local.customer_payments, local.customers, local.sync_queue],
+      async () => {
+        await local.customer_payments.put(row);
+        const customer = await local.customers.get(customerId);
+        if (customer) {
+          await local.customers.update(customerId, {
+            credit_balance: customer.credit_balance - amount,
+            updated_at: nowIso(),
+            sync_status: "pending",
+          });
+        }
+        const group = row.id;
+        await enqueue("customers", customerId, { groupId: group });
+        await enqueue("customer_payments", row.id, { groupId: group });
+      },
+    );
+  } finally {
+    endCriticalWork();
+  }
+
+  await logAudit(ctx, action, "customer_payment", row.id, { customer_id: customerId, amount });
+  return row;
+}
+
+/** Money received from a customer against their utang. */
+export async function recordCustomerPayment(
+  ctx: StoreContext,
+  input: { customer_id: string; amount: number; notes?: string | null },
+): Promise<LocalCustomerPayment> {
+  const amount = Number(input.amount);
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Enter an amount.");
+  return writeCustomerLedger(
+    ctx,
+    input.customer_id,
+    amount,
+    input.notes?.trim() || null,
+    "customer.payment",
+  );
+}
+
+/** A charge added by hand (not from a sale) — increases what the customer owes. */
+export async function addManualCharge(
+  ctx: StoreContext,
+  input: { customer_id: string; amount: number; notes?: string | null },
+): Promise<LocalCustomerPayment> {
+  const amount = Number(input.amount);
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Enter an amount.");
+  return writeCustomerLedger(
+    ctx,
+    input.customer_id,
+    -amount,
+    input.notes?.trim() || null,
+    "customer.charge",
+  );
+}
+
+/** Charges minus payments, derived locally so devices cannot drift apart. */
+export function deriveBalance(
+  charges: { total: number }[],
+  ledger: { amount: number }[],
+): number {
+  const charged = charges.reduce((s, c) => s + c.total, 0);
+  const net = ledger.reduce((s, l) => s + l.amount, 0);
+  return charged - net;
+}
