@@ -86,7 +86,7 @@ export default defineConfig({
                 // No NavigationRoute on purpose: it would be matched before the
                 // NetworkFirst rule below and serve the precached shell for every
                 // navigation, so a deployment would never be picked up online.
-                navigateFallback: undefined,
+                navigateFallback: null,
                 skipWaiting: false,
                 clientsClaim: true,
                 cleanupOutdatedCaches: true,
