@@ -22,11 +22,23 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useAppSession } from "@/hooks/use-app-session";
 import { useBackHandler } from "@/hooks/use-back-handler";
 import { formatMoney, formatQty } from "@/lib/format";
-import { db, type LocalProduct } from "@/lib/local-db";
+import {
+  PAYMENT_METHODS,
+  db,
+  type LocalCustomer,
+  type LocalProduct,
+  type PaymentMethod,
+} from "@/lib/local-db";
 import { printReceiptText } from "@/lib/platform/print-service";
 import { shareText } from "@/lib/platform/share-service";
 import { buildReceiptText } from "@/lib/receipt";
-import { checkout, matchProductByCode, type CartLine, type CheckoutResult } from "@/lib/repo";
+import {
+  checkout,
+  matchProductByCode,
+  saveCustomer,
+  type CartLine,
+  type CheckoutResult,
+} from "@/lib/repo";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/pos")({
@@ -52,6 +64,9 @@ function PosPage() {
   const [cart, setCart] = useState<Record<string, number>>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [cash, setCash] = useState("");
+  const [method, setMethod] = useState<PaymentMethod>("cash");
+  const [customerId, setCustomerId] = useState<string>("");
+  const [newCustomer, setNewCustomer] = useState("");
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState<CheckoutResult | null>(null);
   const committingRef = useRef(false);
@@ -101,6 +116,17 @@ function PosPage() {
       else window.clearTimeout(id);
     };
   }, [cart, cash, draftKey]);
+
+  const customers = useLiveQuery(
+    async () =>
+      storeId
+        ? (await db().customers.where("store_id").equals(storeId).toArray())
+            .filter((c) => c.is_active)
+            .sort((a, b) => a.name.localeCompare(b.name))
+        : [],
+    [storeId],
+    [] as LocalCustomer[],
+  );
 
   const products = useLiveQuery(
     async () =>
@@ -206,17 +232,28 @@ function PosPage() {
     if (!ctx || lines.length === 0) return;
     // Guard against a double tap / re-entrant submit creating two sales.
     if (committingRef.current) return;
-    if (cashNumber < total) {
+    if (method === "cash" && cashNumber < total) {
       toast.error("Cash received is less than the total.");
+      return;
+    }
+    if (method === "utang" && !customerId) {
+      toast.error("Choose a customer for this utang.");
       return;
     }
     committingRef.current = true;
     setBusy(true);
     try {
-      const result = await checkout(ctx, { lines, cash_received: cashNumber });
+      const result = await checkout(ctx, {
+        lines,
+        cash_received: method === "cash" ? cashNumber : 0,
+        payment_method: method,
+        customer_id: method === "utang" ? customerId : null,
+      });
       setReceipt(result);
       setCart({});
       setCash("");
+      setMethod("cash");
+      setCustomerId("");
       setCartOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Checkout failed.");
