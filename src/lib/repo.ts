@@ -2,6 +2,7 @@ import {
   DEFAULT_CATEGORIES,
   db,
   type CashTxnType,
+  type LocalCashPhoto,
   type LocalCashTransaction,
   type LocalCustomer,
   type LocalCustomerPayment,
