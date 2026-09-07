@@ -99,8 +99,9 @@ export function AppShell({
                   type="button"
                   aria-label="Sign out"
                   onClick={async () => {
+                    await queryClient.cancelQueries();
+                    queryClient.clear();
                     await signOut();
-                    void navigate({ to: "/auth", replace: true });
                   }}
                   className="grid size-9 place-items-center rounded-xl border text-muted-foreground active:bg-accent/10"
                 >
