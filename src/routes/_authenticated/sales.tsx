@@ -110,13 +110,20 @@ function SalesPage() {
       subtitle={`${totals.count} sales · ${formatMoney(totals.revenue, currency)}`}
     >
       <div className="space-y-3">
-        <Tabs value={range} onValueChange={(v) => setRange(v as RangeKey)}>
+        <Tabs
+          value={range}
+          onValueChange={(v) => {
+            if (!pro && v === "all") return;
+            setRangeChoice(v as RangeKey);
+          }}
+        >
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="today">Today</TabsTrigger>
             <TabsTrigger value="week">7 days</TabsTrigger>
-            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="all">{pro ? "All" : "All · Pro"}</TabsTrigger>
           </TabsList>
         </Tabs>
+
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
