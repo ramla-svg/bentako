@@ -66,6 +66,18 @@ export const Route = createFileRoute("/_authenticated/cash")({
 type RangeKey = "today" | "7d" | "30d";
 type FilterKey = "all" | "in" | "out";
 
+/** What kind of entry this is. `add_balance` is a wallet top-up by the store. */
+type EntryKind = "cash_in" | "cash_out" | "add_balance";
+
+const KINDS: { value: EntryKind; label: string; hint: string }[] = [
+  { value: "cash_in", label: "Cash In", hint: "Customer gives cash — balance goes up" },
+  { value: "cash_out", label: "Cash Out", hint: "Customer takes cash — balance goes down" },
+  { value: "add_balance", label: "Add Balance", hint: "You top up your own e-wallet" },
+];
+
+const NOTE_SOURCES = ["Bank", "GCash app", "Cash on hand", "Load / Bills", "Other"] as const;
+type NoteSource = (typeof NOTE_SOURCES)[number] | "";
+
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "All" },
   { key: "in", label: "Cash In" },
@@ -83,12 +95,24 @@ function rangeStart(range: RangeKey): number {
   return now.getTime() - days * 24 * 60 * 60 * 1000;
 }
 
+/** Direction actually stored for a kind: a top-up raises the wallet. */
+function directionOf(kind: EntryKind): CashTxnType {
+  return kind === "cash_out" ? "cash_out" : "cash_in";
+}
+
+/** Rebuilds the display label of a saved row from its note + direction. */
+function kindLabel(e: LocalCashTransaction): string {
+  if (e.transaction_type === "cash_out") return "Cash Out";
+  return (e.notes ?? "").startsWith("Add balance") ? "Add Balance" : "Cash In";
+}
+
 type Preset = {
   key: string;
   label: string;
   icon: typeof ArrowDownLeft;
   tint: string;
-  direction: CashTxnType;
+  kind: EntryKind;
+  source?: NoteSource;
 };
 
 const PRESETS: Preset[] = [
@@ -97,28 +121,30 @@ const PRESETS: Preset[] = [
     label: "Cash In",
     icon: ArrowDownLeft,
     tint: "bg-tile-mint text-tile-mint-ink",
-    direction: "cash_in",
+    kind: "cash_in",
   },
   {
     key: "out",
     label: "Cash Out",
     icon: ArrowUpRight,
     tint: "bg-tile-rose text-tile-rose-ink",
-    direction: "cash_out",
+    kind: "cash_out",
   },
   {
     key: "load",
     label: "Buy Load",
     icon: Smartphone,
     tint: "bg-tile-lavender text-tile-lavender-ink",
-    direction: "cash_out",
+    kind: "cash_out",
+    source: "Load / Bills",
   },
   {
     key: "bills",
     label: "Pay Bills",
     icon: FileText,
     tint: "bg-tile-peach text-tile-peach-ink",
-    direction: "cash_out",
+    kind: "cash_out",
+    source: "Load / Bills",
   },
 ];
 

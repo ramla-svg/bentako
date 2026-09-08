@@ -228,7 +228,7 @@ function Dashboard() {
             <ActionTile to="/products" icon={Package} tint="mint" label="Products" />
             <ActionTile to="/inventory" icon={Boxes} tint="sky" label="Inventory" />
             <ActionTile to="/cash" icon={Smartphone} tint="blue" label="GCash Cash In/Out" />
-            <ActionTile to="/cash" icon={Smartphone} tint="lavender" label="Load & Other" />
+            
             <ActionTile to="/expenses" icon={Wallet} tint="rose" label="Expenses" />
             <ActionTile to="/sales" icon={Receipt} tint="mint" label="Sales" />
             <ActionTile to="/reports" icon={BarChart3} tint="lavender" label="Reports" />
