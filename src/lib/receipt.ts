@@ -1,4 +1,5 @@
 import { formatDateTime, formatMoney, formatQty } from "@/lib/format";
+import { isPro, type PlanFields } from "@/lib/plan";
 import type { CheckoutResult } from "@/lib/repo";
 
 /**
@@ -7,9 +8,12 @@ import type { CheckoutResult } from "@/lib/repo";
  */
 export function buildReceiptText(
   result: CheckoutResult,
-  store: { name?: string | null; currency?: string | null; receipt_footer?: string | null } | null,
+  store:
+    | ({ name?: string | null; currency?: string | null; receipt_footer?: string | null } & PlanFields)
+    | null,
 ): string {
   const currency = store?.currency ?? "PHP";
+
   const lines: string[] = [];
 
   lines.push(store?.name ?? "BentaKo");
@@ -38,5 +42,12 @@ export function buildReceiptText(
     lines.push(store.receipt_footer);
   }
 
+  // Free plan keeps a small credit line; Pro receipts are fully the store's own.
+  if (!isPro(store)) {
+    lines.push("");
+    lines.push("Powered by BentaKo");
+  }
+
   return lines.join("\n");
 }
+

@@ -41,11 +41,13 @@ export const Route = createFileRoute("/_authenticated/sales")({
 type RangeKey = "today" | "week" | "all";
 
 function SalesPage() {
-  const { store, ctx, role } = useAppSession();
+  const { store, ctx, role, pro } = useAppSession();
   const storeId = store?.id ?? "";
   const currency = store?.currency ?? "PHP";
 
-  const [range, setRange] = useState<RangeKey>("today");
+  const [rangeChoice, setRangeChoice] = useState<RangeKey>("today");
+  const range: RangeKey = !pro && rangeChoice === "all" ? "week" : rangeChoice;
+
   const [search, setSearch] = useState("");
   const [detail, setDetail] = useState<LocalSale | null>(null);
   const [toVoid, setToVoid] = useState<LocalSale | null>(null);
