@@ -184,8 +184,9 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
             const result = await supabase
               .from("stores")
               .select(
-                "id, name, owner_name, logo_url, currency, receipt_footer, allow_negative_stock, default_low_stock_threshold, confirm_void",
+                "id, name, owner_name, logo_url, currency, receipt_footer, allow_negative_stock, default_low_stock_threshold, confirm_void, plan, plan_period, plan_expires_at, plan_source",
               )
+
               .eq("id", profile.store_id!)
               .maybeSingle();
             return result.data;
@@ -257,6 +258,14 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const store = snapshot?.store ?? null;
+  const plan = activePlan(store);
+
+  // Cloud backup is a Pro feature: on Free, records stay queued on the device.
+  useEffect(() => {
+    setCloudBackupEnabled(isPro(store));
+  }, [store]);
+
   const value = useMemo<AppSessionValue>(
     () => ({
       status,
@@ -264,15 +273,19 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       userName: snapshot?.userName ?? null,
       email,
       role: snapshot?.role ?? "cashier",
-      store: snapshot?.store ?? null,
+      store,
       ctx: snapshot?.store
         ? { storeId: snapshot.store.id, userId: snapshot.userId, userName: snapshot.userName }
         : null,
+      plan,
+      limits: planLimits(store),
+      pro: plan === "pro",
       refresh: load,
       signOut,
     }),
-    [status, snapshot, email, load, signOut],
+    [status, snapshot, store, plan, email, load, signOut],
   );
+
 
   return <AppSessionContext.Provider value={value}>{children}</AppSessionContext.Provider>;
 }
