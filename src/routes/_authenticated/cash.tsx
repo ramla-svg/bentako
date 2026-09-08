@@ -313,7 +313,7 @@ function CashPage() {
         </div>
 
         {/* Action tiles */}
-        <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           {PRESETS.map((p) => (
             <button
               key={p.key}
@@ -360,7 +360,7 @@ function CashPage() {
           <EmptyState
             icon={Coins}
             title="No entries yet"
-            description="Record a cash-in, cash-out, load, bill payment or drawer movement."
+            description="Record a cash-in, cash-out, load or bill payment."
             action={<Button onClick={() => openNew()}>Add entry</Button>}
           />
         ) : (
