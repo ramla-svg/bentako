@@ -76,14 +76,12 @@ export const Route = createFileRoute("/_authenticated/cash")({
 });
 
 type RangeKey = "today" | "7d" | "30d";
-type FilterKey = "all" | "in" | "out" | "wallet" | "drawer";
+type FilterKey = "all" | "in" | "out";
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "All" },
   { key: "in", label: "Cash In" },
   { key: "out", label: "Cash Out" },
-  { key: "wallet", label: "GCash/Maya" },
-  { key: "drawer", label: "Drawer" },
 ];
 
 function rangeStart(range: RangeKey): number {
@@ -124,20 +122,11 @@ const PRESETS: Preset[] = [
     provider: "gcash",
   },
   {
-    key: "send",
-    label: "Send Money",
-    icon: Send,
-    tint: "bg-tile-sky text-tile-sky-ink",
-    direction: "cash_out",
-    provider: "gcash",
-  },
-  {
     key: "load",
     label: "Buy Load",
     icon: Smartphone,
     tint: "bg-tile-lavender text-tile-lavender-ink",
     direction: "cash_out",
-    provider: "gcash",
   },
   {
     key: "bills",
@@ -145,15 +134,6 @@ const PRESETS: Preset[] = [
     icon: FileText,
     tint: "bg-tile-peach text-tile-peach-ink",
     direction: "cash_out",
-    provider: "gcash",
-  },
-  {
-    key: "more",
-    label: "More",
-    icon: MoreHorizontal,
-    tint: "bg-tile-blue text-tile-blue-ink",
-    direction: "cash_in",
-    provider: "other",
   },
 ];
 
