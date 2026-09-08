@@ -60,7 +60,8 @@ export async function submitPlanPayment(input: SubmitPaymentInput): Promise<Plan
     const path = `${input.storeId}/${Date.now()}.${ext}`;
     const { error } = await supabase.storage
       .from("payment-proofs")
-      .upload(path, input.proof, { upsert: false, contentType: input.proof.type || undefined });
+      .upload(path, input.proof, { upsert: false, contentType: input.proof.type || "image/jpeg" });
+
     if (!error) proofPath = path;
   }
 
