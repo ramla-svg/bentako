@@ -450,6 +450,14 @@ let started = false;
 /** Wire up connection listeners + periodic retry. Call once from the app shell. */
 export function startSyncEngine(): () => void {
   if (typeof window === "undefined") return () => {};
+  // One-time cleanup: activity logs are device-only now, so any rows left in
+  // the queue from an older version would never drain. Drop them.
+  void db()
+    .sync_queue.where("entity")
+    .equals("audit_logs")
+    .delete()
+    .then(() => refreshPending())
+    .catch(() => {});
   void refreshPending();
   if (started) return () => {};
   started = true;
