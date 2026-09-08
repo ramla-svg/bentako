@@ -10,13 +10,10 @@ import {
   Download,
   FileText,
   Image as ImageIcon,
-  MoreHorizontal,
   Plus,
-  Send,
   Share2,
   Smartphone,
   Trash2,
-  Wallet,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -32,13 +29,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppSession } from "@/hooks/use-app-session";
 import { formatDateTime, formatMoney, localDayKey } from "@/lib/format";
@@ -48,14 +38,12 @@ import {
   db,
   type CashTxnType,
   type LocalCashTransaction,
-  type ServiceProvider,
 } from "@/lib/local-db";
 import {
   deleteCashPhoto,
   getCashPhoto,
   putCashPhoto,
   saveCashTransaction,
-  saveWalletAdjustment,
 } from "@/lib/repo";
 import { cn } from "@/lib/utils";
 
@@ -76,14 +64,12 @@ export const Route = createFileRoute("/_authenticated/cash")({
 });
 
 type RangeKey = "today" | "7d" | "30d";
-type FilterKey = "all" | "in" | "out" | "wallet" | "drawer";
+type FilterKey = "all" | "in" | "out";
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "All" },
   { key: "in", label: "Cash In" },
   { key: "out", label: "Cash Out" },
-  { key: "wallet", label: "GCash/Maya" },
-  { key: "drawer", label: "Drawer" },
 ];
 
 function rangeStart(range: RangeKey): number {
@@ -103,7 +89,6 @@ type Preset = {
   icon: typeof ArrowDownLeft;
   tint: string;
   direction: CashTxnType;
-  provider: ServiceProvider;
 };
 
 const PRESETS: Preset[] = [
@@ -113,7 +98,6 @@ const PRESETS: Preset[] = [
     icon: ArrowDownLeft,
     tint: "bg-tile-mint text-tile-mint-ink",
     direction: "cash_in",
-    provider: "gcash",
   },
   {
     key: "out",
@@ -121,15 +105,6 @@ const PRESETS: Preset[] = [
     icon: ArrowUpRight,
     tint: "bg-tile-rose text-tile-rose-ink",
     direction: "cash_out",
-    provider: "gcash",
-  },
-  {
-    key: "send",
-    label: "Send Money",
-    icon: Send,
-    tint: "bg-tile-sky text-tile-sky-ink",
-    direction: "cash_out",
-    provider: "gcash",
   },
   {
     key: "load",
@@ -137,7 +112,6 @@ const PRESETS: Preset[] = [
     icon: Smartphone,
     tint: "bg-tile-lavender text-tile-lavender-ink",
     direction: "cash_out",
-    provider: "gcash",
   },
   {
     key: "bills",
@@ -145,15 +119,6 @@ const PRESETS: Preset[] = [
     icon: FileText,
     tint: "bg-tile-peach text-tile-peach-ink",
     direction: "cash_out",
-    provider: "gcash",
-  },
-  {
-    key: "more",
-    label: "More",
-    icon: MoreHorizontal,
-    tint: "bg-tile-blue text-tile-blue-ink",
-    direction: "cash_in",
-    provider: "other",
   },
 ];
 
@@ -166,7 +131,6 @@ function CashPage() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [open, setOpen] = useState(false);
   const [direction, setDirection] = useState<CashTxnType>("cash_in");
-  const [provider, setProvider] = useState<ServiceProvider>("other");
   const [amount, setAmount] = useState("");
   const [fee, setFee] = useState("");
   const [customerName, setCustomerName] = useState("");
@@ -178,12 +142,6 @@ function CashPage() {
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  // Balance-by-hand dialog
-  const [balanceOpen, setBalanceOpen] = useState(false);
-  const [balanceMode, setBalanceMode] = useState<"set" | "delta">("set");
-  const [balanceValue, setBalanceValue] = useState("");
-  const [balanceSign, setBalanceSign] = useState<"add" | "remove">("add");
 
   // Full-screen photo viewer
   const [viewer, setViewer] = useState<{ id: string; url: string; blob: Blob } | null>(null);
@@ -241,8 +199,6 @@ function CashPage() {
   const filtered = useMemo(
     () =>
       inRange.filter((e) => {
-        if (filter === "drawer") return e.provider === "other";
-        if (filter === "wallet") return e.provider !== "other";
         if (filter === "in") return e.transaction_type === "cash_in";
         if (filter === "out") return e.transaction_type === "cash_out";
         return true;
@@ -263,7 +219,6 @@ function CashPage() {
 
   function openNew(preset?: Preset) {
     setDirection(preset?.direction ?? "cash_in");
-    setProvider(preset?.provider ?? "other");
     setAmount("");
     setFee("");
     setCustomerName("");
@@ -294,7 +249,7 @@ function CashPage() {
     try {
       await saveCashTransaction(ctx, {
         transaction_type: direction,
-        provider,
+        provider: "gcash",
         amount: value,
         service_fee: Number(fee) || 0,
         customer_name: customerName || null,
@@ -307,33 +262,6 @@ function CashPage() {
       setOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save entry.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function openBalance(mode: "set" | "delta") {
-    setBalanceMode(mode);
-    setBalanceSign("add");
-    setBalanceValue(mode === "set" ? String(Math.max(0, Number(walletTotal.toFixed(2)))) : "");
-    setBalanceOpen(true);
-  }
-
-  async function submitBalance() {
-    if (!ctx) return;
-    const value = Number(balanceValue);
-    if (!Number.isFinite(value) || (balanceMode === "delta" && value <= 0)) {
-      toast.error("Enter an amount.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const signed = balanceMode === "delta" && balanceSign === "remove" ? -value : value;
-      const row = await saveWalletAdjustment(ctx, { mode: balanceMode, amount: signed });
-      toast.success(row ? "E-wallet balance updated." : "Balance already matches.");
-      setBalanceOpen(false);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not update balance.");
     } finally {
       setBusy(false);
     }
@@ -360,8 +288,6 @@ function CashPage() {
     toast.success("Photo attached on this phone.");
   }
 
-  const isWallet = provider !== "other";
-
   return (
     <AppShell back title="GCash & E-Wallet" subtitle="Cash in/out, load, bills and more">
       <div className="space-y-4">
@@ -377,13 +303,6 @@ function CashPage() {
                 {formatMoney(walletTotal, currency)}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => openBalance("set")}
-              className="flex shrink-0 items-center gap-1.5 rounded-full bg-wallet-foreground/20 px-3 py-2 text-xs font-bold"
-            >
-              <Wallet className="size-4" /> Balance
-            </button>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
             <WalletStat label="Cash In Today" value={formatMoney(cashInToday, currency)} />
@@ -391,15 +310,10 @@ function CashPage() {
             <WalletStat label="Fees Earned" value={formatMoney(feesToday, currency)} />
             <WalletStat label="Transactions" value={String(todayEntries.length)} />
           </div>
-          {walletTotal === 0 ? (
-            <p className="mt-3 text-[11px] opacity-90">
-              New here? Tap Balance and type what your GCash app really shows.
-            </p>
-          ) : null}
         </div>
 
         {/* Action tiles */}
-        <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           {PRESETS.map((p) => (
             <button
               key={p.key}
@@ -446,7 +360,7 @@ function CashPage() {
           <EmptyState
             icon={Coins}
             title="No entries yet"
-            description="Record a cash-in, cash-out, load, bill payment or drawer movement."
+            description="Record a cash-in, cash-out, load or bill payment."
             action={<Button onClick={() => openNew()}>Add entry</Button>}
           />
         ) : (
@@ -509,18 +423,9 @@ function CashPage() {
           </ul>
         )}
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Button className="h-14 w-full text-base" onClick={() => openNew()}>
-            <Plus className="size-5" /> New e-wallet transaction
-          </Button>
-          <Button
-            variant="outline"
-            className="h-14 w-full text-base"
-            onClick={() => openBalance("delta")}
-          >
-            <Wallet className="size-5" /> Top up / correct balance
-          </Button>
-        </div>
+        <Button className="h-14 w-full text-base" onClick={() => openNew()}>
+          <Plus className="size-5" /> New GCash transaction
+        </Button>
       </div>
 
       {/* Add entry */}
@@ -538,22 +443,6 @@ function CashPage() {
             </Tabs>
 
             <div className="space-y-1.5">
-              <Label>Type</Label>
-              <Select value={provider} onValueChange={(v) => setProvider(v as ServiceProvider)}>
-                <SelectTrigger className="h-12">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CASH_PROVIDERS.map((p) => (
-                    <SelectItem key={p.value} value={p.value}>
-                      {p.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
               <Label>Amount</Label>
               <Input
                 value={amount}
@@ -564,45 +453,41 @@ function CashPage() {
               />
             </div>
 
-            {isWallet ? (
-              <>
-                <div className="space-y-1.5">
-                  <Label>Service fee</Label>
-                  <Input
-                    value={fee}
-                    onChange={(e) => setFee(e.target.value.replace(/[^0-9.]/g, ""))}
-                    inputMode="decimal"
-                    className="tnum h-12"
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Customer name (optional)</Label>
-                  <Input
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="h-12"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Mobile number (optional)</Label>
-                  <Input
-                    value={mobile}
-                    onChange={(e) => setMobile(e.target.value)}
-                    inputMode="tel"
-                    className="h-12"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Reference number (optional)</Label>
-                  <Input
-                    value={reference}
-                    onChange={(e) => setReference(e.target.value)}
-                    className="h-12"
-                  />
-                </div>
-              </>
-            ) : null}
+            <div className="space-y-1.5">
+              <Label>Service fee</Label>
+              <Input
+                value={fee}
+                onChange={(e) => setFee(e.target.value.replace(/[^0-9.]/g, ""))}
+                inputMode="decimal"
+                className="tnum h-12"
+                placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Customer name (optional)</Label>
+              <Input
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                className="h-12"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Mobile number (optional)</Label>
+              <Input
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                inputMode="tel"
+                className="h-12"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Reference number (optional)</Label>
+              <Input
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+                className="h-12"
+              />
+            </div>
 
             {/* Screenshot of the GCash transaction */}
             <div className="space-y-1.5">
@@ -651,55 +536,6 @@ function CashPage() {
           <DialogFooter>
             <Button className="h-12 w-full text-base" onClick={() => void submit()} disabled={busy}>
               Save entry
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Balance by hand */}
-      <Dialog open={balanceOpen} onOpenChange={setBalanceOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-display">E-wallet balance</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <Tabs value={balanceMode} onValueChange={(v) => setBalanceMode(v as "set" | "delta")}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="set">Set balance</TabsTrigger>
-                <TabsTrigger value="delta">Top up / correct</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <p className="text-xs text-muted-foreground">
-              {balanceMode === "set"
-                ? `BentaKo now shows ${formatMoney(walletTotal, currency)}. Type what your GCash app really shows and the difference is recorded as one correction entry.`
-                : "Add money you loaded into your wallet, or take out an amount to fix a mistake."}
-            </p>
-            {balanceMode === "delta" ? (
-              <Tabs value={balanceSign} onValueChange={(v) => setBalanceSign(v as "add" | "remove")}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="add">Add</TabsTrigger>
-                  <TabsTrigger value="remove">Take out</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            ) : null}
-            <div className="space-y-1.5">
-              <Label>{balanceMode === "set" ? "Real balance" : "Amount"}</Label>
-              <Input
-                value={balanceValue}
-                onChange={(e) => setBalanceValue(e.target.value.replace(/[^0-9.]/g, ""))}
-                inputMode="decimal"
-                className="tnum h-14 text-xl font-bold"
-                placeholder="0.00"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              className="h-12 w-full text-base"
-              onClick={() => void submitBalance()}
-              disabled={busy}
-            >
-              Save balance
             </Button>
           </DialogFooter>
         </DialogContent>
