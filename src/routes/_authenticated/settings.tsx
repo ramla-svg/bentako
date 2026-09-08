@@ -116,14 +116,21 @@ function SettingsPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Receipt footer</Label>
+            <Label>Receipt footer{pro ? "" : " · Pro"}</Label>
             <Textarea
               value={footer}
               onChange={(e) => setFooter(e.target.value)}
               rows={2}
-              disabled={!isOwner}
+              disabled={!isOwner || !pro}
             />
+            {!pro ? (
+              <p className="text-xs text-muted-foreground">
+                Your own message on receipts comes with Pro. Free receipts show “Powered by
+                BentaKo”.
+              </p>
+            ) : null}
           </div>
+
           <div className="space-y-1.5">
             <Label>Default low-stock alert</Label>
             <Input
