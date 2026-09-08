@@ -5,8 +5,8 @@
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useState } from "react";
-import { Check, ExternalLink, Loader2, Save, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Check, ExternalLink, Loader2, Save, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/app-shell";
@@ -130,14 +130,70 @@ function AdminPage() {
               value={config.gcashNumber}
               onChange={(e) => setConfig({ ...config, gcashNumber: e.target.value })}
             />
-            <Label htmlFor="gqr">QR image link</Label>
-            <Input
-              id="gqr"
-              className="h-12"
-              placeholder="https://…"
-              value={config.gcashQrUrl}
-              onChange={(e) => setConfig({ ...config, gcashQrUrl: e.target.value })}
+            <Label>GCash QR code</Label>
+            {config.gcashQrUrl ? (
+              <img
+                src={config.gcashQrUrl}
+                alt="Your GCash QR code"
+                className="mx-auto size-40 rounded-xl border object-contain bg-white"
+              />
+            ) : (
+              <p className="rounded-xl border border-dashed p-4 text-center text-xs text-muted-foreground">
+                No QR code yet. Shop owners will only see your name and number.
+              </p>
+            )}
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (!file) return;
+                setBusy("qr");
+                try {
+                  const dataUrl = await shrinkImage(file);
+                  const saved = await saveQr({ data: { dataUrl } });
+                  setConfig((c) => ({ ...c, gcashQrUrl: saved.url }));
+                  toast.success("QR code saved.");
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : "Could not save that photo.");
+                } finally {
+                  setBusy(null);
+                }
+              }}
             />
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="h-11 flex-1"
+                disabled={busy === "qr"}
+                onClick={() => fileRef.current?.click()}
+              >
+                {busy === "qr" ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+                {config.gcashQrUrl ? "Replace QR photo" : "Upload QR photo"}
+              </Button>
+              {config.gcashQrUrl ? (
+                <Button
+                  variant="ghost"
+                  className="h-11"
+                  disabled={busy === "qr"}
+                  onClick={() => {
+                    setBusy("qr");
+                    void saveQr({ data: { dataUrl: "" } })
+                      .then(() => {
+                        setConfig((c) => ({ ...c, gcashQrUrl: "" }));
+                        toast.success("QR code removed.");
+                      })
+                      .catch(() => toast.error("Could not remove that."))
+                      .finally(() => setBusy(null));
+                  }}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              ) : null}
+            </div>
           </div>
           <Button
             className="h-12 w-full"
