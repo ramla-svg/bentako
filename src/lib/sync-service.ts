@@ -8,7 +8,11 @@ import {
 import { db, setSetting, type SyncEntity, type SyncQueueItem } from "./local-db";
 import { nowIso, uuid } from "./ids";
 
-/** Sync order respects foreign keys (sales before sale_items, etc.). */
+/**
+ * Sync order respects foreign keys (sales before sale_items, etc.).
+ * `audit_logs` is deliberately absent: activity logs are device-only, so they
+ * are neither pushed nor pulled.
+ */
 const ENTITY_ORDER: SyncEntity[] = [
   "categories",
   "products",
@@ -19,7 +23,6 @@ const ENTITY_ORDER: SyncEntity[] = [
   "expenses",
   "cash_transactions",
   "customer_payments",
-  "audit_logs",
 ];
 
 const NUMERIC_FIELDS = new Set([

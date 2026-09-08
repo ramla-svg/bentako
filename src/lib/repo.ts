@@ -46,8 +46,8 @@ export async function logAudit(
     created_at: nowIso(),
     sync_status: "pending" as const,
   };
+  // Activity logs stay on this device: they are never enqueued for upload.
   await db().audit_logs.put(row);
-  await enqueue("audit_logs", row.id);
 }
 
 /* ------------------------------------------------------------- categories */
