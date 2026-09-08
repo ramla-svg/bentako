@@ -603,6 +603,10 @@ export type Database = {
           name: string
           owner_id: string
           owner_name: string | null
+          plan: string
+          plan_expires_at: string | null
+          plan_period: string | null
+          plan_source: string | null
           receipt_footer: string | null
           updated_at: string
         }
@@ -617,6 +621,10 @@ export type Database = {
           name: string
           owner_id: string
           owner_name?: string | null
+          plan?: string
+          plan_expires_at?: string | null
+          plan_period?: string | null
+          plan_source?: string | null
           receipt_footer?: string | null
           updated_at?: string
         }
@@ -631,6 +639,10 @@ export type Database = {
           name?: string
           owner_id?: string
           owner_name?: string | null
+          plan?: string
+          plan_expires_at?: string | null
+          plan_period?: string | null
+          plan_source?: string | null
           receipt_footer?: string | null
           updated_at?: string
         }

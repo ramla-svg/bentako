@@ -41,11 +41,13 @@ export const Route = createFileRoute("/_authenticated/sales")({
 type RangeKey = "today" | "week" | "all";
 
 function SalesPage() {
-  const { store, ctx, role } = useAppSession();
+  const { store, ctx, role, pro } = useAppSession();
   const storeId = store?.id ?? "";
   const currency = store?.currency ?? "PHP";
 
-  const [range, setRange] = useState<RangeKey>("today");
+  const [rangeChoice, setRangeChoice] = useState<RangeKey>("today");
+  const range: RangeKey = !pro && rangeChoice === "all" ? "week" : rangeChoice;
+
   const [search, setSearch] = useState("");
   const [detail, setDetail] = useState<LocalSale | null>(null);
   const [toVoid, setToVoid] = useState<LocalSale | null>(null);
@@ -108,13 +110,20 @@ function SalesPage() {
       subtitle={`${totals.count} sales · ${formatMoney(totals.revenue, currency)}`}
     >
       <div className="space-y-3">
-        <Tabs value={range} onValueChange={(v) => setRange(v as RangeKey)}>
+        <Tabs
+          value={range}
+          onValueChange={(v) => {
+            if (!pro && v === "all") return;
+            setRangeChoice(v as RangeKey);
+          }}
+        >
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="today">Today</TabsTrigger>
             <TabsTrigger value="week">7 days</TabsTrigger>
-            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="all">{pro ? "All" : "All · Pro"}</TabsTrigger>
           </TabsList>
         </Tabs>
+
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

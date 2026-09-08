@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo, useState } from "react";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Crown } from "lucide-react";
+
 
 import { AppShell, EmptyState } from "@/components/app-shell";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,10 +26,12 @@ export const Route = createFileRoute("/_authenticated/reports")({
 type RangeKey = "7" | "30";
 
 function ReportsPage() {
-  const { store } = useAppSession();
+  const { store, pro } = useAppSession();
   const storeId = store?.id ?? "";
   const currency = store?.currency ?? "PHP";
   const [range, setRange] = useState<RangeKey>("7");
+  const effectiveRange: RangeKey = pro ? range : "7";
+
 
   const raw = useLiveQuery(
     async () => {
@@ -46,7 +49,7 @@ function ReportsPage() {
 
   const report = useMemo(() => {
     if (!raw) return null;
-    const days = Number(range);
+    const days = Number(effectiveRange);
     const from = startOfDay(addDays(new Date(), -(days - 1)));
     const dayKeys: string[] = [];
     for (let i = 0; i < days; i += 1) dayKeys.push(localDayKey(addDays(from, i)));
@@ -94,19 +97,39 @@ function ReportsPage() {
       topProducts: [...byProduct.values()].sort((a, b) => b.qty - a.qty).slice(0, 8),
       categories: [...byCategory.entries()].sort((a, b) => b[1] - a[1]),
     };
-  }, [raw, range]);
+  }, [raw, effectiveRange]);
 
   const maxDay = Math.max(1, ...(report?.perDay.map((d) => d.total) ?? [1]));
 
   return (
-    <AppShell title="Reports" subtitle={`Last ${range} days`}>
+    <AppShell title="Reports" subtitle={`Last ${effectiveRange} days`}>
       <div className="space-y-4">
-        <Tabs value={range} onValueChange={(v) => setRange(v as RangeKey)}>
+        <Tabs
+          value={effectiveRange}
+          onValueChange={(v) => {
+            if (!pro && v === "30") return;
+            setRange(v as RangeKey);
+          }}
+        >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="7">7 days</TabsTrigger>
-            <TabsTrigger value="30">30 days</TabsTrigger>
+            <TabsTrigger value="30">30 days{pro ? "" : " · Pro"}</TabsTrigger>
           </TabsList>
         </Tabs>
+
+        {!pro ? (
+          <Link
+            to="/upgrade"
+            className="flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm"
+          >
+            <Crown className="size-4 shrink-0 text-primary" />
+            <span className="min-w-0 flex-1">
+              The free plan shows the last 7 days. Pro shows your whole history.
+            </span>
+            <span className="shrink-0 font-semibold text-primary">See Pro</span>
+          </Link>
+        ) : null}
+
 
         {!report || report.transactions === 0 ? (
           <EmptyState

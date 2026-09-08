@@ -1,8 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo, useState } from "react";
-import { Copy, MoreVertical, Package, Pencil, Plus, Search, Trash2, Undo2 } from "lucide-react";
+import { Copy, Crown, MoreVertical, Package, Pencil, Plus, Search, Trash2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
+
 
 import { AppShell, EmptyState } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -82,7 +83,7 @@ function emptyForm(threshold: number): FormState {
 }
 
 function ProductsPage() {
-  const { store, ctx, role } = useAppSession();
+  const { store, ctx, role, pro, limits } = useAppSession();
   const storeId = store?.id ?? "";
   const currency = store?.currency ?? "PHP";
   const canEdit = role === "owner";
@@ -90,9 +91,11 @@ function ProductsPage() {
   const [search, setSearch] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [open, setOpen] = useState(false);
+  const [limitOpen, setLimitOpen] = useState(false);
   const [form, setForm] = useState<FormState>(() => emptyForm(store?.default_low_stock_threshold ?? 5));
   const [newCategory, setNewCategory] = useState("");
   const [busy, setBusy] = useState(false);
+
 
   const products = useLiveQuery(
     async () =>
@@ -123,10 +126,22 @@ function ProductsPage() {
     );
   }, [products, search, showArchived]);
 
+  const activeCount = useMemo(
+    () => (products ?? []).filter((p) => p.is_active).length,
+    [products],
+  );
+  const limit = limits.products;
+  const atLimit = activeCount >= limit;
+
   function openNew() {
+    if (atLimit) {
+      setLimitOpen(true);
+      return;
+    }
     setForm(emptyForm(store?.default_low_stock_threshold ?? 5));
     setOpen(true);
   }
+
 
   function openEdit(p: LocalProduct) {
     setForm({
@@ -146,10 +161,16 @@ function ProductsPage() {
 
   async function submit() {
     if (!ctx) return;
+    if (!form.id && atLimit) {
+      setOpen(false);
+      setLimitOpen(true);
+      return;
+    }
     if (!form.name.trim()) {
       toast.error("Product name is required.");
       return;
     }
+
     const selling = Number(form.selling_price);
     if (!selling || selling <= 0) {
       toast.error("Enter a selling price.");
@@ -194,6 +215,22 @@ function ProductsPage() {
       }
     >
       <div className="space-y-3">
+        {!pro && Number.isFinite(limit) ? (
+          <Link
+            to="/upgrade"
+            className={cn(
+              "flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm",
+              atLimit ? "border-primary/50 bg-primary/10" : "bg-card",
+            )}
+          >
+            <Crown className="size-4 shrink-0 text-primary" />
+            <span className="tnum min-w-0 flex-1">
+              {activeCount} of {limit} products used
+            </span>
+            <span className="shrink-0 font-semibold text-primary">Upgrade</span>
+          </Link>
+        ) : null}
+
         <div className="relative">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -208,6 +245,7 @@ function ProductsPage() {
           <span className="text-sm">Show archived</span>
           <Switch checked={showArchived} onCheckedChange={setShowArchived} />
         </div>
+
 
         {filtered.length === 0 ? (
           <EmptyState
@@ -425,9 +463,32 @@ function ProductsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={limitOpen} onOpenChange={setLimitOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display">Free plan holds {limit} products</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            You already have {activeCount}. BentaKo Pro removes the limit for ₱99 a month, and keeps
+            a safe copy of your records outside this phone.
+          </p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" className="h-12 flex-1" onClick={() => setLimitOpen(false)}>
+              Maybe later
+            </Button>
+            <Button asChild className="h-12 flex-1">
+              <Link to="/upgrade" onClick={() => setLimitOpen(false)}>
+                See Pro
+              </Link>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
+
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

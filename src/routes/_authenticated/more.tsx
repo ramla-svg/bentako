@@ -6,11 +6,13 @@ import {
   Boxes,
   ChevronRight,
   Coins,
+  Crown,
   HandCoins,
   LogOut,
   Settings,
   Wallet,
 } from "lucide-react";
+
 
 import { AppShell } from "@/components/app-shell";
 import { useAppSession } from "@/hooks/use-app-session";
@@ -35,8 +37,10 @@ const LINKS = [
   { to: "/payments", label: "Payments", description: "Everything you received", icon: Banknote },
   { to: "/expenses", label: "Expenses", description: "Daily store costs", icon: Wallet },
   { to: "/reports", label: "Reports", description: "Sales, profit, best sellers", icon: BarChart3 },
+  { to: "/upgrade", label: "Plan & pricing", description: "Free vs BentaKo Pro", icon: Crown },
   { to: "/settings", label: "Settings", description: "Store details, sync, account", icon: Settings },
 ] as const;
+
 
 function MorePage() {
   const { store, role, signOut } = useAppSession();

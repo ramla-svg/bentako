@@ -1,7 +1,8 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
-import { Download, LogOut, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
+import { Crown, Download, LogOut, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
+
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/app-shell";
@@ -38,7 +39,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
 });
 
 function SettingsPage() {
-  const { store, ctx, role, email, refresh, signOut } = useAppSession();
+  const { store, ctx, role, email, pro, refresh, signOut } = useAppSession();
   const navigate = useNavigate();
   const isOwner = role === "owner";
 
@@ -157,7 +158,28 @@ function SettingsPage() {
         </section>
 
         <section className="space-y-3 rounded-2xl border bg-card p-4">
+          <h2 className="flex items-center gap-2 font-display text-sm font-bold">
+            <Crown className="size-4 text-primary" /> Your plan
+          </h2>
+          <p className="text-sm">
+            <span className="font-semibold">{pro ? "BentaKo Pro" : "Free"}</span>
+            {pro && store?.plan_expires_at ? (
+              <span className="text-muted-foreground"> · renews {formatDateTime(store.plan_expires_at)}</span>
+            ) : null}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {pro
+              ? "Unlimited products, cloud backup, extra phones and cashier accounts are unlocked."
+              : "Free covers selling, receipts, cash and utang on this phone — up to 60 products, 7 days of reports, no cloud backup."}
+          </p>
+          <Button asChild variant={pro ? "outline" : "default"} className="h-12 w-full">
+            <Link to="/upgrade">{pro ? "Manage plan" : "See BentaKo Pro — ₱99/month"}</Link>
+          </Button>
+        </section>
+
+        <section className="space-y-3 rounded-2xl border bg-card p-4">
           <h2 className="font-display text-sm font-bold">Offline &amp; Sync</h2>
+
           <dl className="space-y-1.5 text-sm">
             <div className="flex items-center justify-between gap-3">
               <dt className="text-muted-foreground">Connection</dt>
@@ -180,19 +202,38 @@ function SettingsPage() {
               <dd className="tnum font-medium">{failed}</dd>
             </div>
           </dl>
-          <p className="text-sm text-muted-foreground">
-            {pending === 0
-              ? "Everything on this device is backed up."
-              : (lastIssue ??
-                `${pending} change${pending > 1 ? "s" : ""} waiting to upload. They are safe on this device.`)}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Activity history and receipt photos are kept on this phone only — they are never
-            uploaded. Sales, products, cash entries and utang are backed up.
-          </p>
-          <Button variant="outline" className="h-12 w-full" onClick={() => void syncNow()}>
-            <RefreshCw className="size-4" /> Sync now
-          </Button>
+          {pro ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                {pending === 0
+                  ? "Everything on this device is backed up."
+                  : (lastIssue ??
+                    `${pending} change${pending > 1 ? "s" : ""} waiting to upload. They are safe on this device.`)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Activity history and receipt photos are kept on this phone only — they are never
+                uploaded. Sales, products, cash entries and utang are backed up.
+              </p>
+              <Button variant="outline" className="h-12 w-full" onClick={() => void syncNow()}>
+                <RefreshCw className="size-4" /> Sync now
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                On the free plan everything is saved on this phone only. Selling, receipts, cash and
+                utang all keep working — nothing is uploaded.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Your records are held ready on this phone. The moment you go Pro, they are backed up
+                so a new phone can be restored.
+              </p>
+              <Button asChild variant="outline" className="h-12 w-full">
+                <Link to="/upgrade">Turn on cloud backup with Pro</Link>
+              </Button>
+            </>
+          )}
+
         </section>
 
         <section className="space-y-3 rounded-2xl border bg-card p-4">
