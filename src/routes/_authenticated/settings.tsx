@@ -1,7 +1,8 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
-import { Download, LogOut, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
+import { Crown, Download, LogOut, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
+
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/app-shell";
@@ -38,7 +39,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
 });
 
 function SettingsPage() {
-  const { store, ctx, role, email, refresh, signOut } = useAppSession();
+  const { store, ctx, role, email, pro, refresh, signOut } = useAppSession();
   const navigate = useNavigate();
   const isOwner = role === "owner";
 
