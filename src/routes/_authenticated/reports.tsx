@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo, useState } from "react";
-import { BarChart3, Crown } from "lucide-react";
+import { BarChart3, Crown, Download } from "lucide-react";
 
 
 import { AppShell, EmptyState } from "@/components/app-shell";
@@ -129,6 +129,42 @@ function ReportsPage() {
             <span className="shrink-0 font-semibold text-primary">See Pro</span>
           </Link>
         ) : null}
+
+        {pro && report ? (
+          <button
+            type="button"
+            onClick={() => {
+              const rows: string[][] = [["Day", "Sales", "Profit", "Expenses"]];
+              for (const day of report.perDay) {
+                rows.push([
+                  day.key,
+                  String(day.total ?? 0),
+                  String(day.profit ?? 0),
+                  String(day.expenses ?? 0),
+                ]);
+              }
+              rows.push([]);
+              rows.push(["Product", "Quantity", "Sales"]);
+              for (const item of report.topProducts) {
+                rows.push([item.name, String(item.qty), String(item.total ?? 0)]);
+              }
+              const csv = rows
+                .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+                .join("\n");
+              const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = `bentako-report-${effectiveRange}days.csv`;
+              link.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border bg-card text-sm font-semibold"
+          >
+            <Download className="size-4" /> Download as spreadsheet
+          </button>
+        ) : null}
+
+
 
 
         {!report || report.transactions === 0 ? (
