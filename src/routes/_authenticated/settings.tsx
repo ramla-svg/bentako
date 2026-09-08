@@ -68,6 +68,26 @@ function SettingsPage() {
   const [checking, setChecking] = useState(false);
 
   const [issues, setIssues] = useState<IntegrityIssue[] | null>(null);
+
+  // Owner tools (BentaKo staff only) and the list of phones using this shop.
+  const checkAdmin = useServerFn(isBillingAdmin);
+  const loadDevices = useServerFn(listStoreDevices);
+  const dropDevice = useServerFn(releaseDevice);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [devices, setDevices] = useState<StoreDevice[]>([]);
+  const thisDevice = deviceId();
+
+  useEffect(() => {
+    void checkAdmin()
+      .then(setIsAdmin)
+      .catch(() => setIsAdmin(false));
+  }, [checkAdmin]);
+
+  useEffect(() => {
+    void loadDevices()
+      .then(setDevices)
+      .catch(() => setDevices([]));
+  }, [loadDevices]);
   const install = useInstallState();
   const { connection, pending, failed, lastIssue } = useConnection();
   const online = connection !== "offline" && isOnline();
