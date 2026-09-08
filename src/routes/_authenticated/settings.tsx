@@ -157,7 +157,28 @@ function SettingsPage() {
         </section>
 
         <section className="space-y-3 rounded-2xl border bg-card p-4">
+          <h2 className="flex items-center gap-2 font-display text-sm font-bold">
+            <Crown className="size-4 text-primary" /> Your plan
+          </h2>
+          <p className="text-sm">
+            <span className="font-semibold">{pro ? "BentaKo Pro" : "Free"}</span>
+            {pro && store?.plan_expires_at ? (
+              <span className="text-muted-foreground"> · renews {formatDateTime(store.plan_expires_at)}</span>
+            ) : null}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {pro
+              ? "Unlimited products, cloud backup, extra phones and cashier accounts are unlocked."
+              : "Free covers selling, receipts, cash and utang on this phone — up to 60 products, 7 days of reports, no cloud backup."}
+          </p>
+          <Button asChild variant={pro ? "outline" : "default"} className="h-12 w-full">
+            <Link to="/upgrade">{pro ? "Manage plan" : "See BentaKo Pro — ₱99/month"}</Link>
+          </Button>
+        </section>
+
+        <section className="space-y-3 rounded-2xl border bg-card p-4">
           <h2 className="font-display text-sm font-bold">Offline &amp; Sync</h2>
+
           <dl className="space-y-1.5 text-sm">
             <div className="flex items-center justify-between gap-3">
               <dt className="text-muted-foreground">Connection</dt>
