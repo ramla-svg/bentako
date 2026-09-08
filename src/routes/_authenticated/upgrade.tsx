@@ -179,22 +179,8 @@ function UpgradePage() {
         </section>
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="font-display">Pro is opening soon</DialogTitle>
-            <DialogDescription>
-              We are finishing in-app payment. In the meantime, message us to activate BentaKo Pro
-              on this store —{" "}
-              {period === "monthly" ? `₱${PRO_PRICE_MONTHLY}/month` : `₱${PRO_PRICE_YEARLY}/year`}.
-              Your records are already safe on this phone.
-            </DialogDescription>
-          </DialogHeader>
-          <Button className="h-12 w-full" onClick={() => setOpen(false)}>
-            Got it
-          </Button>
-        </DialogContent>
-      </Dialog>
+      <GcashPaySheet open={open} onOpenChange={setOpen} period={period} />
+
     </AppShell>
   );
 }
