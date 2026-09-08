@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -355,6 +373,71 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "inventory_movements_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          gcash_reference: string
+          id: string
+          plan_period: string
+          proof_path: string | null
+          reference_code: string
+          requested_by: string | null
+          requested_by_email: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          store_id: string
+          store_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          gcash_reference: string
+          id?: string
+          plan_period?: string
+          proof_path?: string | null
+          reference_code: string
+          requested_by?: string | null
+          requested_by_email?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          store_id: string
+          store_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          gcash_reference?: string
+          id?: string
+          plan_period?: string
+          proof_path?: string | null
+          reference_code?: string
+          requested_by?: string | null
+          requested_by_email?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          store_id?: string
+          store_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_payments_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"

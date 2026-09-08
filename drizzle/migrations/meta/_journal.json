@@ -36,6 +36,13 @@
       "when": 1788842006700,
       "tag": "0004_store_plan_tiers",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788843202472,
+      "tag": "0005_create_plan_payments_and_app_settings",
+      "breakpoints": true
     }
   ]
 }
