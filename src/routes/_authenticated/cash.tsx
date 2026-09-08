@@ -289,7 +289,8 @@ function CashPage() {
     setBusy(true);
     try {
       await saveCashTransaction(ctx, {
-        transaction_type: direction,
+        transaction_type: directionOf(kind),
+        notes: composeNote(),
         provider: "gcash",
         amount: value,
         service_fee: Number(fee) || 0,
