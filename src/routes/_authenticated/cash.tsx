@@ -156,7 +156,9 @@ function CashPage() {
   const [range, setRange] = useState<RangeKey>("today");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [open, setOpen] = useState(false);
-  const [direction, setDirection] = useState<CashTxnType>("cash_in");
+  const [kind, setKind] = useState<EntryKind>("cash_in");
+  const [source, setSource] = useState<NoteSource>("");
+  const [note, setNote] = useState("");
   const [amount, setAmount] = useState("");
   const [fee, setFee] = useState("");
   const [customerName, setCustomerName] = useState("");
@@ -244,7 +246,9 @@ function CashPage() {
   }, [photo]);
 
   function openNew(preset?: Preset) {
-    setDirection(preset?.direction ?? "cash_in");
+    setKind(preset?.kind ?? "cash_in");
+    setSource(preset?.source ?? "");
+    setNote("");
     setAmount("");
     setFee("");
     setCustomerName("");
@@ -252,6 +256,17 @@ function CashPage() {
     setReference("");
     setPhoto(null);
     setOpen(true);
+  }
+
+  /** "Add balance · Bank — extra detail", trimmed of empty parts. */
+  function composeNote(): string | null {
+    const parts: string[] = [];
+    if (kind === "add_balance") parts.push("Add balance");
+    if (source && source !== "Other") parts.push(source);
+    else if (source === "Other") parts.push("Other");
+    const head = parts.join(" · ");
+    const tail = note.trim();
+    return [head, tail].filter(Boolean).join(" — ") || null;
   }
 
   async function pickPhoto(file: File | undefined) {
