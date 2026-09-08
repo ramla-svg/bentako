@@ -76,7 +76,7 @@ function SettingsPage() {
         .update({
           name: name.trim(),
           owner_name: ownerName.trim() || null,
-          receipt_footer: footer.trim() || null,
+          receipt_footer: pro ? footer.trim() || null : store.receipt_footer ?? null,
           default_low_stock_threshold: Number(threshold) || 5,
           allow_negative_stock: negative,
           confirm_void: confirmVoid,
