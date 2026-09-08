@@ -143,7 +143,6 @@ function CashPage() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [open, setOpen] = useState(false);
   const [direction, setDirection] = useState<CashTxnType>("cash_in");
-  const [provider, setProvider] = useState<ServiceProvider>("other");
   const [amount, setAmount] = useState("");
   const [fee, setFee] = useState("");
   const [customerName, setCustomerName] = useState("");
@@ -155,12 +154,6 @@ function CashPage() {
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  // Balance-by-hand dialog
-  const [balanceOpen, setBalanceOpen] = useState(false);
-  const [balanceMode, setBalanceMode] = useState<"set" | "delta">("set");
-  const [balanceValue, setBalanceValue] = useState("");
-  const [balanceSign, setBalanceSign] = useState<"add" | "remove">("add");
 
   // Full-screen photo viewer
   const [viewer, setViewer] = useState<{ id: string; url: string; blob: Blob } | null>(null);
