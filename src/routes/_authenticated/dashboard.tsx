@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
+import { PlanReminder } from "@/components/plan-reminder";
+
 import { useAppSession } from "@/hooks/use-app-session";
 import { formatDate, formatMoney, formatQty, formatTime, localDayKey } from "@/lib/format";
 import { db } from "@/lib/local-db";
@@ -130,7 +132,9 @@ function Dashboard() {
       subtitle={`${userName ?? store?.name ?? ""} · ${role === "owner" ? "Owner" : "Cashier"}`}
     >
       <div className="space-y-3 sm:space-y-5">
+        <PlanReminder />
         {/* Sales today */}
+
         <div className="min-w-0 rounded-2xl bg-primary p-3 text-primary-foreground sm:rounded-3xl sm:p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
