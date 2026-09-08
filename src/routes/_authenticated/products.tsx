@@ -463,9 +463,32 @@ function ProductsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={limitOpen} onOpenChange={setLimitOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display">Free plan holds {limit} products</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            You already have {activeCount}. BentaKo Pro removes the limit for ₱99 a month, and keeps
+            a safe copy of your records outside this phone.
+          </p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" className="h-12 flex-1" onClick={() => setLimitOpen(false)}>
+              Maybe later
+            </Button>
+            <Button asChild className="h-12 flex-1">
+              <Link to="/upgrade" onClick={() => setLimitOpen(false)}>
+                See Pro
+              </Link>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
+
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
