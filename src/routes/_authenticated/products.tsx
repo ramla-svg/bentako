@@ -1,8 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo, useState } from "react";
-import { Copy, MoreVertical, Package, Pencil, Plus, Search, Trash2, Undo2 } from "lucide-react";
+import { Copy, Crown, MoreVertical, Package, Pencil, Plus, Search, Trash2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
+
 
 import { AppShell, EmptyState } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -125,10 +126,22 @@ function ProductsPage() {
     );
   }, [products, search, showArchived]);
 
+  const activeCount = useMemo(
+    () => (products ?? []).filter((p) => p.is_active).length,
+    [products],
+  );
+  const limit = limits.products;
+  const atLimit = activeCount >= limit;
+
   function openNew() {
+    if (atLimit) {
+      setLimitOpen(true);
+      return;
+    }
     setForm(emptyForm(store?.default_low_stock_threshold ?? 5));
     setOpen(true);
   }
+
 
   function openEdit(p: LocalProduct) {
     setForm({
