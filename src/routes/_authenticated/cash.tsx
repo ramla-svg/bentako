@@ -435,18 +435,9 @@ function CashPage() {
           </ul>
         )}
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Button className="h-14 w-full text-base" onClick={() => openNew()}>
-            <Plus className="size-5" /> New e-wallet transaction
-          </Button>
-          <Button
-            variant="outline"
-            className="h-14 w-full text-base"
-            onClick={() => openBalance("delta")}
-          >
-            <Wallet className="size-5" /> Top up / correct balance
-          </Button>
-        </div>
+        <Button className="h-14 w-full text-base" onClick={() => openNew()}>
+          <Plus className="size-5" /> New GCash transaction
+        </Button>
       </div>
 
       {/* Add entry */}
@@ -464,22 +455,6 @@ function CashPage() {
             </Tabs>
 
             <div className="space-y-1.5">
-              <Label>Type</Label>
-              <Select value={provider} onValueChange={(v) => setProvider(v as ServiceProvider)}>
-                <SelectTrigger className="h-12">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CASH_PROVIDERS.map((p) => (
-                    <SelectItem key={p.value} value={p.value}>
-                      {p.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
               <Label>Amount</Label>
               <Input
                 value={amount}
@@ -490,45 +465,41 @@ function CashPage() {
               />
             </div>
 
-            {isWallet ? (
-              <>
-                <div className="space-y-1.5">
-                  <Label>Service fee</Label>
-                  <Input
-                    value={fee}
-                    onChange={(e) => setFee(e.target.value.replace(/[^0-9.]/g, ""))}
-                    inputMode="decimal"
-                    className="tnum h-12"
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Customer name (optional)</Label>
-                  <Input
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="h-12"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Mobile number (optional)</Label>
-                  <Input
-                    value={mobile}
-                    onChange={(e) => setMobile(e.target.value)}
-                    inputMode="tel"
-                    className="h-12"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Reference number (optional)</Label>
-                  <Input
-                    value={reference}
-                    onChange={(e) => setReference(e.target.value)}
-                    className="h-12"
-                  />
-                </div>
-              </>
-            ) : null}
+            <div className="space-y-1.5">
+              <Label>Service fee</Label>
+              <Input
+                value={fee}
+                onChange={(e) => setFee(e.target.value.replace(/[^0-9.]/g, ""))}
+                inputMode="decimal"
+                className="tnum h-12"
+                placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Customer name (optional)</Label>
+              <Input
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                className="h-12"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Mobile number (optional)</Label>
+              <Input
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                inputMode="tel"
+                className="h-12"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Reference number (optional)</Label>
+              <Input
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+                className="h-12"
+              />
+            </div>
 
             {/* Screenshot of the GCash transaction */}
             <div className="space-y-1.5">
