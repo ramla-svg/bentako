@@ -223,6 +223,7 @@ function RootComponent() {
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
         <UpdateBanner />
+        <InstallPrompt />
         <Toaster position="top-center" />
       </AppSessionProvider>
     </QueryClientProvider>
