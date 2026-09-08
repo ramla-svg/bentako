@@ -185,6 +185,8 @@ export interface LocalCashTransaction {
   amount: number;
   service_fee: number;
   reference_number: string | null;
+  /** Free-text note: where the money came from / what the entry is for. */
+  notes: string | null;
   wallet_before: number | null;
   wallet_after: number | null;
   cash_before: number | null;
@@ -336,6 +338,20 @@ class BentakoDatabase extends Dexie {
     this.version(4).stores({
       cash_photos: "id, store_id, cash_transaction_id, created_at",
     });
+    // v5 adds an optional note to cash transactions. Additive, no index change;
+    // older rows simply read `notes` as null.
+    this.version(5)
+      .stores({
+        cash_transactions: "id, store_id, created_at, transaction_type, provider, sync_status",
+      })
+      .upgrade(async (tx) =>
+        tx
+          .table("cash_transactions")
+          .toCollection()
+          .modify((row: Partial<LocalCashTransaction>) => {
+            row.notes = row.notes ?? null;
+          }),
+      );
   }
 }
 
