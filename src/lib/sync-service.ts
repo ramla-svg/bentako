@@ -118,6 +118,23 @@ export function isOnline(): boolean {
   return networkIsOnline();
 }
 
+/**
+ * Cloud backup is a paid feature. On the Free plan nothing is pushed or pulled:
+ * records stay queued on the device, so upgrading later uploads the backlog.
+ */
+let cloudBackupEnabled = true;
+
+export function setCloudBackupEnabled(enabled: boolean): void {
+  const changed = cloudBackupEnabled !== enabled;
+  cloudBackupEnabled = enabled;
+  if (changed && enabled) void syncNow();
+}
+
+export function isCloudBackupEnabled(): boolean {
+  return cloudBackupEnabled;
+}
+
+
 /** Checkout sets this so a sync pass never competes with an in-flight sale. */
 let criticalDepth = 0;
 const criticalIdleListeners = new Set<() => void>();
