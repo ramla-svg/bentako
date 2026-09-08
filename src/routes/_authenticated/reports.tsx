@@ -25,10 +25,12 @@ export const Route = createFileRoute("/_authenticated/reports")({
 type RangeKey = "7" | "30";
 
 function ReportsPage() {
-  const { store } = useAppSession();
+  const { store, pro } = useAppSession();
   const storeId = store?.id ?? "";
   const currency = store?.currency ?? "PHP";
   const [range, setRange] = useState<RangeKey>("7");
+  const effectiveRange: RangeKey = pro ? range : "7";
+
 
   const raw = useLiveQuery(
     async () => {

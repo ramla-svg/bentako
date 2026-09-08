@@ -24,6 +24,7 @@ import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated/sales'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
 import { Route as AuthenticatedUtangRouteImport } from './routes/_authenticated/utang'
 import { Route as AuthenticatedUtangCustomerIdRouteImport } from './routes/_authenticated/utang.$customerId'
 
@@ -101,6 +102,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
+  id: '/upgrade',
+  path: '/upgrade',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedUtangRoute = AuthenticatedUtangRouteImport.update({
   id: '/utang',
   path: '/utang',
@@ -128,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof AuthenticatedReportsRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/upgrade': typeof AuthenticatedUpgradeRoute
   '/utang': typeof AuthenticatedUtangRouteWithChildren
   '/utang/$customerId': typeof AuthenticatedUtangCustomerIdRoute
 }
@@ -146,6 +153,7 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthenticatedReportsRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/upgrade': typeof AuthenticatedUpgradeRoute
   '/utang': typeof AuthenticatedUtangRouteWithChildren
   '/utang/$customerId': typeof AuthenticatedUtangCustomerIdRoute
 }
@@ -166,6 +174,7 @@ export interface FileRoutesById {
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/sales': typeof AuthenticatedSalesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
   '/_authenticated/utang': typeof AuthenticatedUtangRouteWithChildren
   '/_authenticated/utang/$customerId': typeof AuthenticatedUtangCustomerIdRoute
 }
@@ -186,6 +195,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/sales'
     | '/settings'
+    | '/upgrade'
     | '/utang'
     | '/utang/$customerId'
   fileRoutesByTo: FileRoutesByTo
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/sales'
     | '/settings'
+    | '/upgrade'
     | '/utang'
     | '/utang/$customerId'
   id:
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports'
     | '/_authenticated/sales'
     | '/_authenticated/settings'
+    | '/_authenticated/upgrade'
     | '/_authenticated/utang'
     | '/_authenticated/utang/$customerId'
   fileRoutesById: FileRoutesById
@@ -341,6 +353,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/upgrade': {
+      id: '/_authenticated/upgrade'
+      path: '/upgrade'
+      fullPath: '/upgrade'
+      preLoaderRoute: typeof AuthenticatedUpgradeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/utang': {
       id: '/_authenticated/utang'
       path: '/utang'
@@ -381,6 +400,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSalesRoute: typeof AuthenticatedSalesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
   AuthenticatedUtangRoute: typeof AuthenticatedUtangRouteWithChildren
 }
 
@@ -396,6 +416,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSalesRoute: AuthenticatedSalesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
   AuthenticatedUtangRoute: AuthenticatedUtangRouteWithChildren,
 }
 
