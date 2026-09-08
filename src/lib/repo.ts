@@ -775,36 +775,6 @@ export async function walletBalance(storeId: string): Promise<number> {
     .reduce((sum, r) => sum + (r.transaction_type === "cash_in" ? r.amount : -r.amount), 0);
 }
 
-export interface WalletAdjustmentInput {
-  /** `set` makes the balance equal `amount`; `delta` adds/subtracts `amount`. */
-  mode: "set" | "delta";
-  amount: number;
-  provider?: ServiceProvider;
-  label?: string;
-}
-
-/**
- * Lets the owner match BentaKo's e-wallet balance to the real GCash app.
- * Written as an ordinary ledger entry so the running total stays honest.
- */
-export async function saveWalletAdjustment(
-  ctx: StoreContext,
-  input: WalletAdjustmentInput,
-): Promise<LocalCashTransaction | null> {
-  const provider = input.provider && input.provider !== "other" ? input.provider : "gcash";
-  const target = Number(input.amount);
-  if (!Number.isFinite(target)) throw new Error("Enter an amount.");
-  const current = await walletBalance(ctx.storeId);
-  const delta = input.mode === "set" ? target - current : target;
-  if (Math.abs(delta) < 0.005) return null;
-  return saveCashTransaction(ctx, {
-    transaction_type: delta > 0 ? "cash_in" : "cash_out",
-    provider,
-    amount: Math.abs(Number(delta.toFixed(2))),
-    reference_number: input.label ?? (input.mode === "set" ? "Balance correction" : "Balance top-up"),
-  });
-}
-
 /* ---------------------------------------------------------- credit ledger */
 
 
