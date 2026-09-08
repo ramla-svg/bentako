@@ -2,7 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import { supabase } from "@/integrations/supabase/client";
 import { db, getSetting, setSetting } from "@/lib/local-db";
-import { pullAll, startSyncEngine, isOnline } from "@/lib/sync-service";
+import { activePlan, isPro, planLimits, type PlanId, type PlanLimits } from "@/lib/plan";
+import { pullAll, startSyncEngine, isOnline, setCloudBackupEnabled } from "@/lib/sync-service";
 import type { StoreContext } from "@/lib/repo";
 
 export type Role = "owner" | "cashier";
@@ -17,6 +18,10 @@ export interface StoreProfile {
   allow_negative_stock: boolean;
   default_low_stock_threshold: number;
   confirm_void: boolean;
+  plan?: string | null;
+  plan_period?: string | null;
+  plan_expires_at?: string | null;
+  plan_source?: string | null;
 }
 
 interface Snapshot {
@@ -36,9 +41,13 @@ interface AppSessionValue {
   role: Role;
   store: StoreProfile | null;
   ctx: StoreContext | null;
+  plan: PlanId;
+  limits: PlanLimits;
+  pro: boolean;
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
 }
+
 
 const AppSessionContext = createContext<AppSessionValue | null>(null);
 
