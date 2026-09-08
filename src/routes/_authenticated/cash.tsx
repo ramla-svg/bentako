@@ -477,12 +477,50 @@ function CashPage() {
             <DialogTitle className="font-display">Add cash entry</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <Tabs value={direction} onValueChange={(v) => setDirection(v as CashTxnType)}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="cash_in">Money in</TabsTrigger>
-                <TabsTrigger value="cash_out">Money out</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="space-y-1.5">
+              <Label>Type of entry</Label>
+              <Select value={kind} onValueChange={(v) => setKind(v as EntryKind)}>
+                <SelectTrigger className="h-12 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {KINDS.map((k) => (
+                    <SelectItem key={k.value} value={k.value}>
+                      {k.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                {KINDS.find((k) => k.value === kind)?.hint}
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Where from / what for (optional)</Label>
+              <Select
+                value={source || "none"}
+                onValueChange={(v) => setSource(v === "none" ? "" : (v as NoteSource))}
+              >
+                <SelectTrigger className="h-12 w-full">
+                  <SelectValue placeholder="Not set" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Not set</SelectItem>
+                  {NOTE_SOURCES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                className="h-12"
+                placeholder="Note (e.g. from BDO, for Meralco bill)"
+              />
+            </div>
 
             <div className="space-y-1.5">
               <Label>Amount</Label>
