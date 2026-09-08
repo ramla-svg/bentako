@@ -63,6 +63,8 @@ function AdminPage() {
   const review = useServerFn(reviewPlanPayment);
   const loadConfig = useServerFn(getBillingConfig);
   const saveConfig = useServerFn(saveBillingConfig);
+  const saveQr = useServerFn(saveBillingQr);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [pending, setPending] = useState<AdminPayment[]>([]);
