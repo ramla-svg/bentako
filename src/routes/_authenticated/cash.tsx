@@ -231,7 +231,6 @@ function CashPage() {
 
   function openNew(preset?: Preset) {
     setDirection(preset?.direction ?? "cash_in");
-    setProvider(preset?.provider ?? "other");
     setAmount("");
     setFee("");
     setCustomerName("");
@@ -262,7 +261,7 @@ function CashPage() {
     try {
       await saveCashTransaction(ctx, {
         transaction_type: direction,
-        provider,
+        provider: "gcash",
         amount: value,
         service_fee: Number(fee) || 0,
         customer_name: customerName || null,
@@ -275,33 +274,6 @@ function CashPage() {
       setOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save entry.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function openBalance(mode: "set" | "delta") {
-    setBalanceMode(mode);
-    setBalanceSign("add");
-    setBalanceValue(mode === "set" ? String(Math.max(0, Number(walletTotal.toFixed(2)))) : "");
-    setBalanceOpen(true);
-  }
-
-  async function submitBalance() {
-    if (!ctx) return;
-    const value = Number(balanceValue);
-    if (!Number.isFinite(value) || (balanceMode === "delta" && value <= 0)) {
-      toast.error("Enter an amount.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const signed = balanceMode === "delta" && balanceSign === "remove" ? -value : value;
-      const row = await saveWalletAdjustment(ctx, { mode: balanceMode, amount: signed });
-      toast.success(row ? "E-wallet balance updated." : "Balance already matches.");
-      setBalanceOpen(false);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not update balance.");
     } finally {
       setBusy(false);
     }
