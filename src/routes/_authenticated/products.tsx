@@ -209,6 +209,22 @@ function ProductsPage() {
       }
     >
       <div className="space-y-3">
+        {!pro && Number.isFinite(limit) ? (
+          <Link
+            to="/upgrade"
+            className={cn(
+              "flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm",
+              atLimit ? "border-primary/50 bg-primary/10" : "bg-card",
+            )}
+          >
+            <Crown className="size-4 shrink-0 text-primary" />
+            <span className="tnum min-w-0 flex-1">
+              {activeCount} of {limit} products used
+            </span>
+            <span className="shrink-0 font-semibold text-primary">Upgrade</span>
+          </Link>
+        ) : null}
+
         <div className="relative">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -223,6 +239,7 @@ function ProductsPage() {
           <span className="text-sm">Show archived</span>
           <Switch checked={showArchived} onCheckedChange={setShowArchived} />
         </div>
+
 
         {filtered.length === 0 ? (
           <EmptyState
