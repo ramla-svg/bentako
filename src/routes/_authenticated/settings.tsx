@@ -202,19 +202,38 @@ function SettingsPage() {
               <dd className="tnum font-medium">{failed}</dd>
             </div>
           </dl>
-          <p className="text-sm text-muted-foreground">
-            {pending === 0
-              ? "Everything on this device is backed up."
-              : (lastIssue ??
-                `${pending} change${pending > 1 ? "s" : ""} waiting to upload. They are safe on this device.`)}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Activity history and receipt photos are kept on this phone only — they are never
-            uploaded. Sales, products, cash entries and utang are backed up.
-          </p>
-          <Button variant="outline" className="h-12 w-full" onClick={() => void syncNow()}>
-            <RefreshCw className="size-4" /> Sync now
-          </Button>
+          {pro ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                {pending === 0
+                  ? "Everything on this device is backed up."
+                  : (lastIssue ??
+                    `${pending} change${pending > 1 ? "s" : ""} waiting to upload. They are safe on this device.`)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Activity history and receipt photos are kept on this phone only — they are never
+                uploaded. Sales, products, cash entries and utang are backed up.
+              </p>
+              <Button variant="outline" className="h-12 w-full" onClick={() => void syncNow()}>
+                <RefreshCw className="size-4" /> Sync now
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                On the free plan everything is saved on this phone only. Selling, receipts, cash and
+                utang all keep working — nothing is uploaded.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Your records are held ready on this phone. The moment you go Pro, they are backed up
+                so a new phone can be restored.
+              </p>
+              <Button asChild variant="outline" className="h-12 w-full">
+                <Link to="/upgrade">Turn on cloud backup with Pro</Link>
+              </Button>
+            </>
+          )}
+
         </section>
 
         <section className="space-y-3 rounded-2xl border bg-card p-4">
