@@ -553,55 +553,6 @@ function CashPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Balance by hand */}
-      <Dialog open={balanceOpen} onOpenChange={setBalanceOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-display">E-wallet balance</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <Tabs value={balanceMode} onValueChange={(v) => setBalanceMode(v as "set" | "delta")}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="set">Set balance</TabsTrigger>
-                <TabsTrigger value="delta">Top up / correct</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <p className="text-xs text-muted-foreground">
-              {balanceMode === "set"
-                ? `BentaKo now shows ${formatMoney(walletTotal, currency)}. Type what your GCash app really shows and the difference is recorded as one correction entry.`
-                : "Add money you loaded into your wallet, or take out an amount to fix a mistake."}
-            </p>
-            {balanceMode === "delta" ? (
-              <Tabs value={balanceSign} onValueChange={(v) => setBalanceSign(v as "add" | "remove")}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="add">Add</TabsTrigger>
-                  <TabsTrigger value="remove">Take out</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            ) : null}
-            <div className="space-y-1.5">
-              <Label>{balanceMode === "set" ? "Real balance" : "Amount"}</Label>
-              <Input
-                value={balanceValue}
-                onChange={(e) => setBalanceValue(e.target.value.replace(/[^0-9.]/g, ""))}
-                inputMode="decimal"
-                className="tnum h-14 text-xl font-bold"
-                placeholder="0.00"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              className="h-12 w-full text-base"
-              onClick={() => void submitBalance()}
-              disabled={busy}
-            >
-              Save balance
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Photo viewer */}
       <Dialog open={!!viewer} onOpenChange={(o) => (o ? null : closeViewer())}>
         <DialogContent className="max-h-[92vh] max-w-lg overflow-y-auto">
