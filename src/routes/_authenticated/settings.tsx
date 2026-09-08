@@ -192,14 +192,25 @@ function SettingsPage() {
         </section>
 
         <section className="space-y-3 rounded-2xl border bg-card p-4">
-          <h2 className="font-display text-sm font-bold">Install BentaKo</h2>
+          <h2 className="font-display text-sm font-bold">
+            {install.installed ? "BentaKo is installed" : "Install BentaKo"}
+          </h2>
           <p className="text-sm text-muted-foreground">
             {install.installed
               ? `BentaKo is installed on this device (${platformLabel()}). It opens straight to the POS, even without signal.`
               : install.available
                 ? "Add BentaKo to your home screen so it opens like an app and works offline."
-                : install.hint}
+                : install.ios
+                  ? "Install BentaKo on iPhone:"
+                  : install.hint}
           </p>
+          {!install.installed && install.ios ? (
+            <ol className="ml-4 list-decimal space-y-1 text-sm text-muted-foreground">
+              <li>Tap the Share button in Safari.</li>
+              <li>Select “Add to Home Screen”.</li>
+              <li>Tap “Add”.</li>
+            </ol>
+          ) : null}
           {!install.installed && install.available ? (
             <Button
               className="h-12 w-full"
@@ -215,6 +226,7 @@ function SettingsPage() {
           ) : null}
           <p className="text-xs text-muted-foreground">Running as: {platformLabel()}</p>
         </section>
+
 
         <section className="space-y-3 rounded-2xl border bg-card p-4">
           <h2 className="font-display text-sm font-bold">App version</h2>

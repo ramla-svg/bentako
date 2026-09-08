@@ -10,6 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { UpdateBanner } from "@/components/update-banner";
+import { InstallPrompt } from "@/components/install-prompt";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -222,6 +223,7 @@ function RootComponent() {
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
         <UpdateBanner />
+        <InstallPrompt />
         <Toaster position="top-center" />
       </AppSessionProvider>
     </QueryClientProvider>
