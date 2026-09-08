@@ -1,7 +1,19 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useState } from "react";
-import { Crown, Download, LogOut, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  ChevronRight,
+  Crown,
+  Download,
+  LogOut,
+  RefreshCw,
+  ShieldCheck,
+  Smartphone,
+  Sparkles,
+  Wrench,
+  X,
+} from "lucide-react";
 
 import { toast } from "sonner";
 
@@ -23,6 +35,9 @@ import { promptInstall, useInstallState } from "@/lib/platform/install-service";
 import { platformLabel } from "@/lib/platform/platform-service";
 import { seedDemoProducts } from "@/lib/repo";
 import { isOnline, syncNow } from "@/lib/sync-service";
+import { isBillingAdmin } from "@/lib/billing.functions";
+import { listStoreDevices, releaseDevice, type StoreDevice } from "@/lib/devices.functions";
+import { deviceId } from "@/lib/device-id";
 
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -53,6 +68,26 @@ function SettingsPage() {
   const [checking, setChecking] = useState(false);
 
   const [issues, setIssues] = useState<IntegrityIssue[] | null>(null);
+
+  // Owner tools (BentaKo staff only) and the list of phones using this shop.
+  const checkAdmin = useServerFn(isBillingAdmin);
+  const loadDevices = useServerFn(listStoreDevices);
+  const dropDevice = useServerFn(releaseDevice);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [devices, setDevices] = useState<StoreDevice[]>([]);
+  const thisDevice = deviceId();
+
+  useEffect(() => {
+    void checkAdmin()
+      .then(setIsAdmin)
+      .catch(() => setIsAdmin(false));
+  }, [checkAdmin]);
+
+  useEffect(() => {
+    void loadDevices()
+      .then(setDevices)
+      .catch(() => setDevices([]));
+  }, [loadDevices]);
   const install = useInstallState();
   const { connection, pending, failed, lastIssue } = useConnection();
   const online = connection !== "offline" && isOnline();
@@ -182,6 +217,71 @@ function SettingsPage() {
           <Button asChild variant={pro ? "outline" : "default"} className="h-12 w-full">
             <Link to="/upgrade">{pro ? "Manage plan" : "See BentaKo Pro — ₱99/month"}</Link>
           </Button>
+        </section>
+
+        {isAdmin ? (
+          <section className="space-y-3 rounded-2xl border bg-card p-4">
+            <h2 className="flex items-center gap-2 font-display text-sm font-bold">
+              <Wrench className="size-4 text-primary" /> Owner tools
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Set the GCash name, number and QR code shops pay to, and confirm payments waiting for
+              Pro.
+            </p>
+            <Button asChild className="h-12 w-full justify-between">
+              <Link to="/bk-admin">
+                GCash details &amp; Pro approvals <ChevronRight className="size-4" />
+              </Link>
+            </Button>
+          </section>
+        ) : null}
+
+        <section className="space-y-3 rounded-2xl border bg-card p-4">
+          <h2 className="flex items-center gap-2 font-display text-sm font-bold">
+            <Smartphone className="size-4 text-primary" /> Phones using this shop
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {pro
+              ? `BentaKo Pro covers 3 phones. ${devices.length} in use.`
+              : `The free plan covers 1 phone. ${devices.length} in use — Pro adds up to 3.`}
+          </p>
+          {devices.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No phones recorded yet.</p>
+          ) : (
+            <ul className="divide-y rounded-xl border text-sm">
+              {devices.map((d) => (
+                <li key={d.id} className="flex items-center justify-between gap-2 px-3 py-2">
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">
+                      {d.label ?? "Phone"}
+                      {d.device_id === thisDevice ? " · this phone" : ""}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      Last used {formatDateTime(d.last_seen_at)}
+                    </span>
+                  </span>
+                  {isOwner && d.device_id !== thisDevice ? (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Remove ${d.label ?? "phone"}`}
+                      onClick={async () => {
+                        try {
+                          await dropDevice({ data: { id: d.id } });
+                          setDevices((list) => list.filter((row) => row.id !== d.id));
+                          toast.success("Phone removed.");
+                        } catch {
+                          toast.error("Could not remove that phone.");
+                        }
+                      }}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section className="space-y-3 rounded-2xl border bg-card p-4">
