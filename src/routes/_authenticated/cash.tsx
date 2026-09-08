@@ -300,8 +300,6 @@ function CashPage() {
     toast.success("Photo attached on this phone.");
   }
 
-  const isWallet = provider !== "other";
-
   return (
     <AppShell back title="GCash & E-Wallet" subtitle="Cash in/out, load, bills and more">
       <div className="space-y-4">
@@ -317,13 +315,6 @@ function CashPage() {
                 {formatMoney(walletTotal, currency)}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => openBalance("set")}
-              className="flex shrink-0 items-center gap-1.5 rounded-full bg-wallet-foreground/20 px-3 py-2 text-xs font-bold"
-            >
-              <Wallet className="size-4" /> Balance
-            </button>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
             <WalletStat label="Cash In Today" value={formatMoney(cashInToday, currency)} />
@@ -331,11 +322,6 @@ function CashPage() {
             <WalletStat label="Fees Earned" value={formatMoney(feesToday, currency)} />
             <WalletStat label="Transactions" value={String(todayEntries.length)} />
           </div>
-          {walletTotal === 0 ? (
-            <p className="mt-3 text-[11px] opacity-90">
-              New here? Tap Balance and type what your GCash app really shows.
-            </p>
-          ) : null}
         </div>
 
         {/* Action tiles */}
