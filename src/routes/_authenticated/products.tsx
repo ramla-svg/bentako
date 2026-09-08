@@ -82,7 +82,7 @@ function emptyForm(threshold: number): FormState {
 }
 
 function ProductsPage() {
-  const { store, ctx, role } = useAppSession();
+  const { store, ctx, role, pro, limits } = useAppSession();
   const storeId = store?.id ?? "";
   const currency = store?.currency ?? "PHP";
   const canEdit = role === "owner";
@@ -90,9 +90,11 @@ function ProductsPage() {
   const [search, setSearch] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [open, setOpen] = useState(false);
+  const [limitOpen, setLimitOpen] = useState(false);
   const [form, setForm] = useState<FormState>(() => emptyForm(store?.default_low_stock_threshold ?? 5));
   const [newCategory, setNewCategory] = useState("");
   const [busy, setBusy] = useState(false);
+
 
   const products = useLiveQuery(
     async () =>
