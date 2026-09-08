@@ -191,3 +191,26 @@ export const saveBillingConfig = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/**
+ * Store the GCash QR photo itself (not a link). The image arrives already
+ * shrunk by the browser and is kept with the other billing settings, so shop
+ * owners see it on the payment sheet without any public file storage.
+ */
+export const saveBillingQr = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { dataUrl: string }) => {
+    const value = input?.dataUrl ?? "";
+    if (value && !value.startsWith("data:image/")) throw new Error("That file is not an image");
+    if (value.length > 900_000) throw new Error("That photo is too large");
+    return { dataUrl: value };
+  })
+  .handler(async ({ data, context }): Promise<{ ok: true; url: string }> => {
+    assertAdmin(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("app_settings")
+      .upsert([{ key: "gcash_qr_url", value: data.dataUrl }], { onConflict: "key" });
+    if (error) throw new Error(error.message);
+    return { ok: true, url: data.dataUrl };
+  });
