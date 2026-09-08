@@ -29,6 +29,13 @@
       "when": 1788828804333,
       "tag": "0003_cash_transactions_notes",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788842006700,
+      "tag": "0004_store_plan_tiers",
+      "breakpoints": true
     }
   ]
 }
