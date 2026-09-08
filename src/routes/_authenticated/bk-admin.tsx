@@ -19,6 +19,7 @@ import {
   listPlanPayments,
   reviewPlanPayment,
   saveBillingConfig,
+  saveBillingQr,
   type AdminPayment,
   type BillingConfig,
 } from "@/lib/billing.functions";
@@ -39,6 +40,22 @@ export const Route = createFileRoute("/_authenticated/bk-admin")({
   }),
   component: AdminPage,
 });
+
+/** Shrink a QR photo in the browser so it stays small enough to keep in settings. */
+async function shrinkImage(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const max = 640;
+  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not read that photo.");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.85);
+}
 
 function AdminPage() {
   const checkAdmin = useServerFn(isBillingAdmin);
