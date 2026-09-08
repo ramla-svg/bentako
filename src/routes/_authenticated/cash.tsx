@@ -101,7 +101,6 @@ type Preset = {
   icon: typeof ArrowDownLeft;
   tint: string;
   direction: CashTxnType;
-  provider: ServiceProvider;
 };
 
 const PRESETS: Preset[] = [
@@ -111,7 +110,6 @@ const PRESETS: Preset[] = [
     icon: ArrowDownLeft,
     tint: "bg-tile-mint text-tile-mint-ink",
     direction: "cash_in",
-    provider: "gcash",
   },
   {
     key: "out",
@@ -119,7 +117,6 @@ const PRESETS: Preset[] = [
     icon: ArrowUpRight,
     tint: "bg-tile-rose text-tile-rose-ink",
     direction: "cash_out",
-    provider: "gcash",
   },
   {
     key: "load",
@@ -221,8 +218,6 @@ function CashPage() {
   const filtered = useMemo(
     () =>
       inRange.filter((e) => {
-        if (filter === "drawer") return e.provider === "other";
-        if (filter === "wallet") return e.provider !== "other";
         if (filter === "in") return e.transaction_type === "cash_in";
         if (filter === "out") return e.transaction_type === "cash_out";
         return true;
