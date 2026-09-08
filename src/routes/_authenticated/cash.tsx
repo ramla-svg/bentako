@@ -437,12 +437,15 @@ function CashPage() {
                   </span>
                   <div className="min-w-0">
                     <p className="truncate font-semibold">
-                      {isIn ? "Cash In" : "Cash Out"} · {label}
+                      {kindLabel(e)} · {label}
                       {e.customer_name ? ` · ${e.customer_name}` : ""}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {formatDateTime(e.created_at)}
                     </p>
+                    {e.notes ? (
+                      <p className="truncate text-xs text-muted-foreground">{e.notes}</p>
+                    ) : null}
                     {e.reference_number || e.service_fee > 0 ? (
                       <p className="truncate text-xs text-muted-foreground">
                         {e.reference_number ? `Ref: ${e.reference_number}` : ""}
