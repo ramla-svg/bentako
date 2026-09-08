@@ -1,7 +1,19 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useState } from "react";
-import { Crown, Download, LogOut, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  ChevronRight,
+  Crown,
+  Download,
+  LogOut,
+  RefreshCw,
+  ShieldCheck,
+  Smartphone,
+  Sparkles,
+  Wrench,
+  X,
+} from "lucide-react";
 
 import { toast } from "sonner";
 
@@ -23,6 +35,9 @@ import { promptInstall, useInstallState } from "@/lib/platform/install-service";
 import { platformLabel } from "@/lib/platform/platform-service";
 import { seedDemoProducts } from "@/lib/repo";
 import { isOnline, syncNow } from "@/lib/sync-service";
+import { isBillingAdmin } from "@/lib/billing.functions";
+import { listStoreDevices, releaseDevice, type StoreDevice } from "@/lib/devices.functions";
+import { deviceId } from "@/lib/device-id";
 
 
 export const Route = createFileRoute("/_authenticated/settings")({
