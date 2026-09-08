@@ -3,18 +3,13 @@ import { useState } from "react";
 import { Check, Crown, Minus, Sparkles } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
+import { GcashPaySheet } from "@/components/gcash-pay-sheet";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { useAppSession } from "@/hooks/use-app-session";
 import { formatDateTime } from "@/lib/format";
 import { PRO_PRICE_MONTHLY, PRO_PRICE_YEARLY, daysLeft } from "@/lib/plan";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
   ssr: false,
