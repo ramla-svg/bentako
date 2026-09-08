@@ -65,6 +65,7 @@ export type Database = {
           customer_mobile_number: string | null
           customer_name: string | null
           id: string
+          notes: string | null
           provider: Database["public"]["Enums"]["service_provider"]
           reference_number: string | null
           service_fee: number
@@ -84,6 +85,7 @@ export type Database = {
           customer_mobile_number?: string | null
           customer_name?: string | null
           id: string
+          notes?: string | null
           provider?: Database["public"]["Enums"]["service_provider"]
           reference_number?: string | null
           service_fee?: number
@@ -103,6 +105,7 @@ export type Database = {
           customer_mobile_number?: string | null
           customer_name?: string | null
           id?: string
+          notes?: string | null
           provider?: Database["public"]["Enums"]["service_provider"]
           reference_number?: string | null
           service_fee?: number
