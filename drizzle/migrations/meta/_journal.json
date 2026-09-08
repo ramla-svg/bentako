@@ -50,6 +50,13 @@
       "when": 1788843241101,
       "tag": "0006_payment_proofs_storage_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788848532586,
+      "tag": "0007_create_store_devices",
+      "breakpoints": true
     }
   ]
 }

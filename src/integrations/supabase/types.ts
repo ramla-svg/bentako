@@ -674,6 +674,44 @@ export type Database = {
           },
         ]
       }
+      store_devices: {
+        Row: {
+          created_at: string
+          device_id: string
+          id: string
+          label: string | null
+          last_seen_at: string
+          store_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          id?: string
+          label?: string | null
+          last_seen_at?: string
+          store_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          id?: string
+          label?: string | null
+          last_seen_at?: string
+          store_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_devices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stores: {
         Row: {
           allow_negative_stock: boolean
