@@ -671,6 +671,8 @@ export interface CashTransactionInput {
   customer_name?: string | null;
   customer_mobile_number?: string | null;
   reference_number?: string | null;
+  /** Optional note: source of the money or what the entry is for. */
+  notes?: string | null;
   /** Optional receipt/screenshot kept on this device only. */
   photo?: Blob | null;
 }
@@ -696,6 +698,7 @@ export async function saveCashTransaction(
     amount,
     service_fee: Number(input.service_fee ?? 0) || 0,
     reference_number: input.reference_number?.trim() || null,
+    notes: input.notes?.trim() || null,
     wallet_before: null,
     wallet_after: null,
     cash_before: null,

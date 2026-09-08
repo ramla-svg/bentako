@@ -29,6 +29,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppSession } from "@/hooks/use-app-session";
 import { formatDateTime, formatMoney, localDayKey } from "@/lib/format";
@@ -66,6 +73,18 @@ export const Route = createFileRoute("/_authenticated/cash")({
 type RangeKey = "today" | "7d" | "30d";
 type FilterKey = "all" | "in" | "out";
 
+/** What kind of entry this is. `add_balance` is a wallet top-up by the store. */
+type EntryKind = "cash_in" | "cash_out" | "add_balance";
+
+const KINDS: { value: EntryKind; label: string; hint: string }[] = [
+  { value: "cash_in", label: "Cash In", hint: "Customer gives cash — balance goes up" },
+  { value: "cash_out", label: "Cash Out", hint: "Customer takes cash — balance goes down" },
+  { value: "add_balance", label: "Add Balance", hint: "You top up your own e-wallet" },
+];
+
+const NOTE_SOURCES = ["Bank", "GCash app", "Cash on hand", "Load / Bills", "Other"] as const;
+type NoteSource = (typeof NOTE_SOURCES)[number] | "";
+
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "All" },
   { key: "in", label: "Cash In" },
@@ -83,12 +102,24 @@ function rangeStart(range: RangeKey): number {
   return now.getTime() - days * 24 * 60 * 60 * 1000;
 }
 
+/** Direction actually stored for a kind: a top-up raises the wallet. */
+function directionOf(kind: EntryKind): CashTxnType {
+  return kind === "cash_out" ? "cash_out" : "cash_in";
+}
+
+/** Rebuilds the display label of a saved row from its note + direction. */
+function kindLabel(e: LocalCashTransaction): string {
+  if (e.transaction_type === "cash_out") return "Cash Out";
+  return (e.notes ?? "").startsWith("Add balance") ? "Add Balance" : "Cash In";
+}
+
 type Preset = {
   key: string;
   label: string;
   icon: typeof ArrowDownLeft;
   tint: string;
-  direction: CashTxnType;
+  kind: EntryKind;
+  source?: NoteSource;
 };
 
 const PRESETS: Preset[] = [
@@ -97,28 +128,30 @@ const PRESETS: Preset[] = [
     label: "Cash In",
     icon: ArrowDownLeft,
     tint: "bg-tile-mint text-tile-mint-ink",
-    direction: "cash_in",
+    kind: "cash_in",
   },
   {
     key: "out",
     label: "Cash Out",
     icon: ArrowUpRight,
     tint: "bg-tile-rose text-tile-rose-ink",
-    direction: "cash_out",
+    kind: "cash_out",
   },
   {
     key: "load",
     label: "Buy Load",
     icon: Smartphone,
     tint: "bg-tile-lavender text-tile-lavender-ink",
-    direction: "cash_out",
+    kind: "cash_out",
+    source: "Load / Bills",
   },
   {
     key: "bills",
     label: "Pay Bills",
     icon: FileText,
     tint: "bg-tile-peach text-tile-peach-ink",
-    direction: "cash_out",
+    kind: "cash_out",
+    source: "Load / Bills",
   },
 ];
 
@@ -130,7 +163,9 @@ function CashPage() {
   const [range, setRange] = useState<RangeKey>("today");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [open, setOpen] = useState(false);
-  const [direction, setDirection] = useState<CashTxnType>("cash_in");
+  const [kind, setKind] = useState<EntryKind>("cash_in");
+  const [source, setSource] = useState<NoteSource>("");
+  const [note, setNote] = useState("");
   const [amount, setAmount] = useState("");
   const [fee, setFee] = useState("");
   const [customerName, setCustomerName] = useState("");
@@ -218,7 +253,9 @@ function CashPage() {
   }, [photo]);
 
   function openNew(preset?: Preset) {
-    setDirection(preset?.direction ?? "cash_in");
+    setKind(preset?.kind ?? "cash_in");
+    setSource(preset?.source ?? "");
+    setNote("");
     setAmount("");
     setFee("");
     setCustomerName("");
@@ -226,6 +263,17 @@ function CashPage() {
     setReference("");
     setPhoto(null);
     setOpen(true);
+  }
+
+  /** "Add balance · Bank — extra detail", trimmed of empty parts. */
+  function composeNote(): string | null {
+    const parts: string[] = [];
+    if (kind === "add_balance") parts.push("Add balance");
+    if (source && source !== "Other") parts.push(source);
+    else if (source === "Other") parts.push("Other");
+    const head = parts.join(" · ");
+    const tail = note.trim();
+    return [head, tail].filter(Boolean).join(" — ") || null;
   }
 
   async function pickPhoto(file: File | undefined) {
@@ -248,7 +296,8 @@ function CashPage() {
     setBusy(true);
     try {
       await saveCashTransaction(ctx, {
-        transaction_type: direction,
+        transaction_type: directionOf(kind),
+        notes: composeNote(),
         provider: "gcash",
         amount: value,
         service_fee: Number(fee) || 0,
@@ -388,12 +437,15 @@ function CashPage() {
                   </span>
                   <div className="min-w-0">
                     <p className="truncate font-semibold">
-                      {isIn ? "Cash In" : "Cash Out"} · {label}
+                      {kindLabel(e)} · {label}
                       {e.customer_name ? ` · ${e.customer_name}` : ""}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {formatDateTime(e.created_at)}
                     </p>
+                    {e.notes ? (
+                      <p className="truncate text-xs text-muted-foreground">{e.notes}</p>
+                    ) : null}
                     {e.reference_number || e.service_fee > 0 ? (
                       <p className="truncate text-xs text-muted-foreground">
                         {e.reference_number ? `Ref: ${e.reference_number}` : ""}
@@ -435,12 +487,50 @@ function CashPage() {
             <DialogTitle className="font-display">Add cash entry</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <Tabs value={direction} onValueChange={(v) => setDirection(v as CashTxnType)}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="cash_in">Money in</TabsTrigger>
-                <TabsTrigger value="cash_out">Money out</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="space-y-1.5">
+              <Label>Type of entry</Label>
+              <Select value={kind} onValueChange={(v) => setKind(v as EntryKind)}>
+                <SelectTrigger className="h-12 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {KINDS.map((k) => (
+                    <SelectItem key={k.value} value={k.value}>
+                      {k.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                {KINDS.find((k) => k.value === kind)?.hint}
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Where from / what for (optional)</Label>
+              <Select
+                value={source || "none"}
+                onValueChange={(v) => setSource(v === "none" ? "" : (v as NoteSource))}
+              >
+                <SelectTrigger className="h-12 w-full">
+                  <SelectValue placeholder="Not set" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Not set</SelectItem>
+                  {NOTE_SOURCES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                className="h-12"
+                placeholder="Note (e.g. from BDO, for Meralco bill)"
+              />
+            </div>
 
             <div className="space-y-1.5">
               <Label>Amount</Label>
