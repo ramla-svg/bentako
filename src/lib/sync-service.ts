@@ -246,7 +246,12 @@ let running = false;
 /** Drain the queue. Safe to call often; never throws to the caller. */
 export async function syncNow(): Promise<void> {
   if (typeof window === "undefined" || running) return;
+  if (!cloudBackupEnabled) {
+    await refreshPending();
+    return;
+  }
   if (criticalDepth > 0) return; // never interrupt an active checkout
+
   if (!isOnline()) {
     emit({ connection: "offline" });
     return;
@@ -394,7 +399,7 @@ function newerThan(cloud: Record<string, unknown>, local: Record<string, unknown
 
 /** Pull cloud data locally. Never clobbers local work that has not synced. */
 export async function pullAll(storeId: string): Promise<void> {
-  if (typeof window === "undefined" || !isOnline()) return;
+  if (typeof window === "undefined" || !isOnline() || !cloudBackupEnabled) return;
   try {
     const { data } = await supabase.auth.getSession();
     if (!data.session) return;
