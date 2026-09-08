@@ -134,20 +134,16 @@ function ReportsPage() {
           <button
             type="button"
             onClick={() => {
-              const rows: string[][] = [["Day", "Sales", "Profit", "Expenses"]];
+              const rows: string[][] = [["Day", "Sales", "Transactions"]];
               for (const day of report.perDay) {
-                rows.push([
-                  day.key,
-                  String(day.total ?? 0),
-                  String(day.profit ?? 0),
-                  String(day.expenses ?? 0),
-                ]);
+                rows.push([day.key, String(day.total), String(day.count)]);
               }
               rows.push([]);
-              rows.push(["Product", "Quantity", "Sales"]);
+              rows.push(["Product", "Quantity", "Sales", "Profit"]);
               for (const item of report.topProducts) {
-                rows.push([item.name, String(item.qty), String(item.total ?? 0)]);
+                rows.push([item.name, String(item.qty), String(item.revenue), String(item.profit)]);
               }
+
               const csv = rows
                 .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
                 .join("\n");
