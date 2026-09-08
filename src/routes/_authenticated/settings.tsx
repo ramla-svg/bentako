@@ -219,6 +219,71 @@ function SettingsPage() {
           </Button>
         </section>
 
+        {isAdmin ? (
+          <section className="space-y-3 rounded-2xl border bg-card p-4">
+            <h2 className="flex items-center gap-2 font-display text-sm font-bold">
+              <Wrench className="size-4 text-primary" /> Owner tools
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Set the GCash name, number and QR code shops pay to, and confirm payments waiting for
+              Pro.
+            </p>
+            <Button asChild className="h-12 w-full justify-between">
+              <Link to="/bk-admin">
+                GCash details &amp; Pro approvals <ChevronRight className="size-4" />
+              </Link>
+            </Button>
+          </section>
+        ) : null}
+
+        <section className="space-y-3 rounded-2xl border bg-card p-4">
+          <h2 className="flex items-center gap-2 font-display text-sm font-bold">
+            <Smartphone className="size-4 text-primary" /> Phones using this shop
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {pro
+              ? `BentaKo Pro covers 3 phones. ${devices.length} in use.`
+              : `The free plan covers 1 phone. ${devices.length} in use — Pro adds up to 3.`}
+          </p>
+          {devices.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No phones recorded yet.</p>
+          ) : (
+            <ul className="divide-y rounded-xl border text-sm">
+              {devices.map((d) => (
+                <li key={d.id} className="flex items-center justify-between gap-2 px-3 py-2">
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">
+                      {d.label ?? "Phone"}
+                      {d.device_id === thisDevice ? " · this phone" : ""}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      Last used {formatDateTime(d.last_seen_at)}
+                    </span>
+                  </span>
+                  {isOwner && d.device_id !== thisDevice ? (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Remove ${d.label ?? "phone"}`}
+                      onClick={async () => {
+                        try {
+                          await dropDevice({ data: { id: d.id } });
+                          setDevices((list) => list.filter((row) => row.id !== d.id));
+                          toast.success("Phone removed.");
+                        } catch {
+                          toast.error("Could not remove that phone.");
+                        }
+                      }}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
         <section className="space-y-3 rounded-2xl border bg-card p-4">
           <h2 className="font-display text-sm font-bold">Offline &amp; Sync</h2>
 
