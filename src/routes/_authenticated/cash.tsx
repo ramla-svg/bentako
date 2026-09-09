@@ -341,9 +341,9 @@ function CashPage() {
     <AppShell back title="GCash & E-Wallet" subtitle="Cash in/out, load, bills and more">
       <div className="space-y-4">
         {/* Wallet balance */}
-        <div className="min-w-0 rounded-3xl bg-wallet p-4 text-wallet-foreground sm:p-5">
+        <div className="min-w-0 rounded-3xl bg-primary p-4 text-primary-foreground sm:p-5">
           <div className="flex items-center gap-3">
-            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-wallet-foreground/20">
+            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary-foreground/20">
               <Smartphone className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
@@ -363,20 +363,22 @@ function CashPage() {
 
         {/* Action tiles */}
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-          {PRESETS.map((p) => (
-            <button
-              key={p.key}
-              type="button"
-              onClick={() => openNew(p)}
-              className={cn(
-                "flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-2xl px-1 text-center active:opacity-90",
-                p.tint,
-              )}
-            >
-              <p.icon className="size-5" />
-              <span className="font-display text-xs font-bold leading-tight">{p.label}</span>
-            </button>
-          ))}
+          {PRESETS.map((p) => {
+            const Icon = p.icon;
+            return (
+              <button
+                key={p.key}
+                type="button"
+                onClick={() => openNew(p)}
+                className="flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-2xl border bg-card px-1 text-center active:opacity-90"
+              >
+                <span className={cn("grid size-10 shrink-0 place-items-center rounded-full", p.tint)}>
+                  <Icon className="size-5" />
+                </span>
+                <span className="font-display text-xs font-bold leading-tight text-foreground">{p.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         <Tabs value={range} onValueChange={(v) => setRange(v as RangeKey)}>
