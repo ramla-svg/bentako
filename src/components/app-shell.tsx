@@ -75,6 +75,16 @@ export function AppShell({
     await signOut();
   };
 
+  const handleBack = () => {
+    // Return to the previous screen when there is one to return to;
+    // otherwise drop the user back on the dashboard instead of doing nothing.
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.history.back();
+    } else {
+      router.navigate({ to: "/dashboard" });
+    }
+  };
+
   return (
     <div className="app-pan-y min-h-screen w-full max-w-full overflow-x-clip bg-background">
       <div className="mx-auto flex w-full max-w-6xl min-w-0">
@@ -112,7 +122,7 @@ export function AppShell({
         <div className="min-w-0 max-w-full flex-1 overflow-x-clip pb-28 lg:pb-8">
           <header className="safe-top sticky top-0 z-30 w-full border-b bg-background">
             {brand ? (
-              <div className="safe-x flex items-center gap-2.5 px-4 pt-2.5 sm:gap-3 sm:px-6 sm:pt-3">
+              <div className="safe-x flex items-center gap-2.5 px-5 pt-3 sm:gap-3 sm:px-7 sm:pt-3.5">
                 <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground sm:size-10 sm:rounded-2xl">
                   <Store className="size-5 sm:size-6" />
                 </div>
@@ -144,13 +154,13 @@ export function AppShell({
                 </button>
               </div>
             ) : null}
-            <div className="safe-x grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-4 py-2.5 sm:gap-3 sm:px-6 sm:py-3">
+            <div className="safe-x grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-5 py-3 sm:gap-3 sm:px-7 sm:py-3.5">
               <div className="flex min-w-0 items-center gap-2">
                 {back ? (
                   <button
                     type="button"
                     aria-label="Go back"
-                    onClick={() => router.history.back()}
+                    onClick={handleBack}
                     className="-ml-1 grid size-9 shrink-0 place-items-center rounded-xl text-muted-foreground active:bg-accent/10"
                   >
                     <ChevronLeft className="size-5" />
@@ -186,7 +196,7 @@ export function AppShell({
           </header>
 
 
-          <main className="safe-x min-w-0 max-w-full px-4 py-4 sm:px-6 sm:py-5">{children}</main>
+          <main className="safe-x min-w-0 max-w-full px-5 py-4 sm:px-7 sm:py-5">{children}</main>
         </div>
       </div>
 
