@@ -102,7 +102,7 @@ function ReportsPage() {
   const maxDay = Math.max(1, ...(report?.perDay.map((d) => d.total) ?? [1]));
 
   return (
-    <AppShell title="Reports" subtitle={`Last ${effectiveRange} days`}>
+    <AppShell back title="Reports" subtitle={`Last ${effectiveRange} days`}>
       <div className="space-y-4">
         <Tabs
           value={effectiveRange}

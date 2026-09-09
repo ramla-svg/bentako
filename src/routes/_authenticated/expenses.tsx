@@ -134,6 +134,7 @@ function ExpensesPage() {
 
   return (
     <AppShell
+      back
       title="Expenses"
       subtitle={formatMoney(total, currency)}
       action={

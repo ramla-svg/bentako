@@ -149,6 +149,7 @@ function CustomerUtangPage() {
 
   return (
     <AppShell
+      back
       title={customer?.name ?? "Customer"}
       subtitle={`Balance ${formatMoney(balance, currency)}${
         customer?.mobile_number ? ` · ${customer.mobile_number}` : ""

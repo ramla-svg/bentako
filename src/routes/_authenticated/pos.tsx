@@ -264,7 +264,7 @@ function PosPage() {
   }
 
   return (
-    <AppShell title="New sale" subtitle={store?.name}>
+    <AppShell back title="New sale" subtitle={store?.name}>
       <div className="space-y-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

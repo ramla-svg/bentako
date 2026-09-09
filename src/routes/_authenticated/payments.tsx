@@ -136,7 +136,7 @@ function PaymentsPage() {
   const filtered = filter === "all" ? rows : rows.filter((r) => r.type === filter);
 
   return (
-    <AppShell title="Payments" subtitle={`Received ${formatMoney(grandTotal, currency)}`}>
+    <AppShell back title="Payments" subtitle={`Received ${formatMoney(grandTotal, currency)}`}>
       <div className="space-y-3">
         <Tabs value={range} onValueChange={(v) => setRange(v as RangeKey)}>
           <TabsList className="grid w-full grid-cols-3">

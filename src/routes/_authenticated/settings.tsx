@@ -128,7 +128,7 @@ function SettingsPage() {
   }
 
   return (
-    <AppShell title="Settings" subtitle={email ?? undefined}>
+    <AppShell back title="Settings" subtitle={email ?? undefined}>
       <div className="space-y-4">
         <section className="space-y-3 rounded-2xl border bg-card p-4">
           <h2 className="font-display text-sm font-bold">Store details</h2>

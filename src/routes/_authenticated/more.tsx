@@ -47,7 +47,7 @@ function MorePage() {
   const queryClient = useQueryClient();
 
   return (
-    <AppShell title="More" subtitle={`${store?.name ?? ""} · ${role === "owner" ? "Owner" : "Cashier"}`}>
+    <AppShell back title="More" subtitle={`${store?.name ?? ""} · ${role === "owner" ? "Owner" : "Cashier"}`}>
       <ul className="space-y-2">
         {LINKS.map((item) => (
           <li key={item.to}>
