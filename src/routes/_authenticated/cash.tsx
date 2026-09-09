@@ -733,7 +733,7 @@ function PhotoRowAction({
 
 function WalletStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-xl bg-wallet-foreground/15 px-2 py-2">
+    <div className="min-w-0 rounded-xl bg-primary-foreground/15 px-2 py-2">
       <p className="truncate opacity-90">{label}</p>
       <p className="tnum truncate font-display text-sm font-bold">{value}</p>
     </div>
