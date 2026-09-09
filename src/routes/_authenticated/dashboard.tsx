@@ -401,12 +401,11 @@ function ActionTile({
   return (
     <Link
       to={to}
-      className={cn(
-        "flex min-h-16 min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl px-1 py-2 text-center active:opacity-90 sm:min-h-24 sm:items-start sm:justify-between sm:rounded-2xl sm:p-3.5 sm:text-left",
-        TINT[tint],
-      )}
+      className="flex min-h-16 min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl border bg-card px-1 py-2 text-center active:opacity-90 sm:min-h-24 sm:items-start sm:justify-between sm:rounded-2xl sm:p-3.5 sm:text-left"
     >
-      <Icon className="size-4.5 shrink-0 sm:size-6" />
+      <span className={cn("grid size-9 shrink-0 place-items-center rounded-full", TINT[tint])}>
+        <Icon className="size-4.5 sm:size-5" />
+      </span>
       <span className="line-clamp-2 font-display text-[9px] font-bold leading-tight sm:text-sm">{label}</span>
     </Link>
   );
