@@ -18,7 +18,7 @@ import {
 
 import type { ReactNode } from "react";
 
-import brandMark from "@/assets/bentako-mark.png";
+
 import { ConnectionChip, useConnection } from "@/components/connection-chip";
 import { useAppSession } from "@/hooks/use-app-session";
 import { cn } from "@/lib/utils";
@@ -113,13 +113,9 @@ export function AppShell({
           <header className="safe-top sticky top-0 z-30 w-full border-b bg-background">
             {brand ? (
               <div className="safe-x flex items-center gap-2.5 px-4 pt-2.5 sm:gap-3 sm:px-6 sm:pt-3">
-                <img
-                  src={brandMark}
-                  alt="BentaKo"
-                  width={40}
-                  height={40}
-                  className="size-9 shrink-0 rounded-lg sm:size-10 sm:rounded-xl"
-                />
+                <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground sm:size-10 sm:rounded-2xl">
+                  <Store className="size-5 sm:size-6" />
+                </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-display text-lg font-extrabold leading-none sm:text-xl">
                     BentaKo
