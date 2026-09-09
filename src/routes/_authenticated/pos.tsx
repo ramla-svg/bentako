@@ -324,7 +324,7 @@ function PosPage() {
 
       <Sheet open={cartOpen} onOpenChange={setCartOpen}>
         {itemCount > 0 ? (
-          <div className="safe-nav-offset safe-x fixed inset-x-0 z-30 px-4">
+          <div className="safe-nav-offset app-gutter fixed inset-x-0 z-30">
             <SheetTrigger asChild>
               <Button
                 type="button"

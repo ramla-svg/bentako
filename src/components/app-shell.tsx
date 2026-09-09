@@ -122,7 +122,7 @@ export function AppShell({
         <div className="min-w-0 max-w-full flex-1 overflow-x-clip pb-28 lg:pb-8">
           <header className="safe-top sticky top-0 z-30 w-full border-b bg-background">
             {brand ? (
-              <div className="safe-x flex items-center gap-2.5 px-5 pt-3 sm:gap-3 sm:px-7 sm:pt-3.5">
+              <div className="app-gutter flex items-center gap-2.5 pt-3 sm:gap-3 sm:pt-3.5">
                 <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground sm:size-10 sm:rounded-2xl">
                   <Store className="size-5 sm:size-6" />
                 </div>
@@ -154,7 +154,7 @@ export function AppShell({
                 </button>
               </div>
             ) : null}
-            <div className="safe-x grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-5 py-3 sm:gap-3 sm:px-7 sm:py-3.5">
+            <div className="app-gutter grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-3 sm:gap-3 sm:py-3.5">
               <div className="flex min-w-0 items-center gap-2">
                 {back ? (
                   <button
@@ -196,7 +196,7 @@ export function AppShell({
           </header>
 
 
-          <main className="safe-x min-w-0 max-w-full px-5 py-4 sm:px-7 sm:py-5">{children}</main>
+          <main className="app-gutter min-w-0 max-w-full py-4 sm:py-5">{children}</main>
         </div>
       </div>
 
@@ -215,7 +215,7 @@ const MOBILE_NAV = [
 
 function BottomNav({ pathname }: { pathname: string }) {
   return (
-    <nav className="safe-bottom safe-x fixed inset-x-0 bottom-0 z-30 border-t bg-card lg:hidden">
+    <nav className="safe-bottom app-gutter fixed inset-x-0 bottom-0 z-30 border-t bg-card lg:hidden">
       <ul className="mx-auto grid max-w-md grid-cols-5 items-end px-3 pb-1.5 pt-1.5 sm:px-4">
         {MOBILE_NAV.map((item) => {
           const active = pathname.startsWith(item.to);
