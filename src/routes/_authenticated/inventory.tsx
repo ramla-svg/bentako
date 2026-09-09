@@ -153,7 +153,7 @@ function InventoryPage() {
   }
 
   return (
-    <AppShell title="Inventory" subtitle={`Stock value ${formatMoney(totals.value, currency)}`}>
+    <AppShell back title="Inventory" subtitle={`Stock value ${formatMoney(totals.value, currency)}`}>
       <div className="space-y-3">
         <div className="grid grid-cols-3 gap-2 text-center">
           <SummaryTile label="Products" value={String((products ?? []).length)} />

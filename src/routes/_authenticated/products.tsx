@@ -204,6 +204,7 @@ function ProductsPage() {
 
   return (
     <AppShell
+      back
       title="Products"
       subtitle={`${filtered.length} ${showArchived ? "archived" : "active"}`}
       action={

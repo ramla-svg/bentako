@@ -307,4 +307,28 @@
   }
 }
 
+/*
+ * App gutter: a real side margin that ALSO respects device safe areas.
+ *
+ * .safe-x on its own collapses to 0px of horizontal padding on devices without
+ * a notch (env() falls back to 0), and because it is an unlayered rule it
+ * overrides Tailwind's px-* utilities — so content glued itself to the edges.
+ * app-gutter merges both intents in one declaration: at least the gutter, and
+ * at least the safe-area inset, whichever is larger.
+ */
+:root {
+  --app-gutter: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --app-gutter: 1.75rem;
+  }
+}
+
+@utility app-gutter {
+  padding-left: max(env(safe-area-inset-left, 0px), var(--app-gutter));
+  padding-right: max(env(safe-area-inset-right, 0px), var(--app-gutter));
+}
+
 

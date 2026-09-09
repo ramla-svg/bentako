@@ -114,6 +114,7 @@ function UtangPage() {
 
   return (
     <AppShell
+      back
       title="Utang"
       subtitle={`Total out ${formatMoney(totalOut, currency)}`}
       action={

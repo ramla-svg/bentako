@@ -106,6 +106,7 @@ function SalesPage() {
 
   return (
     <AppShell
+      back
       title="Sales"
       subtitle={`${totals.count} sales · ${formatMoney(totals.revenue, currency)}`}
     >
