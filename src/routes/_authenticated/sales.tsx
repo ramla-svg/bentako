@@ -162,7 +162,7 @@ function SalesPage() {
                   <div className="shrink-0 text-right">
                     <p
                       className={cn(
-                        "tnum font-display text-base font-bold",
+                        "tnum font-display text-xl font-extrabold",
                         s.status === "voided" && "text-muted-foreground line-through",
                       )}
                     >
@@ -188,22 +188,29 @@ function SalesPage() {
           </DialogHeader>
           {detail ? (
             <div className="space-y-3">
-              <div className="rounded-2xl border p-4 text-sm">
-                <p className="text-center font-display font-bold">{store?.name}</p>
+              <div className="rounded-2xl border p-4 text-base">
+                {pro && logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt={`${store?.name ?? "Store"} logo`}
+                    className="mx-auto mb-2 max-h-16 w-auto object-contain"
+                  />
+                ) : null}
+                <p className="text-center font-display text-lg font-bold">{store?.name}</p>
                 <p className="mb-2 text-center text-xs text-muted-foreground">
                   {detail.transaction_number} · {formatDateTime(detail.created_at)}
                 </p>
                 {(items ?? []).map((it) => (
-                  <div key={it.id} className="flex justify-between gap-2 py-0.5">
+                  <div key={it.id} className="flex justify-between gap-2 py-1">
                     <span className="truncate">
                       {formatQty(it.quantity)}× {it.product_name_snapshot}
                     </span>
-                    <span className="tnum">{formatMoney(it.subtotal, currency)}</span>
+                    <span className="tnum font-semibold">{formatMoney(it.subtotal, currency)}</span>
                   </div>
                 ))}
-                <div className="mt-2 flex justify-between border-t pt-2 font-bold">
+                <div className="mt-2 flex items-center justify-between border-t pt-2 font-bold">
                   <span>Total</span>
-                  <span className="tnum">{formatMoney(detail.total, currency)}</span>
+                  <span className="tnum text-2xl">{formatMoney(detail.total, currency)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Cash</span>
