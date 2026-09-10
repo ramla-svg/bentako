@@ -1,11 +1,12 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ChevronRight,
   Crown,
   Download,
+  ImagePlus,
   LogOut,
   RefreshCw,
   ShieldCheck,
@@ -36,6 +37,7 @@ import { platformLabel } from "@/lib/platform/platform-service";
 import { seedDemoProducts } from "@/lib/repo";
 import { isOnline, syncNow } from "@/lib/sync-service";
 import { isBillingAdmin } from "@/lib/billing.functions";
+import { removeStoreLogo, uploadStoreLogo, useStoreLogo } from "@/lib/store-logo";
 import { listStoreDevices, releaseDevice, type StoreDevice } from "@/lib/devices.functions";
 import { deviceId } from "@/lib/device-id";
 
