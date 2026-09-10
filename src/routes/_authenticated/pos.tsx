@@ -336,7 +336,7 @@ function PosPage() {
                   <ShoppingBasket className="size-4" />
                   {itemCount} item{itemCount > 1 ? "s" : ""}
                 </span>
-                <span className="tnum font-display text-lg font-bold">
+                <span className="tnum font-display text-2xl font-extrabold">
                   {formatMoney(total, currency)}
                 </span>
               </Button>
@@ -353,10 +353,12 @@ function PosPage() {
             {lines.map((l) => (
               <div key={l.product_id} className="flex items-center gap-3 rounded-xl border bg-card p-3">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{l.name}</p>
-                  <p className="tnum text-xs text-muted-foreground">
-                    {formatMoney(l.selling_price, currency)} ×{" "}
-                    {formatQty(l.quantity)} = {formatMoney(l.selling_price * l.quantity, currency)}
+                  <p className="truncate text-base font-semibold">{l.name}</p>
+                  <p className="tnum text-sm font-medium text-muted-foreground">
+                    {formatMoney(l.selling_price, currency)} × {formatQty(l.quantity)} ={" "}
+                    <span className="font-bold text-foreground">
+                      {formatMoney(l.selling_price * l.quantity, currency)}
+                    </span>
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
@@ -384,8 +386,8 @@ function PosPage() {
 
           <div className="mt-4 rounded-2xl bg-secondary p-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Total</span>
-              <span className="tnum font-display text-2xl font-extrabold">
+              <span className="text-base font-bold">Total</span>
+              <span className="tnum font-display text-3xl font-extrabold">
                 {formatMoney(total, currency)}
               </span>
             </div>
