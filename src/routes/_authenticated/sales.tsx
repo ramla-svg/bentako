@@ -23,6 +23,7 @@ import { useAppSession } from "@/hooks/use-app-session";
 import { formatDateTime, formatMoney, formatQty, localDayKey } from "@/lib/format";
 import { db, type LocalSale, type LocalSaleItem } from "@/lib/local-db";
 import { voidSale } from "@/lib/repo";
+import { useStoreLogo } from "@/lib/store-logo";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/sales")({

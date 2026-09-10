@@ -659,7 +659,7 @@ const ProductTile = memo(function ProductTile({
     <button
       onClick={() => onAdd(product)}
       className={cn(
-        "relative flex min-h-24 flex-col justify-between rounded-2xl border bg-card p-3 text-left",
+        "relative flex min-h-28 flex-col justify-between rounded-2xl border bg-card p-3 text-left",
         inCart > 0 && "border-primary ring-1 ring-primary",
       )}
     >
