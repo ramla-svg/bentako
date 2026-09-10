@@ -57,6 +57,13 @@
       "when": 1788848532586,
       "tag": "0007_create_store_devices",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788999696210,
+      "tag": "0008_store_logos_storage_policies",
+      "breakpoints": true
     }
   ]
 }

@@ -29,9 +29,10 @@ import {
   type LocalProduct,
   type PaymentMethod,
 } from "@/lib/local-db";
-import { printReceiptText } from "@/lib/platform/print-service";
+import { printReceipt } from "@/lib/platform/print-service";
 import { shareText } from "@/lib/platform/share-service";
-import { buildReceiptText } from "@/lib/receipt";
+import { buildReceiptPrintDoc, buildReceiptText } from "@/lib/receipt";
+import { useStoreLogo } from "@/lib/store-logo";
 import {
   checkout,
   matchProductByCode,
@@ -58,6 +59,7 @@ function PosPage() {
   const { store, ctx } = useAppSession();
   const storeId = store?.id ?? "";
   const currency = store?.currency ?? "PHP";
+  const logoUrl = useStoreLogo(store?.logo_url);
 
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<string | "all">("all");
@@ -334,7 +336,7 @@ function PosPage() {
                   <ShoppingBasket className="size-4" />
                   {itemCount} item{itemCount > 1 ? "s" : ""}
                 </span>
-                <span className="tnum font-display text-lg font-bold">
+                <span className="tnum font-display text-2xl font-extrabold">
                   {formatMoney(total, currency)}
                 </span>
               </Button>
@@ -351,10 +353,12 @@ function PosPage() {
             {lines.map((l) => (
               <div key={l.product_id} className="flex items-center gap-3 rounded-xl border bg-card p-3">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{l.name}</p>
-                  <p className="tnum text-xs text-muted-foreground">
-                    {formatMoney(l.selling_price, currency)} ×{" "}
-                    {formatQty(l.quantity)} = {formatMoney(l.selling_price * l.quantity, currency)}
+                  <p className="truncate text-base font-semibold">{l.name}</p>
+                  <p className="tnum text-sm font-medium text-muted-foreground">
+                    {formatMoney(l.selling_price, currency)} × {formatQty(l.quantity)} ={" "}
+                    <span className="font-bold text-foreground">
+                      {formatMoney(l.selling_price * l.quantity, currency)}
+                    </span>
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
@@ -382,8 +386,8 @@ function PosPage() {
 
           <div className="mt-4 rounded-2xl bg-secondary p-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Total</span>
-              <span className="tnum font-display text-2xl font-extrabold">
+              <span className="text-base font-bold">Total</span>
+              <span className="tnum font-display text-3xl font-extrabold">
                 {formatMoney(total, currency)}
               </span>
             </div>
@@ -549,22 +553,29 @@ function PosPage() {
                   )}
                 </p>
               </div>
-              <div className="rounded-2xl border p-4 text-sm">
-                <p className="text-center font-display font-bold">{store?.name}</p>
+              <div className="rounded-2xl border p-4 text-base">
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt={`${store?.name ?? "Store"} logo`}
+                    className="mx-auto mb-2 max-h-16 w-auto object-contain"
+                  />
+                ) : null}
+                <p className="text-center font-display text-lg font-bold">{store?.name}</p>
                 <p className="mb-2 text-center text-xs text-muted-foreground">
                   {receipt.sale.transaction_number}
                 </p>
                 {receipt.items.map((it) => (
-                  <div key={it.id} className="flex justify-between gap-2 py-0.5">
+                  <div key={it.id} className="flex justify-between gap-2 py-1">
                     <span className="truncate">
                       {formatQty(it.quantity)}× {it.product_name_snapshot}
                     </span>
-                    <span className="tnum">{formatMoney(it.subtotal, currency)}</span>
+                    <span className="tnum font-semibold">{formatMoney(it.subtotal, currency)}</span>
                   </div>
                 ))}
-                <div className="mt-2 flex justify-between border-t pt-2 font-bold">
+                <div className="mt-2 flex items-center justify-between border-t pt-2 font-bold">
                   <span>Total</span>
-                  <span className="tnum">{formatMoney(receipt.sale.total, currency)}</span>
+                  <span className="tnum text-2xl">{formatMoney(receipt.sale.total, currency)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>
@@ -593,11 +604,14 @@ function PosPage() {
                   variant="outline"
                   className="h-12"
                   onClick={() => {
-                    const ok = printReceiptText(
-                      buildReceiptText(receipt, store),
+                    const ok = printReceipt(
+                      buildReceiptPrintDoc(receipt, store, logoUrl),
                       receipt.sale.transaction_number,
                     );
-                    if (!ok) toast.error("Printing is not available on this device.");
+                    if (!ok)
+                      toast.error(
+                        "This device cannot print. Use Share to send the receipt instead.",
+                      );
                   }}
                 >
                   <Printer className="size-4" /> Print
@@ -645,7 +659,7 @@ const ProductTile = memo(function ProductTile({
     <button
       onClick={() => onAdd(product)}
       className={cn(
-        "relative flex min-h-24 flex-col justify-between rounded-2xl border bg-card p-3 text-left",
+        "relative flex min-h-28 flex-col justify-between rounded-2xl border bg-card p-3 text-left",
         inCart > 0 && "border-primary ring-1 ring-primary",
       )}
     >
@@ -656,12 +670,12 @@ const ProductTile = memo(function ProductTile({
       ) : null}
       <p className="line-clamp-2 text-sm font-semibold leading-snug">{product.name}</p>
       <div className="mt-2">
-        <p className="tnum font-display text-base font-bold text-primary">
+        <p className="tnum font-display text-2xl font-extrabold leading-tight text-primary">
           {formatMoney(product.selling_price, currency)}
         </p>
         <p
           className={cn(
-            "tnum text-[11px]",
+            "tnum text-xs font-medium",
             product.stock_quantity <= 0
               ? "text-destructive"
               : low

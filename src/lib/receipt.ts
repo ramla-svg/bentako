@@ -1,6 +1,56 @@
 import { formatDateTime, formatMoney, formatQty } from "@/lib/format";
 import { isPro, type PlanFields } from "@/lib/plan";
+import type { ReceiptPrintDoc } from "@/lib/platform/print-service";
 import type { CheckoutResult } from "@/lib/repo";
+
+type ReceiptStore =
+  | ({
+      name?: string | null;
+      currency?: string | null;
+      receipt_footer?: string | null;
+    } & PlanFields)
+  | null;
+
+/**
+ * Structured receipt used for printing: same business rules as the text
+ * receipt, but it can carry the shop's logo and a large total.
+ */
+export function buildReceiptPrintDoc(
+  result: CheckoutResult,
+  store: ReceiptStore,
+  logoUrl?: string | null,
+): ReceiptPrintDoc {
+  const currency = store?.currency ?? "PHP";
+  const pro = isPro(store);
+
+  const totals: ReceiptPrintDoc["totals"] = [
+    { left: "TOTAL", right: formatMoney(result.sale.total, currency), strong: true },
+  ];
+  if (result.sale.payment_method === "utang") {
+    totals.push({ left: "UNPAID", right: "charged to utang" });
+  } else if (result.sale.payment_method === "cash") {
+    totals.push({ left: "Cash", right: formatMoney(result.sale.cash_received, currency) });
+    totals.push({ left: "Change", right: formatMoney(result.sale.change_amount, currency) });
+  } else {
+    totals.push({ left: "Paid", right: result.sale.payment_method.toUpperCase() });
+  }
+
+  const footerParts = [pro ? (store?.receipt_footer ?? "") : "", pro ? "" : "Powered by BentaKo"]
+    .filter(Boolean)
+    .join("\n");
+
+  return {
+    logoUrl: pro ? (logoUrl ?? null) : null,
+    storeName: store?.name ?? "BentaKo",
+    meta: [result.sale.transaction_number, formatDateTime(result.sale.created_at)],
+    items: result.items.map((item) => ({
+      left: `${formatQty(item.quantity)}x ${item.product_name_snapshot}`,
+      right: formatMoney(item.subtotal, currency),
+    })),
+    totals,
+    footer: footerParts || null,
+  };
+}
 
 /**
  * Receipt formatting lives here (not in the POS screen) so print and share

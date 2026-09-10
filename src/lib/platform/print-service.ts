@@ -1,8 +1,8 @@
 /**
- * Print abstraction. Today: browser printing of a plain-text receipt in a
- * hidden iframe (works in a PWA and in a WebView print bridge). Later a
- * Bluetooth 58mm/80mm thermal driver can implement the same interface without
- * changing receipt business logic.
+ * Print abstraction. Today: browser printing of a receipt in a hidden iframe
+ * (works in a PWA and in a WebView print bridge), with a new-window fallback.
+ * Later a Bluetooth 58mm/80mm thermal driver can implement the same interface
+ * without changing receipt business logic.
  */
 
 export type PrintTarget = "browser" | "unavailable";
@@ -17,43 +17,173 @@ function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
-/** Prints a monospaced receipt sized for a narrow (58mm-like) roll. */
-export function printReceiptText(text: string, title = "Receipt"): boolean {
+/** Narrow-roll (58mm) print stylesheet, sized large for older eyes. */
+function receiptDocument(bodyHtml: string, title: string): string {
+  return (
+    `<!doctype html><html><head><meta charset="utf-8">` +
+    `<title>${escapeHtml(title)}</title>` +
+    `<style>` +
+    `@page{margin:5mm}` +
+    `html,body{margin:0;padding:0}` +
+    `body{font:14px/1.5 ui-monospace,Menlo,Consolas,monospace;width:58mm}` +
+    `img.logo{display:block;margin:0 auto 4px;max-width:34mm;max-height:20mm}` +
+    `.name{text-align:center;font-size:17px;font-weight:700;font-family:system-ui,sans-serif}` +
+    `.meta{text-align:center;font-size:12px}` +
+    `hr{border:none;border-top:1px dashed #000;margin:6px 0}` +
+    `.row{display:flex;justify-content:space-between;gap:6px;font-size:14px}` +
+    `.row span:last-child{white-space:nowrap}` +
+    `.total{font-size:20px;font-weight:700}` +
+    `.foot{text-align:center;font-size:12px;margin-top:8px}` +
+    `</style></head><body>${bodyHtml}</body></html>`
+  );
+}
+
+/** Wraps plain text so old callers keep working. */
+function textDocument(text: string, title: string): string {
+  return receiptDocument(
+    `<pre style="white-space:pre-wrap;font:inherit;margin:0">${escapeHtml(text)}</pre>`,
+    title,
+  );
+}
+
+export type ReceiptPrintRow = { left: string; right: string; strong?: boolean; muted?: boolean };
+
+export type ReceiptPrintDoc = {
+  logoUrl?: string | null;
+  storeName: string;
+  meta: string[];
+  items: ReceiptPrintRow[];
+  totals: ReceiptPrintRow[];
+  footer?: string | null;
+};
+
+function buildReceiptHtml(doc: ReceiptPrintDoc): string {
+  const parts: string[] = [];
+  if (doc.logoUrl) parts.push(`<img class="logo" src="${escapeHtml(doc.logoUrl)}" alt="">`);
+  parts.push(`<div class="name">${escapeHtml(doc.storeName)}</div>`);
+  for (const m of doc.meta) parts.push(`<div class="meta">${escapeHtml(m)}</div>`);
+  parts.push("<hr>");
+  for (const it of doc.items) {
+    parts.push(
+      `<div class="row"><span>${escapeHtml(it.left)}</span><span>${escapeHtml(it.right)}</span></div>`,
+    );
+  }
+  parts.push("<hr>");
+  for (const t of doc.totals) {
+    const cls = `row${t.strong ? " total" : ""}`;
+    parts.push(
+      `<div class="${cls}"><span>${escapeHtml(t.left)}</span><span>${escapeHtml(t.right)}</span></div>`,
+    );
+  }
+  if (doc.footer) parts.push(`<div class="foot">${escapeHtml(doc.footer)}</div>`);
+  return parts.join("");
+}
+
+/**
+ * Prints an already-built HTML document. Waits for the frame (and its logo) to
+ * load before calling print, and keeps the frame alive until printing finishes —
+ * removing it too early is why phones printed nothing.
+ */
+function printHtml(html: string, title: string): boolean {
   if (printTarget() !== "browser") return false;
 
   const frame = document.createElement("iframe");
   frame.setAttribute("aria-hidden", "true");
+  frame.setAttribute("title", title);
   frame.style.position = "fixed";
   frame.style.right = "0";
   frame.style.bottom = "0";
-  frame.style.width = "0";
-  frame.style.height = "0";
+  frame.style.width = "1px";
+  frame.style.height = "1px";
+  frame.style.opacity = "0";
   frame.style.border = "0";
-  document.body.appendChild(frame);
+  frame.srcdoc = html;
 
-  const doc = frame.contentDocument;
-  if (!doc) {
-    frame.remove();
+  let done = false;
+  const cleanup = () => {
+    if (done) return;
+    done = true;
+    window.removeEventListener("afterprint", cleanup);
+    window.setTimeout(() => frame.remove(), 500);
+  };
+
+  frame.onload = () => {
+    const win = frame.contentWindow;
+    if (!win) {
+      cleanup();
+      openPrintWindow(html);
+      return;
+    }
+    const go = () => {
+      try {
+        win.focus();
+        win.addEventListener("afterprint", cleanup);
+        window.addEventListener("afterprint", cleanup);
+        win.print();
+      } catch {
+        cleanup();
+        openPrintWindow(html);
+        return;
+      }
+      // Backstop: some WebViews never fire afterprint.
+      window.setTimeout(cleanup, 60_000);
+    };
+    // Give a logo image a moment to decode so it is not missing on paper.
+    const imgs = Array.from(win.document.images);
+    if (imgs.length === 0 || imgs.every((i) => i.complete)) go();
+    else {
+      let waited = false;
+      const once = () => {
+        if (waited) return;
+        waited = true;
+        go();
+      };
+      imgs.forEach((i) => {
+        i.addEventListener("load", () => {
+          if (imgs.every((x) => x.complete)) once();
+        });
+        i.addEventListener("error", once);
+      });
+      window.setTimeout(once, 2500);
+    }
+  };
+
+  document.body.appendChild(frame);
+  return true;
+}
+
+/** Last resort when the hidden frame is blocked: a real window the user can print. */
+function openPrintWindow(html: string): boolean {
+  try {
+    const win = window.open("", "_blank");
+    if (!win) return false;
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    window.setTimeout(() => {
+      try {
+        win.print();
+      } catch {
+        /* the user can still print from the browser menu */
+      }
+    }, 400);
+    return true;
+  } catch {
     return false;
   }
+}
 
-  doc.open();
-  doc.write(
-    `<!doctype html><html><head><title>${escapeHtml(title)}</title>` +
-      `<style>@page{margin:6mm}body{font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;` +
-      `white-space:pre-wrap;width:58mm;margin:0}</style></head><body>${escapeHtml(text)}</body></html>`,
-  );
-  doc.close();
+/** Prints a structured receipt (store logo, items, big total). */
+export function printReceipt(doc: ReceiptPrintDoc, title = "Receipt"): boolean {
+  return printHtml(receiptDocument(buildReceiptHtml(doc), title), title);
+}
 
-  const cleanup = () => window.setTimeout(() => frame.remove(), 1000);
-  try {
-    frame.contentWindow?.focus();
-    frame.contentWindow?.print();
-  } finally {
-    cleanup();
-  }
-  return true;
+/** Prints a monospaced plain-text receipt. */
+export function printReceiptText(text: string, title = "Receipt"): boolean {
+  return printHtml(textDocument(text, title), title);
 }

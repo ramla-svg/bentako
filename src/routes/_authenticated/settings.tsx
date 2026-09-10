@@ -1,11 +1,12 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ChevronRight,
   Crown,
   Download,
+  ImagePlus,
   LogOut,
   RefreshCw,
   ShieldCheck,
@@ -36,6 +37,7 @@ import { platformLabel } from "@/lib/platform/platform-service";
 import { seedDemoProducts } from "@/lib/repo";
 import { isOnline, syncNow } from "@/lib/sync-service";
 import { isBillingAdmin } from "@/lib/billing.functions";
+import { removeStoreLogo, uploadStoreLogo, useStoreLogo } from "@/lib/store-logo";
 import { listStoreDevices, releaseDevice, type StoreDevice } from "@/lib/devices.functions";
 import { deviceId } from "@/lib/device-id";
 
@@ -68,6 +70,11 @@ function SettingsPage() {
   const [checking, setChecking] = useState(false);
 
   const [issues, setIssues] = useState<IntegrityIssue[] | null>(null);
+
+  // Receipt logo (Pro): picked on the phone, shrunk, then kept in cloud storage.
+  const logoUrl = useStoreLogo(store?.logo_url);
+  const logoInput = useRef<HTMLInputElement>(null);
+  const [logoBusy, setLogoBusy] = useState(false);
 
   // Owner tools (BentaKo staff only) and the list of phones using this shop.
   const checkAdmin = useServerFn(isBillingAdmin);
@@ -163,6 +170,88 @@ function SettingsPage() {
                 Your own message on receipts comes with Pro. Free receipts show “Powered by
                 BentaKo”.
               </p>
+            ) : null}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Receipt logo{pro ? "" : " · Pro"}</Label>
+            <div className="flex items-center gap-3">
+              <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-xl border bg-secondary">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Receipt logo" className="size-full object-contain" />
+                ) : (
+                  <ImagePlus className="size-5 text-muted-foreground" />
+                )}
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11"
+                  disabled={!isOwner || !pro || logoBusy}
+                  onClick={() => logoInput.current?.click()}
+                >
+                  {logoBusy ? "Uploading…" : logoUrl ? "Change logo" : "Upload logo"}
+                </Button>
+                {logoUrl && isOwner && pro ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-9 text-destructive"
+                    disabled={logoBusy}
+                    onClick={async () => {
+                      if (!store) return;
+                      setLogoBusy(true);
+                      try {
+                        await removeStoreLogo(store.id, store.logo_url);
+                        await refresh();
+                        toast.success("Logo removed.");
+                      } catch {
+                        toast.error("Could not remove the logo.");
+                      } finally {
+                        setLogoBusy(false);
+                      }
+                    }}
+                  >
+                    <X className="size-4" /> Remove logo
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+            <input
+              ref={logoInput}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (!file || !store) return;
+                if (!isOnline()) {
+                  toast.error("Connect to the internet to upload your logo.");
+                  return;
+                }
+                setLogoBusy(true);
+                try {
+                  await uploadStoreLogo(store.id, file);
+                  await refresh();
+                  toast.success("Logo saved — it now shows on your receipts.");
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : "Could not upload that image.");
+                } finally {
+                  setLogoBusy(false);
+                }
+              }}
+            />
+            <p className="text-xs text-muted-foreground">
+              {pro
+                ? "Your logo shows at the top of the receipt on screen and when you print. A square picture works best."
+                : "Your own logo on receipts comes with Pro."}
+            </p>
+            {!pro ? (
+              <Button asChild variant="outline" className="h-11 w-full">
+                <Link to="/upgrade">See BentaKo Pro</Link>
+              </Button>
             ) : null}
           </div>
 
