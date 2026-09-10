@@ -42,12 +42,12 @@ function receiptDocument(bodyHtml: string, title: string): string {
     `font-family:system-ui,sans-serif;text-transform:uppercase}` +
     `.meta{text-align:center;font-size:10px;line-height:1.2}` +
     `hr{border:none;border-top:1px dashed #000;margin:3px 0}` +
-    `.head{display:flex;justify-content:space-between;font-size:10px;font-weight:700;` +
-    `letter-spacing:.02em}` +
-    `.row{display:flex;justify-content:space-between;gap:4px;font-size:11px;` +
-    `page-break-inside:avoid;break-inside:avoid}` +
-    `.row span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` +
-    `.row span:last-child{white-space:nowrap}` +
+    `.info{font-size:10px;line-height:1.3}` +
+    `.head{font-size:10px;font-weight:700;letter-spacing:.02em}` +
+    `.row{display:flex;gap:3px;font-size:11px;page-break-inside:avoid;break-inside:avoid}` +
+    `.row .qty{width:6mm;flex:none;text-align:right}` +
+    `.row .nm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` +
+    `.row .amt{flex:none;text-align:right;white-space:nowrap}` +
     `.total{font-size:16px;font-weight:700;line-height:1.3}` +
     `.foot{text-align:center;font-size:10px;line-height:1.25;margin-top:4px;` +
     `white-space:pre-line}` +
