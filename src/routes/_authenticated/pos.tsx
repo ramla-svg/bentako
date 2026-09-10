@@ -604,11 +604,14 @@ function PosPage() {
                   variant="outline"
                   className="h-12"
                   onClick={() => {
-                    const ok = printReceiptText(
-                      buildReceiptText(receipt, store),
+                    const ok = printReceipt(
+                      buildReceiptPrintDoc(receipt, store, logoUrl),
                       receipt.sale.transaction_number,
                     );
-                    if (!ok) toast.error("Printing is not available on this device.");
+                    if (!ok)
+                      toast.error(
+                        "This device cannot print. Use Share to send the receipt instead.",
+                      );
                   }}
                 >
                   <Printer className="size-4" /> Print
