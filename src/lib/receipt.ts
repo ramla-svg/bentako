@@ -24,8 +24,12 @@ export function buildReceiptPrintDoc(
   const pro = isPro(store);
 
   const totals: ReceiptPrintDoc["totals"] = [
-    { left: "TOTAL", right: formatMoney(result.sale.total, currency), strong: true },
+    { left: "Subtotal", right: formatMoney(result.sale.subtotal, currency) },
   ];
+  if (result.sale.discount > 0) {
+    totals.push({ left: "Discount", right: `-${formatMoney(result.sale.discount, currency)}` });
+  }
+  totals.push({ left: "TOTAL", right: formatMoney(result.sale.total, currency), strong: true });
   if (result.sale.payment_method === "utang") {
     totals.push({ left: "UNPAID", right: "charged to utang" });
   } else if (result.sale.payment_method === "cash") {
