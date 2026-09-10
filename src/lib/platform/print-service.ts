@@ -76,6 +76,8 @@ export type ReceiptPrintDoc = {
   logoUrl?: string | null;
   storeName: string;
   meta: string[];
+  /** Left-aligned lines (receipt no., date, cashier) shown under the store block. */
+  info?: string[];
   items: ReceiptPrintRow[];
   totals: ReceiptPrintRow[];
   footer?: string | null;
