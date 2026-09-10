@@ -81,7 +81,8 @@ function buildReceiptHtml(doc: ReceiptPrintDoc): string {
   parts.push(`<div class="name">${escapeHtml(doc.storeName)}</div>`);
   for (const m of doc.meta) parts.push(`<div class="meta">${escapeHtml(m)}</div>`);
   parts.push("<hr>");
-  for (const it of doc.items) {
+  parts.push(`<div class="head"><span>QTY ITEM</span><span>AMOUNT</span></div>`);
+
     parts.push(
       `<div class="row"><span>${escapeHtml(it.left)}</span><span>${escapeHtml(it.right)}</span></div>`,
     );
