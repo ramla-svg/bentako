@@ -21,26 +21,40 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/** Narrow-roll (58mm) print stylesheet, sized large for older eyes. */
+/**
+ * Narrow-roll (58mm x 105mm) print stylesheet: pure black on white, grocery
+ * slip style, compact enough that a normal basket fits one slip.
+ */
 function receiptDocument(bodyHtml: string, title: string): string {
   return (
     `<!doctype html><html><head><meta charset="utf-8">` +
+    `<meta name="viewport" content="width=58mm">` +
     `<title>${escapeHtml(title)}</title>` +
     `<style>` +
-    `@page{margin:5mm}` +
-    `html,body{margin:0;padding:0}` +
-    `body{font:14px/1.5 ui-monospace,Menlo,Consolas,monospace;width:58mm}` +
-    `img.logo{display:block;margin:0 auto 4px;max-width:34mm;max-height:20mm}` +
-    `.name{text-align:center;font-size:17px;font-weight:700;font-family:system-ui,sans-serif}` +
-    `.meta{text-align:center;font-size:12px}` +
-    `hr{border:none;border-top:1px dashed #000;margin:6px 0}` +
-    `.row{display:flex;justify-content:space-between;gap:6px;font-size:14px}` +
+    `@page{size:58mm 105mm;margin:2mm}` +
+    `html,body{margin:0;padding:0;background:#fff}` +
+    `body{color:#000;font:11px/1.25 ui-monospace,Menlo,Consolas,monospace;width:54mm;` +
+    `-webkit-print-color-adjust:exact;print-color-adjust:exact}` +
+    `*{color:#000!important;background:transparent!important;box-shadow:none!important}` +
+    `img.logo{display:block;margin:0 auto 2px;max-width:28mm;max-height:12mm;` +
+    `filter:grayscale(100%) contrast(140%)}` +
+    `.name{text-align:center;font-size:13px;font-weight:700;line-height:1.2;` +
+    `font-family:system-ui,sans-serif;text-transform:uppercase}` +
+    `.meta{text-align:center;font-size:10px;line-height:1.2}` +
+    `hr{border:none;border-top:1px dashed #000;margin:3px 0}` +
+    `.head{display:flex;justify-content:space-between;font-size:10px;font-weight:700;` +
+    `letter-spacing:.02em}` +
+    `.row{display:flex;justify-content:space-between;gap:4px;font-size:11px;` +
+    `page-break-inside:avoid;break-inside:avoid}` +
+    `.row span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` +
     `.row span:last-child{white-space:nowrap}` +
-    `.total{font-size:20px;font-weight:700}` +
-    `.foot{text-align:center;font-size:12px;margin-top:8px}` +
+    `.total{font-size:16px;font-weight:700;line-height:1.3}` +
+    `.foot{text-align:center;font-size:10px;line-height:1.25;margin-top:4px;` +
+    `white-space:pre-line}` +
     `</style></head><body>${bodyHtml}</body></html>`
   );
 }
+
 
 /** Wraps plain text so old callers keep working. */
 function textDocument(text: string, title: string): string {
@@ -67,8 +81,10 @@ function buildReceiptHtml(doc: ReceiptPrintDoc): string {
   parts.push(`<div class="name">${escapeHtml(doc.storeName)}</div>`);
   for (const m of doc.meta) parts.push(`<div class="meta">${escapeHtml(m)}</div>`);
   parts.push("<hr>");
+  parts.push(`<div class="head"><span>QTY ITEM</span><span>AMOUNT</span></div>`);
   for (const it of doc.items) {
     parts.push(
+
       `<div class="row"><span>${escapeHtml(it.left)}</span><span>${escapeHtml(it.right)}</span></div>`,
     );
   }
