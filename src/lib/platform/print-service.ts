@@ -87,20 +87,29 @@ function buildReceiptHtml(doc: ReceiptPrintDoc): string {
   parts.push(`<div class="name">${escapeHtml(doc.storeName)}</div>`);
   for (const m of doc.meta) parts.push(`<div class="meta">${escapeHtml(m)}</div>`);
   parts.push("<hr>");
-  parts.push(`<div class="head"><span>QTY ITEM</span><span>AMOUNT</span></div>`);
+  for (const line of doc.info ?? []) parts.push(`<div class="info">${escapeHtml(line)}</div>`);
+  if ((doc.info ?? []).length > 0) parts.push("<hr>");
+  parts.push(
+    `<div class="row head"><span class="qty">QTY</span><span class="nm">ITEM</span>` +
+      `<span class="amt">AMOUNT</span></div>`,
+  );
   for (const it of doc.items) {
     parts.push(
-
-      `<div class="row"><span>${escapeHtml(it.left)}</span><span>${escapeHtml(it.right)}</span></div>`,
+      `<div class="row"><span class="qty">${escapeHtml(it.qty ?? "")}</span>` +
+        `<span class="nm">${escapeHtml(it.left)}</span>` +
+        `<span class="amt">${escapeHtml(it.right)}</span></div>`,
     );
   }
   parts.push("<hr>");
   for (const t of doc.totals) {
+    if (t.strong) parts.push("<hr>");
     const cls = `row${t.strong ? " total" : ""}`;
     parts.push(
-      `<div class="${cls}"><span>${escapeHtml(t.left)}</span><span>${escapeHtml(t.right)}</span></div>`,
+      `<div class="${cls}"><span class="nm">${escapeHtml(t.left)}</span>` +
+        `<span class="amt">${escapeHtml(t.right)}</span></div>`,
     );
   }
+  parts.push("<hr>");
   if (doc.footer) parts.push(`<div class="foot">${escapeHtml(doc.footer)}</div>`);
   return parts.join("");
 }
