@@ -64,7 +64,13 @@ function textDocument(text: string, title: string): string {
   );
 }
 
-export type ReceiptPrintRow = { left: string; right: string; strong?: boolean; muted?: boolean };
+export type ReceiptPrintRow = {
+  left: string;
+  right: string;
+  strong?: boolean;
+  muted?: boolean;
+  qty?: string;
+};
 
 export type ReceiptPrintDoc = {
   logoUrl?: string | null;
