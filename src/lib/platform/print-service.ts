@@ -25,33 +25,33 @@ function escapeHtml(value: string): string {
  * Narrow-roll (58mm x 105mm) print stylesheet: pure black on white, grocery
  * slip style, compact enough that a normal basket fits one slip.
  */
+const RECEIPT_CSS =
+  `@page{size:58mm 105mm;margin:2mm}` +
+  `html,body{margin:0;padding:0;background:#fff}` +
+  `body{color:#000;font:11px/1.25 ui-monospace,Menlo,Consolas,monospace;width:54mm;` +
+  `-webkit-print-color-adjust:exact;print-color-adjust:exact}` +
+  `*{color:#000!important;background:transparent!important;box-shadow:none!important}` +
+  `img.logo{display:block;margin:0 auto 2px;max-width:28mm;max-height:12mm;` +
+  `filter:grayscale(100%) contrast(140%)}` +
+  `.name{text-align:center;font-size:13px;font-weight:700;line-height:1.2;` +
+  `font-family:system-ui,sans-serif;text-transform:uppercase}` +
+  `.meta{text-align:center;font-size:10px;line-height:1.2}` +
+  `hr{border:none;border-top:1px dashed #000;margin:3px 0}` +
+  `.info{font-size:10px;line-height:1.3}` +
+  `.head{font-size:10px;font-weight:700;letter-spacing:.02em}` +
+  `.row{display:flex;gap:3px;font-size:11px;page-break-inside:avoid;break-inside:avoid}` +
+  `.row .qty{width:6mm;flex:none;text-align:right}` +
+  `.row .nm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` +
+  `.row .amt{flex:none;text-align:right;white-space:nowrap}` +
+  `.total{font-size:16px;font-weight:700;line-height:1.3}` +
+  `.foot{text-align:center;font-size:10px;line-height:1.25;margin-top:4px;white-space:pre-line}`;
+
 function receiptDocument(bodyHtml: string, title: string): string {
   return (
     `<!doctype html><html><head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=58mm">` +
-    `<title>${escapeHtml(title)}</title>` +
-    `<style>` +
-    `@page{size:58mm 105mm;margin:2mm}` +
-    `html,body{margin:0;padding:0;background:#fff}` +
-    `body{color:#000;font:11px/1.25 ui-monospace,Menlo,Consolas,monospace;width:54mm;` +
-    `-webkit-print-color-adjust:exact;print-color-adjust:exact}` +
-    `*{color:#000!important;background:transparent!important;box-shadow:none!important}` +
-    `img.logo{display:block;margin:0 auto 2px;max-width:28mm;max-height:12mm;` +
-    `filter:grayscale(100%) contrast(140%)}` +
-    `.name{text-align:center;font-size:13px;font-weight:700;line-height:1.2;` +
-    `font-family:system-ui,sans-serif;text-transform:uppercase}` +
-    `.meta{text-align:center;font-size:10px;line-height:1.2}` +
-    `hr{border:none;border-top:1px dashed #000;margin:3px 0}` +
-    `.info{font-size:10px;line-height:1.3}` +
-    `.head{font-size:10px;font-weight:700;letter-spacing:.02em}` +
-    `.row{display:flex;gap:3px;font-size:11px;page-break-inside:avoid;break-inside:avoid}` +
-    `.row .qty{width:6mm;flex:none;text-align:right}` +
-    `.row .nm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` +
-    `.row .amt{flex:none;text-align:right;white-space:nowrap}` +
-    `.total{font-size:16px;font-weight:700;line-height:1.3}` +
-    `.foot{text-align:center;font-size:10px;line-height:1.25;margin-top:4px;` +
-    `white-space:pre-line}` +
-    `</style></head><body>${bodyHtml}</body></html>`
+    `<title>${escapeHtml(title)}</title><style>${RECEIPT_CSS}</style>` +
+    `</head><body>${bodyHtml}</body></html>`
   );
 }
 
@@ -189,6 +189,107 @@ function printHtml(html: string, title: string): boolean {
   return true;
 }
 
+/**
+ * Prints from the active document. Android WebView print services (including
+ * the one commonly used with Goojprt printers) may ignore an iframe's print
+ * target and capture its parent page. Keeping the receipt in the parent page
+ * and hiding every sibling in @media print prevents the app UI being printed.
+ */
+function printActiveDocument(bodyHtml: string, title: string): boolean {
+  if (printTarget() !== "browser" || !document.body || !document.head) return false;
+
+  const oldRoot = document.getElementById("bentako-print-receipt");
+  const oldStyle = document.getElementById("bentako-print-style");
+  oldRoot?.remove();
+  oldStyle?.remove();
+
+  const root = document.createElement("section");
+  root.id = "bentako-print-receipt";
+  root.setAttribute("aria-hidden", "true");
+  root.innerHTML = bodyHtml;
+
+  const style = document.createElement("style");
+  style.id = "bentako-print-style";
+  style.textContent =
+    `#bentako-print-receipt{position:fixed;left:-10000px;top:0;width:54mm;` +
+    `color:#000;background:#fff;font:11px/1.25 ui-monospace,Menlo,Consolas,monospace}` +
+    `@media print{` +
+    `@page{size:58mm 105mm;margin:2mm}` +
+    `html,body{width:54mm!important;min-width:54mm!important;max-width:54mm!important;` +
+    `height:auto!important;margin:0!important;padding:0!important;overflow:visible!important;background:#fff!important}` +
+    `body>*:not(#bentako-print-receipt){display:none!important}` +
+    `#bentako-print-receipt{display:block!important;position:static!important;left:auto!important;top:auto!important;` +
+    `width:54mm!important;margin:0!important;padding:0!important;color:#000!important;background:#fff!important;` +
+    `font:11px/1.25 ui-monospace,Menlo,Consolas,monospace!important;` +
+    `-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}` +
+    `#bentako-print-receipt *{color:#000!important;background:transparent!important;box-shadow:none!important}` +
+    `#bentako-print-receipt img.logo{display:block!important;margin:0 auto 2px!important;max-width:28mm!important;` +
+    `max-height:12mm!important;filter:grayscale(100%) contrast(140%)!important}` +
+    `#bentako-print-receipt .name{text-align:center;font:700 13px/1.2 system-ui,sans-serif!important;text-transform:uppercase}` +
+    `#bentako-print-receipt .meta{text-align:center;font-size:10px;line-height:1.2}` +
+    `#bentako-print-receipt hr{border:0!important;border-top:1px dashed #000!important;margin:3px 0!important}` +
+    `#bentako-print-receipt .info{font-size:10px;line-height:1.3}` +
+    `#bentako-print-receipt .head{font-size:10px;font-weight:700}` +
+    `#bentako-print-receipt .row{display:flex!important;gap:3px;font-size:11px;break-inside:avoid}` +
+    `#bentako-print-receipt .qty{width:6mm;flex:none;text-align:right}` +
+    `#bentako-print-receipt .nm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` +
+    `#bentako-print-receipt .amt{flex:none;text-align:right;white-space:nowrap}` +
+    `#bentako-print-receipt .total{font-size:16px;font-weight:700;line-height:1.3}` +
+    `#bentako-print-receipt .foot{text-align:center;font-size:10px;line-height:1.25;margin-top:4px;white-space:pre-line}` +
+    `}`;
+
+  document.head.appendChild(style);
+  document.body.appendChild(root);
+
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    window.removeEventListener("afterprint", afterPrint);
+    window.setTimeout(() => {
+      root.remove();
+      style.remove();
+    }, 1500);
+  };
+  const afterPrint = () => cleanup();
+  window.addEventListener("afterprint", afterPrint);
+
+  const printNow = () => {
+    try {
+      const previousTitle = document.title;
+      document.title = title;
+      window.focus();
+      window.print();
+      document.title = previousTitle;
+      window.setTimeout(cleanup, 60_000);
+    } catch {
+      cleanup();
+      printHtml(receiptDocument(bodyHtml, title), title);
+    }
+  };
+
+  const images = Array.from(root.querySelectorAll("img"));
+  if (images.length === 0 || images.every((image) => image.complete)) {
+    window.setTimeout(printNow, 50);
+  } else {
+    let started = false;
+    const once = () => {
+      if (started) return;
+      started = true;
+      printNow();
+    };
+    const check = () => {
+      if (images.every((image) => image.complete)) once();
+    };
+    images.forEach((image) => {
+      image.addEventListener("load", check, { once: true });
+      image.addEventListener("error", check, { once: true });
+    });
+    window.setTimeout(once, 2500);
+  }
+  return true;
+}
+
 /** Last resort when the hidden frame is blocked: a real window the user can print. */
 function openPrintWindow(html: string): boolean {
   try {
@@ -213,10 +314,13 @@ function openPrintWindow(html: string): boolean {
 
 /** Prints a structured receipt (store logo, items, big total). */
 export function printReceipt(doc: ReceiptPrintDoc, title = "Receipt"): boolean {
-  return printHtml(receiptDocument(buildReceiptHtml(doc), title), title);
+  return printActiveDocument(buildReceiptHtml(doc), title);
 }
 
 /** Prints a monospaced plain-text receipt. */
 export function printReceiptText(text: string, title = "Receipt"): boolean {
-  return printHtml(textDocument(text, title), title);
+  return printActiveDocument(
+    `<pre style="white-space:pre-wrap;font:inherit;margin:0">${escapeHtml(text)}</pre>`,
+    title,
+  );
 }
