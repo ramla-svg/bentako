@@ -42,12 +42,12 @@ function receiptDocument(bodyHtml: string, title: string): string {
     `font-family:system-ui,sans-serif;text-transform:uppercase}` +
     `.meta{text-align:center;font-size:10px;line-height:1.2}` +
     `hr{border:none;border-top:1px dashed #000;margin:3px 0}` +
-    `.head{display:flex;justify-content:space-between;font-size:10px;font-weight:700;` +
-    `letter-spacing:.02em}` +
-    `.row{display:flex;justify-content:space-between;gap:4px;font-size:11px;` +
-    `page-break-inside:avoid;break-inside:avoid}` +
-    `.row span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` +
-    `.row span:last-child{white-space:nowrap}` +
+    `.info{font-size:10px;line-height:1.3}` +
+    `.head{font-size:10px;font-weight:700;letter-spacing:.02em}` +
+    `.row{display:flex;gap:3px;font-size:11px;page-break-inside:avoid;break-inside:avoid}` +
+    `.row .qty{width:6mm;flex:none;text-align:right}` +
+    `.row .nm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` +
+    `.row .amt{flex:none;text-align:right;white-space:nowrap}` +
     `.total{font-size:16px;font-weight:700;line-height:1.3}` +
     `.foot{text-align:center;font-size:10px;line-height:1.25;margin-top:4px;` +
     `white-space:pre-line}` +
@@ -64,12 +64,20 @@ function textDocument(text: string, title: string): string {
   );
 }
 
-export type ReceiptPrintRow = { left: string; right: string; strong?: boolean; muted?: boolean };
+export type ReceiptPrintRow = {
+  left: string;
+  right: string;
+  strong?: boolean;
+  muted?: boolean;
+  qty?: string;
+};
 
 export type ReceiptPrintDoc = {
   logoUrl?: string | null;
   storeName: string;
   meta: string[];
+  /** Left-aligned lines (receipt no., date, cashier) shown under the store block. */
+  info?: string[];
   items: ReceiptPrintRow[];
   totals: ReceiptPrintRow[];
   footer?: string | null;
@@ -81,20 +89,29 @@ function buildReceiptHtml(doc: ReceiptPrintDoc): string {
   parts.push(`<div class="name">${escapeHtml(doc.storeName)}</div>`);
   for (const m of doc.meta) parts.push(`<div class="meta">${escapeHtml(m)}</div>`);
   parts.push("<hr>");
-  parts.push(`<div class="head"><span>QTY ITEM</span><span>AMOUNT</span></div>`);
+  for (const line of doc.info ?? []) parts.push(`<div class="info">${escapeHtml(line)}</div>`);
+  if ((doc.info ?? []).length > 0) parts.push("<hr>");
+  parts.push(
+    `<div class="row head"><span class="qty">QTY</span><span class="nm">ITEM</span>` +
+      `<span class="amt">AMOUNT</span></div>`,
+  );
   for (const it of doc.items) {
     parts.push(
-
-      `<div class="row"><span>${escapeHtml(it.left)}</span><span>${escapeHtml(it.right)}</span></div>`,
+      `<div class="row"><span class="qty">${escapeHtml(it.qty ?? "")}</span>` +
+        `<span class="nm">${escapeHtml(it.left)}</span>` +
+        `<span class="amt">${escapeHtml(it.right)}</span></div>`,
     );
   }
   parts.push("<hr>");
   for (const t of doc.totals) {
+    if (t.strong) parts.push("<hr>");
     const cls = `row${t.strong ? " total" : ""}`;
     parts.push(
-      `<div class="${cls}"><span>${escapeHtml(t.left)}</span><span>${escapeHtml(t.right)}</span></div>`,
+      `<div class="${cls}"><span class="nm">${escapeHtml(t.left)}</span>` +
+        `<span class="amt">${escapeHtml(t.right)}</span></div>`,
     );
   }
+  parts.push("<hr>");
   if (doc.footer) parts.push(`<div class="foot">${escapeHtml(doc.footer)}</div>`);
   return parts.join("");
 }

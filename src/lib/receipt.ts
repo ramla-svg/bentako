@@ -24,8 +24,12 @@ export function buildReceiptPrintDoc(
   const pro = isPro(store);
 
   const totals: ReceiptPrintDoc["totals"] = [
-    { left: "TOTAL", right: formatMoney(result.sale.total, currency), strong: true },
+    { left: "Subtotal", right: formatMoney(result.sale.subtotal, currency) },
   ];
+  if (result.sale.discount > 0) {
+    totals.push({ left: "Discount", right: `-${formatMoney(result.sale.discount, currency)}` });
+  }
+  totals.push({ left: "TOTAL", right: formatMoney(result.sale.total, currency), strong: true });
   if (result.sale.payment_method === "utang") {
     totals.push({ left: "UNPAID", right: "charged to utang" });
   } else if (result.sale.payment_method === "cash") {
@@ -35,16 +39,24 @@ export function buildReceiptPrintDoc(
     totals.push({ left: "Paid", right: result.sale.payment_method.toUpperCase() });
   }
 
-  const footerParts = [pro ? (store?.receipt_footer ?? "") : "", pro ? "" : "Powered by BentaKo"]
+  const footerParts = [
+    pro ? (store?.receipt_footer ?? "Salamat po!") : "Salamat po!",
+    pro ? "" : "Powered by BentaKo",
+  ]
     .filter(Boolean)
     .join("\n");
+
+  const info = [`Receipt : ${result.sale.transaction_number}`, `Date    : ${formatDateTime(result.sale.created_at)}`];
+  if (result.sale.cashier_name) info.push(`Cashier : ${result.sale.cashier_name}`);
 
   return {
     logoUrl: pro ? (logoUrl ?? null) : null,
     storeName: store?.name ?? "BentaKo",
-    meta: [result.sale.transaction_number, formatDateTime(result.sale.created_at)],
+    meta: [],
+    info,
     items: result.items.map((item) => ({
-      left: `${formatQty(item.quantity)}x ${item.product_name_snapshot}`,
+      qty: formatQty(item.quantity),
+      left: item.product_name_snapshot,
       right: formatMoney(item.subtotal, currency),
     })),
     totals,
