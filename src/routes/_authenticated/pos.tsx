@@ -29,9 +29,10 @@ import {
   type LocalProduct,
   type PaymentMethod,
 } from "@/lib/local-db";
-import { printReceiptText } from "@/lib/platform/print-service";
+import { printReceipt } from "@/lib/platform/print-service";
 import { shareText } from "@/lib/platform/share-service";
-import { buildReceiptText } from "@/lib/receipt";
+import { buildReceiptPrintDoc, buildReceiptText } from "@/lib/receipt";
+import { useStoreLogo } from "@/lib/store-logo";
 import {
   checkout,
   matchProductByCode,
@@ -58,6 +59,7 @@ function PosPage() {
   const { store, ctx } = useAppSession();
   const storeId = store?.id ?? "";
   const currency = store?.currency ?? "PHP";
+  const logoUrl = useStoreLogo(store?.logo_url);
 
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<string | "all">("all");
