@@ -71,6 +71,11 @@ function SettingsPage() {
 
   const [issues, setIssues] = useState<IntegrityIssue[] | null>(null);
 
+  // Receipt logo (Pro): picked on the phone, shrunk, then kept in cloud storage.
+  const logoUrl = useStoreLogo(store?.logo_url);
+  const logoInput = useRef<HTMLInputElement>(null);
+  const [logoBusy, setLogoBusy] = useState(false);
+
   // Owner tools (BentaKo staff only) and the list of phones using this shop.
   const checkAdmin = useServerFn(isBillingAdmin);
   const loadDevices = useServerFn(listStoreDevices);
