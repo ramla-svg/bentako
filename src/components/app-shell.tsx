@@ -144,14 +144,13 @@ export function AppShell({
                     <span className="absolute right-2 top-2 size-2 rounded-full bg-destructive" />
                   ) : null}
                 </Link>
-                <button
-                  type="button"
-                  aria-label="Sign out"
-                  onClick={() => void handleSignOut()}
+                <Link
+                  to="/settings"
+                  aria-label="Account settings"
                   className="grid size-9 shrink-0 place-items-center rounded-full bg-secondary font-display text-[11px] font-bold text-secondary-foreground sm:size-10 sm:text-xs"
                 >
                   {initials}
-                </button>
+                </Link>
               </div>
             ) : null}
             <div className="app-gutter grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-3 sm:gap-3 sm:py-3.5">
