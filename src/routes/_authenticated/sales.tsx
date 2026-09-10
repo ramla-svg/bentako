@@ -43,6 +43,7 @@ type RangeKey = "today" | "week" | "all";
 
 function SalesPage() {
   const { store, ctx, role, pro } = useAppSession();
+  const logoUrl = useStoreLogo(store?.logo_url);
   const storeId = store?.id ?? "";
   const currency = store?.currency ?? "PHP";
 
