@@ -670,12 +670,12 @@ const ProductTile = memo(function ProductTile({
       ) : null}
       <p className="line-clamp-2 text-sm font-semibold leading-snug">{product.name}</p>
       <div className="mt-2">
-        <p className="tnum font-display text-base font-bold text-primary">
+        <p className="tnum font-display text-2xl font-extrabold leading-tight text-primary">
           {formatMoney(product.selling_price, currency)}
         </p>
         <p
           className={cn(
-            "tnum text-[11px]",
+            "tnum text-xs font-medium",
             product.stock_quantity <= 0
               ? "text-destructive"
               : low
