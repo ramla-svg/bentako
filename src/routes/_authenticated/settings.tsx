@@ -173,6 +173,88 @@ function SettingsPage() {
             ) : null}
           </div>
 
+          <div className="space-y-2">
+            <Label>Receipt logo{pro ? "" : " · Pro"}</Label>
+            <div className="flex items-center gap-3">
+              <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-xl border bg-secondary">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Receipt logo" className="size-full object-contain" />
+                ) : (
+                  <ImagePlus className="size-5 text-muted-foreground" />
+                )}
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11"
+                  disabled={!isOwner || !pro || logoBusy}
+                  onClick={() => logoInput.current?.click()}
+                >
+                  {logoBusy ? "Uploading…" : logoUrl ? "Change logo" : "Upload logo"}
+                </Button>
+                {logoUrl && isOwner && pro ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-9 text-destructive"
+                    disabled={logoBusy}
+                    onClick={async () => {
+                      if (!store) return;
+                      setLogoBusy(true);
+                      try {
+                        await removeStoreLogo(store.id, store.logo_url);
+                        await refresh();
+                        toast.success("Logo removed.");
+                      } catch {
+                        toast.error("Could not remove the logo.");
+                      } finally {
+                        setLogoBusy(false);
+                      }
+                    }}
+                  >
+                    <X className="size-4" /> Remove logo
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+            <input
+              ref={logoInput}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (!file || !store) return;
+                if (!isOnline()) {
+                  toast.error("Connect to the internet to upload your logo.");
+                  return;
+                }
+                setLogoBusy(true);
+                try {
+                  await uploadStoreLogo(store.id, file);
+                  await refresh();
+                  toast.success("Logo saved — it now shows on your receipts.");
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : "Could not upload that image.");
+                } finally {
+                  setLogoBusy(false);
+                }
+              }}
+            />
+            <p className="text-xs text-muted-foreground">
+              {pro
+                ? "Your logo shows at the top of the receipt on screen and when you print. A square picture works best."
+                : "Your own logo on receipts comes with Pro."}
+            </p>
+            {!pro ? (
+              <Button asChild variant="outline" className="h-11 w-full">
+                <Link to="/upgrade">See BentaKo Pro</Link>
+              </Button>
+            ) : null}
+          </div>
+
           <div className="space-y-1.5">
             <Label>Default low-stock alert</Label>
             <Input
