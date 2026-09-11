@@ -1,9 +1,11 @@
 /**
- * Print abstraction. Today: browser printing of a receipt in a hidden iframe
- * (works in a PWA and in a WebView print bridge), with a new-window fallback.
- * Later a Bluetooth 58mm/80mm thermal driver can implement the same interface
- * without changing receipt business logic.
+ * Print abstraction. Android uses a dedicated native WebView print job so the
+ * print service never captures the visible app. Browsers use the active-page
+ * print path, with a separate-frame fallback.
  */
+
+import { registerPlugin } from "@capacitor/core";
+import { isNative, platformOS } from "@/lib/platform/platform-service";
 
 export type PrintTarget = "browser" | "unavailable";
 
@@ -27,8 +29,8 @@ function escapeHtml(value: string): string {
  */
 const RECEIPT_CSS =
   `@page{size:58mm 105mm;margin:2mm}` +
-  `html,body{margin:0;padding:0;background:#fff}` +
-  `body{color:#000;font:11px/1.25 ui-monospace,Menlo,Consolas,monospace;width:54mm;` +
+  `html,body{margin:0!important;padding:0!important;background:#fff!important;width:54mm!important}` +
+  `body{color:#000!important;font:11px/1.2 monospace;width:54mm!important;` +
   `-webkit-print-color-adjust:exact;print-color-adjust:exact}` +
   `*{color:#000!important;background:transparent!important;box-shadow:none!important}` +
   `img.logo{display:block;margin:0 auto 2px;max-width:28mm;max-height:12mm;` +
@@ -39,12 +41,20 @@ const RECEIPT_CSS =
   `hr{border:none;border-top:1px dashed #000;margin:3px 0}` +
   `.info{font-size:10px;line-height:1.3}` +
   `.head{font-size:10px;font-weight:700;letter-spacing:.02em}` +
-  `.row{display:flex;gap:3px;font-size:11px;page-break-inside:avoid;break-inside:avoid}` +
-  `.row .qty{width:6mm;flex:none;text-align:right}` +
-  `.row .nm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` +
-  `.row .amt{flex:none;text-align:right;white-space:nowrap}` +
+  `.row{display:grid;grid-template-columns:6mm minmax(0,1fr) auto;column-gap:1mm;` +
+  `font-size:11px;page-break-inside:avoid;break-inside:avoid}` +
+  `.row .qty{text-align:right}` +
+  `.row .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` +
+  `.row .amt{text-align:right;white-space:nowrap}` +
+  `.row:not(.head) .nm:first-child{grid-column:1/3;text-align:left}` +
   `.total{font-size:16px;font-weight:700;line-height:1.3}` +
   `.foot{text-align:center;font-size:10px;line-height:1.25;margin-top:4px;white-space:pre-line}`;
+
+type ReceiptPrinterPlugin = {
+  print(options: { html: string; title: string }): Promise<{ started: boolean }>;
+};
+
+const NativeReceiptPrinter = registerPlugin<ReceiptPrinterPlugin>("ReceiptPrinter");
 
 function receiptDocument(bodyHtml: string, title: string): string {
   return (
@@ -53,6 +63,14 @@ function receiptDocument(bodyHtml: string, title: string): string {
     `<title>${escapeHtml(title)}</title><style>${RECEIPT_CSS}</style>` +
     `</head><body>${bodyHtml}</body></html>`
   );
+}
+
+function printNativeReceipt(bodyHtml: string, title: string): boolean {
+  if (!isNative() || platformOS() !== "android") return false;
+  void NativeReceiptPrinter.print({ html: receiptDocument(bodyHtml, title), title }).catch(() => {
+    printActiveDocument(bodyHtml, title);
+  });
+  return true;
 }
 
 
@@ -314,13 +332,12 @@ function openPrintWindow(html: string): boolean {
 
 /** Prints a structured receipt (store logo, items, big total). */
 export function printReceipt(doc: ReceiptPrintDoc, title = "Receipt"): boolean {
-  return printActiveDocument(buildReceiptHtml(doc), title);
+  const html = buildReceiptHtml(doc);
+  return printNativeReceipt(html, title) || printActiveDocument(html, title);
 }
 
 /** Prints a monospaced plain-text receipt. */
 export function printReceiptText(text: string, title = "Receipt"): boolean {
-  return printActiveDocument(
-    `<pre style="white-space:pre-wrap;font:inherit;margin:0">${escapeHtml(text)}</pre>`,
-    title,
-  );
+  const html = `<pre style="white-space:pre-wrap;font:inherit;margin:0">${escapeHtml(text)}</pre>`;
+  return printNativeReceipt(html, title) || printActiveDocument(html, title);
 }
