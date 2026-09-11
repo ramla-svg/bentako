@@ -248,10 +248,12 @@ function printActiveDocument(bodyHtml: string, title: string): boolean {
     `#bentako-print-receipt hr{border:0!important;border-top:1px dashed #000!important;margin:3px 0!important}` +
     `#bentako-print-receipt .info{font-size:10px;line-height:1.3}` +
     `#bentako-print-receipt .head{font-size:10px;font-weight:700}` +
-    `#bentako-print-receipt .row{display:flex!important;gap:3px;font-size:11px;break-inside:avoid}` +
-    `#bentako-print-receipt .qty{width:6mm;flex:none;text-align:right}` +
-    `#bentako-print-receipt .nm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` +
-    `#bentako-print-receipt .amt{flex:none;text-align:right;white-space:nowrap}` +
+    `#bentako-print-receipt .row{display:grid!important;grid-template-columns:6mm minmax(0,1fr) auto;` +
+    `column-gap:1mm;font-size:11px;break-inside:avoid}` +
+    `#bentako-print-receipt .qty{text-align:right}` +
+    `#bentako-print-receipt .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` +
+    `#bentako-print-receipt .amt{text-align:right;white-space:nowrap}` +
+    `#bentako-print-receipt .row:not(.head) .nm:first-child{grid-column:1/3;text-align:left}` +
     `#bentako-print-receipt .total{font-size:16px;font-weight:700;line-height:1.3}` +
     `#bentako-print-receipt .foot{text-align:center;font-size:10px;line-height:1.25;margin-top:4px;white-space:pre-line}` +
     `}`;
