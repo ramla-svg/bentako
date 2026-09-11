@@ -73,7 +73,6 @@ function printNativeReceipt(bodyHtml: string, title: string): boolean {
   return true;
 }
 
-
 /** Wraps plain text so old callers keep working. */
 function textDocument(text: string, title: string): string {
   return receiptDocument(
