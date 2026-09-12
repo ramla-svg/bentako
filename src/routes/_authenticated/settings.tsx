@@ -304,8 +304,16 @@ function SettingsPage() {
               : "Free covers selling, receipts, cash and utang on this phone — up to 60 products, 7 days of reports, no cloud backup."}
           </p>
           <Button asChild variant={pro ? "outline" : "default"} className="h-12 w-full">
-            <Link to="/upgrade">{pro ? "Manage plan" : "See BentaKo Pro — ₱99/month"}</Link>
+            <Link to="/upgrade">
+              {pro ? "Manage plan" : nativeApp ? "What BentaKo Pro includes" : "See BentaKo Pro — ₱99/month"}
+            </Link>
           </Button>
+          {nativeApp && !pro ? (
+            <p className="text-xs text-muted-foreground">
+              Your plan is managed on your BentaKo account at bentako.lovable.app. Changes show up
+              here automatically.
+            </p>
+          ) : null}
         </section>
 
         {isAdmin ? (
@@ -567,6 +575,26 @@ function SettingsPage() {
           </section>
         ) : null}
 
+        <section className="space-y-3 rounded-2xl border bg-card p-4">
+          <h2 className="flex items-center gap-2 font-display text-sm font-bold">
+            <FileText className="size-4 text-primary" /> Legal
+          </h2>
+          <div className="divide-y rounded-xl border text-sm">
+            <Link to="/terms" className="flex items-center justify-between gap-2 px-3 py-3">
+              Terms of Service <ChevronRight className="size-4 text-muted-foreground" />
+            </Link>
+            <Link to="/privacy" className="flex items-center justify-between gap-2 px-3 py-3">
+              Privacy Policy <ChevronRight className="size-4 text-muted-foreground" />
+            </Link>
+            <Link
+              to="/delete-account"
+              className="flex items-center justify-between gap-2 px-3 py-3"
+            >
+              How account deletion works <ChevronRight className="size-4 text-muted-foreground" />
+            </Link>
+          </div>
+        </section>
+
         <Button
           variant="outline"
           className="h-12 w-full text-destructive"
@@ -577,6 +605,56 @@ function SettingsPage() {
         >
           <LogOut className="size-4" /> Sign out
         </Button>
+
+        <section className="space-y-3 rounded-2xl border border-destructive/40 bg-destructive/5 p-4">
+          <h2 className="flex items-center gap-2 font-display text-sm font-bold text-destructive">
+            <Trash2 className="size-4" /> Delete my account
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {isOwner
+              ? "This removes your sign-in and your whole shop: sales, products, stock, cash, utang, expenses and any cashier sign-ins. It cannot be undone."
+              : "This removes your own sign-in and profile. The shop and its records stay with the owner."}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Want a copy of your figures first? Export them from Reports before you delete.
+          </p>
+          <Label htmlFor="delete-confirm">
+            Type <span className="font-bold">DELETE</span> to confirm
+          </Label>
+          <Input
+            id="delete-confirm"
+            value={deleteText}
+            onChange={(e) => setDeleteText(e.target.value.toUpperCase())}
+            placeholder="DELETE"
+            className="h-12"
+            autoComplete="off"
+          />
+          <Button
+            variant="destructive"
+            className="h-12 w-full"
+            disabled={deleteText.trim() !== "DELETE" || deleting}
+            onClick={async () => {
+              if (!isOnline()) {
+                toast.error("Connect to the internet to delete your account.");
+                return;
+              }
+              setDeleting(true);
+              try {
+                await removeAccount({ data: { confirm: "DELETE" } });
+                await clearLocalData();
+                await signOut();
+                toast.success("Your account and records were deleted.");
+                void navigate({ to: "/auth", replace: true });
+              } catch {
+                toast.error("Could not delete the account. Please try again.");
+              } finally {
+                setDeleting(false);
+              }
+            }}
+          >
+            {deleting ? "Deleting…" : "Delete my account permanently"}
+          </Button>
+        </section>
 
         <p className="pb-4 text-center text-xs text-muted-foreground">
           BentaKo works offline. Sales are saved on this device and uploaded when you have signal.
