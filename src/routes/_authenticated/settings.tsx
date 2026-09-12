@@ -6,12 +6,14 @@ import {
   ChevronRight,
   Crown,
   Download,
+  FileText,
   ImagePlus,
   LogOut,
   RefreshCw,
   ShieldCheck,
   Smartphone,
   Sparkles,
+  Trash2,
   Wrench,
   X,
 } from "lucide-react";
@@ -31,7 +33,9 @@ import { runningBuildId } from "@/lib/build-info";
 import { formatDateTime } from "@/lib/format";
 import { runIntegrityCheck, type IntegrityIssue } from "@/lib/integrity";
 import { applyAppUpdate, checkForAppUpdate } from "@/lib/register-sw";
-import { getSetting } from "@/lib/local-db";
+import { db, getSetting } from "@/lib/local-db";
+import { deleteMyAccount } from "@/lib/account.functions";
+import { useIsNativeApp } from "@/hooks/use-native-app";
 import { promptInstall, useInstallState } from "@/lib/platform/install-service";
 import { platformLabel } from "@/lib/platform/platform-service";
 import { seedDemoProducts } from "@/lib/repo";
