@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Eye, EyeOff, Loader2, Store } from "lucide-react";
 import { toast } from "sonner";
@@ -196,6 +196,17 @@ function AuthPage() {
         </Button>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
+          By continuing you agree to our{" "}
+          <Link to="/terms" className="text-primary underline">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link to="/privacy" className="text-primary underline">
+            Privacy Policy
+          </Link>
+          .
+        </p>
+        <p className="mt-2 text-center text-xs text-muted-foreground">
           Quick PIN unlock for cashiers is coming in a later update.
         </p>
       </div>
