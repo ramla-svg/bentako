@@ -6,6 +6,7 @@ import { AppShell } from "@/components/app-shell";
 import { GcashPaySheet } from "@/components/gcash-pay-sheet";
 import { Button } from "@/components/ui/button";
 import { useAppSession } from "@/hooks/use-app-session";
+import { useIsNativeApp } from "@/hooks/use-native-app";
 import { formatDateTime } from "@/lib/format";
 import { PRO_PRICE_MONTHLY, PRO_PRICE_YEARLY, daysLeft } from "@/lib/plan";
 import { cn } from "@/lib/utils";
@@ -83,6 +84,16 @@ function UpgradePage() {
                     left !== null && left >= 0 ? ` · ${left} day${left === 1 ? "" : "s"} left` : ""
                   }`
                 : "Everything is unlocked on this store."}
+            </p>
+          </section>
+        ) : nativeApp ? (
+          <section className="rounded-2xl border bg-card p-4">
+            <p className="font-display text-sm font-bold">Your plan: Free</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              BentaKo Pro is ₱{PRO_PRICE_MONTHLY} a month or ₱{PRO_PRICE_YEARLY} a year and is
+              managed on your BentaKo account. Open bentako.lovable.app in your browser and sign in
+              with the same account to change your plan. Once it is active, it unlocks here
+              automatically.
             </p>
           </section>
         ) : (
