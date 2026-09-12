@@ -75,6 +75,23 @@ function SettingsPage() {
 
   const [issues, setIssues] = useState<IntegrityIssue[] | null>(null);
 
+  // Buying Pro never happens inside the Android app (Google Play rule).
+  const nativeApp = useIsNativeApp();
+
+  // Account deletion (required by Google Play for apps with sign-in).
+  const removeAccount = useServerFn(deleteMyAccount);
+  const [deleteText, setDeleteText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  /** Clear everything this phone kept locally, so nothing is left behind. */
+  async function clearLocalData() {
+    try {
+      await db().delete();
+    } catch {
+      /* the account is already gone on the server; local leftovers are cleared on next open */
+    }
+  }
+
   // Receipt logo (Pro): picked on the phone, shrunk, then kept in cloud storage.
   const logoUrl = useStoreLogo(store?.logo_url);
   const logoInput = useRef<HTMLInputElement>(null);
