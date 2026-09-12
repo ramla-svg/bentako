@@ -167,7 +167,7 @@ function UpgradePage() {
           </table>
         </section>
 
-        {!pro ? (
+        {!pro && !nativeApp ? (
           <>
             <Button className="h-14 w-full text-base" onClick={() => setOpen(true)}>
               <Sparkles className="size-4" />
@@ -193,7 +193,7 @@ function UpgradePage() {
         </section>
       </div>
 
-      <GcashPaySheet open={open} onOpenChange={setOpen} period={period} />
+      {nativeApp ? null : <GcashPaySheet open={open} onOpenChange={setOpen} period={period} />}
 
     </AppShell>
   );
