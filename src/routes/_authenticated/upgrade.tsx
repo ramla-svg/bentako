@@ -62,6 +62,9 @@ function UpgradePage() {
   const [period, setPeriod] = useState<"monthly" | "yearly">("monthly");
   const [open, setOpen] = useState(false);
   const left = daysLeft(store);
+  // Inside the Android app we only show what Pro includes and the current
+  // status. Buying happens on the BentaKo website, never in the app.
+  const nativeApp = useIsNativeApp();
 
   return (
     <AppShell
