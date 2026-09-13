@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowRight, Loader2, PackagePlus, Store } from "lucide-react";
 import { toast } from "sonner";
@@ -184,6 +184,17 @@ function Onboarding() {
               <Button variant="ghost" className="h-11 w-full" onClick={() => setStep(1)}>
                 Back
               </Button>
+              <p className="pt-2 text-center text-xs text-muted-foreground">
+                By finishing setup you agree to the{" "}
+                <Link to="/terms" className="text-primary underline">
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link to="/privacy" className="text-primary underline">
+                  Privacy Policy
+                </Link>
+                .
+              </p>
             </div>
           </div>
         )}
