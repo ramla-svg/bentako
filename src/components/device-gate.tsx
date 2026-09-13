@@ -53,13 +53,17 @@ export function DeviceGate() {
 
   return (
     <Dialog open={blocked !== null} onOpenChange={(open) => (open ? null : setBlocked(null))}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {blocked === "cashier_limit" ? <Crown className="size-5 text-primary" /> : <Smartphone className="size-5 text-primary" />}
-            {blocked === "cashier_limit" ? "Cashier sign-ins are full" : "This shop already uses its phones"}
+      <DialogContent className="w-[calc(100%-2rem)] max-w-md max-h-[calc(100dvh-2rem)] gap-5 overflow-y-auto rounded-lg p-4 sm:w-[calc(100%-3rem)] sm:p-6 md:max-w-2xl">
+        <DialogHeader className="min-w-0 pr-7 text-left">
+          <DialogTitle className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 text-xl leading-tight sm:text-2xl">
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+              {blocked === "cashier_limit" ? <Crown className="size-5" /> : <Smartphone className="size-5" />}
+            </span>
+            <span className="min-w-0 pt-1">
+              {blocked === "cashier_limit" ? "Cashier sign-ins are full" : "This shop already uses its phones"}
+            </span>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="pl-12 text-sm leading-relaxed sm:text-base">
             {blocked === "cashier_limit"
               ? pro
                 ? `BentaKo Pro allows ${limit} cashier sign-ins. Ask the owner to remove a cashier first.`
@@ -68,53 +72,53 @@ export function DeviceGate() {
           </DialogDescription>
         </DialogHeader>
 
-        {blocked === "device_limit" && devices.length > 0 ? (
-          <ul className="divide-y rounded-xl border text-sm">
-            {devices.map((d) => (
-              <li key={d.id} className="flex items-center justify-between gap-3 px-3 py-2">
-                <span className="min-w-0">
-                  <span className="block truncate font-medium">{d.label ?? "Phone"}</span>
-                  <span className="block truncate text-xs text-muted-foreground">
+        <div className={blocked === "device_limit" && devices.length > 0 ? "grid min-w-0 gap-5 md:grid-cols-[minmax(0,1fr)_minmax(15rem,0.85fr)] md:items-start" : "min-w-0"}>
+          {blocked === "device_limit" && devices.length > 0 ? (
+            <ul className="max-h-56 min-w-0 divide-y overflow-y-auto rounded-lg border text-sm sm:max-h-64">
+              {devices.map((d) => (
+                <li key={d.id} className="min-w-0 px-4 py-3">
+                  <span className="block break-words font-medium leading-snug">{d.label ?? "Phone"}</span>
+                  <span className="mt-1 block text-xs leading-snug text-muted-foreground">
                     Last used {formatDateTime(d.last_seen_at)}
                   </span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : null}
 
-        <div className="space-y-2">
-          {blocked === "device_limit" && oldest ? (
-            <Button
-              className="h-12 w-full"
-              disabled={busy}
-              onClick={async () => {
-                setBusy(true);
-                try {
-                  await release({ data: { id: oldest.id } });
-                  toast.success("That phone was released.");
-                  await run();
-                } catch {
-                  toast.error("Could not release that phone.");
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-              Release “{oldest.label ?? "Phone"}” and use this one
+          <div className="min-w-0 space-y-2">
+            {blocked === "device_limit" && oldest ? (
+              <Button
+                className="min-h-12 h-auto w-full whitespace-normal px-4 py-3 text-center leading-snug"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await release({ data: { id: oldest.id } });
+                    toast.success("That phone was released.");
+                    await run();
+                  } catch {
+                    toast.error("Could not release that phone.");
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                {busy ? <Loader2 className="size-4 animate-spin" /> : null}
+                <span className="min-w-0 break-words">Release “{oldest.label ?? "Phone"}” and use this one</span>
+              </Button>
+            ) : null}
+            {!pro ? (
+              <Button asChild variant="outline" className="min-h-12 h-auto w-full whitespace-normal px-4 py-3 text-center leading-snug">
+                <Link to="/upgrade" onClick={() => setBlocked(null)}>
+                  <Crown className="size-4" /> See BentaKo Pro
+                </Link>
+              </Button>
+            ) : null}
+            <Button variant="ghost" className="h-11 w-full" onClick={() => setBlocked(null)}>
+              Not now
             </Button>
-          ) : null}
-          {!pro ? (
-            <Button asChild variant="outline" className="h-12 w-full">
-              <Link to="/upgrade" onClick={() => setBlocked(null)}>
-                <Crown className="size-4" /> See BentaKo Pro
-              </Link>
-            </Button>
-          ) : null}
-          <Button variant="ghost" className="h-11 w-full" onClick={() => setBlocked(null)}>
-            Not now
-          </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
