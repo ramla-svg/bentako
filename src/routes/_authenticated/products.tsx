@@ -1,7 +1,20 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useMemo, useState } from "react";
-import { Copy, Crown, MoreVertical, Package, Pencil, Plus, Search, Trash2, Undo2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Camera,
+  Copy,
+  Crown,
+  ImageIcon,
+  MoreVertical,
+  Package,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  Undo2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 
@@ -32,10 +45,14 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useAppSession } from "@/hooks/use-app-session";
 import { formatMoney, formatQty } from "@/lib/format";
+import { downscaleImage } from "@/lib/image-file";
 import { UNIT_TYPES, db, type LocalProduct, type UnitType } from "@/lib/local-db";
 import {
   archiveProduct,
+  deleteProductPhoto,
   duplicateProduct,
+  getProductPhoto,
+  putProductPhoto,
   restoreProduct,
   saveCategory,
   saveProduct,
