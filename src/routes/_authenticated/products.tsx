@@ -227,7 +227,11 @@ function ProductsPage() {
       low_stock_threshold: String(p.low_stock_threshold),
       unit_type: p.unit_type,
     });
+    clearPhotoPick(null);
     setOpen(true);
+    void getProductPhoto(p.id).then((blob) => {
+      if (blob) clearPhotoPick(URL.createObjectURL(blob));
+    });
   }
 
   async function submit() {
