@@ -307,6 +307,7 @@ class BentakoDatabase extends Dexie {
   customers!: Table<LocalCustomer, string>;
   customer_payments!: Table<LocalCustomerPayment, string>;
   cash_photos!: Table<LocalCashPhoto, string>;
+  product_photos!: Table<LocalProductPhoto, string>;
   sync_queue!: Table<SyncQueueItem, string>;
   settings!: Table<SettingRow, string>;
 
@@ -365,6 +366,10 @@ class BentakoDatabase extends Dexie {
             row.notes = row.notes ?? null;
           }),
       );
+    // v6 adds device-only product photos (Pro). Additive and never synced.
+    this.version(6).stores({
+      product_photos: "id, store_id, product_id, created_at",
+    });
   }
 }
 
