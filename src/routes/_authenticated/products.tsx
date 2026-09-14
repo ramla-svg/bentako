@@ -186,9 +186,33 @@ function ProductsPage() {
       return;
     }
     setForm(emptyForm(store?.default_low_stock_threshold ?? 5));
+    clearPhotoPick(null);
     setOpen(true);
   }
 
+  /** Resets the picked photo and shows `preview` (an existing photo, or nothing). */
+  function clearPhotoPick(preview: string | null) {
+    setPhoto(null);
+    setPhotoPreview((old) => {
+      if (old && old !== preview) URL.revokeObjectURL(old);
+      return preview;
+    });
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function pickPhoto(file: File | null) {
+    if (!file) return;
+    try {
+      const small = await downscaleImage(file, 800, 0.7);
+      setPhoto(small);
+      setPhotoPreview((old) => {
+        if (old) URL.revokeObjectURL(old);
+        return URL.createObjectURL(small);
+      });
+    } catch {
+      toast.error("Could not read that photo.");
+    }
+  }
 
   function openEdit(p: LocalProduct) {
     setForm({
