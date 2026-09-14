@@ -212,6 +212,19 @@ export interface LocalCashPhoto {
   created_at: string;
 }
 
+/**
+ * A product photo. Device-only, like cash receipt photos: never synced,
+ * never uploaded, so it costs the shop nothing to keep.
+ */
+export interface LocalProductPhoto {
+  id: string;
+  store_id: string;
+  product_id: string;
+  blob: Blob;
+  content_type: string;
+  size: number;
+  created_at: string;
+}
 
 /* ---------------------------------------------------------- credit ledger */
 
