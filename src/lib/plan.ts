@@ -26,6 +26,8 @@ export interface PlanLimits {
   reportDays: number;
   cloudBackup: boolean;
   export: boolean;
+  /** true = the shop can attach a photo to each product. */
+  productPhotos: boolean;
   /** true = "Powered by BentaKo" stays on receipts. */
   branding: boolean;
 }
@@ -38,6 +40,7 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
     reportDays: 7,
     cloudBackup: false,
     export: false,
+    productPhotos: false,
     branding: true,
   },
   pro: {
@@ -47,6 +50,7 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
     reportDays: Number.POSITIVE_INFINITY,
     cloudBackup: true,
     export: true,
+    productPhotos: true,
     branding: false,
   },
 };

@@ -1,7 +1,20 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useMemo, useState } from "react";
-import { Copy, Crown, MoreVertical, Package, Pencil, Plus, Search, Trash2, Undo2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Camera,
+  Copy,
+  Crown,
+  ImageIcon,
+  MoreVertical,
+  Package,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  Undo2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 
@@ -32,10 +45,14 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useAppSession } from "@/hooks/use-app-session";
 import { formatMoney, formatQty } from "@/lib/format";
+import { downscaleImage } from "@/lib/image-file";
 import { UNIT_TYPES, db, type LocalProduct, type UnitType } from "@/lib/local-db";
 import {
   archiveProduct,
+  deleteProductPhoto,
   duplicateProduct,
+  getProductPhoto,
+  putProductPhoto,
   restoreProduct,
   saveCategory,
   saveProduct,
@@ -95,7 +112,37 @@ function ProductsPage() {
   const [form, setForm] = useState<FormState>(() => emptyForm(store?.default_low_stock_threshold ?? 5));
   const [newCategory, setNewCategory] = useState("");
   const [busy, setBusy] = useState(false);
+  /** Photo chosen in the form: Blob = new pick, null = leave as-is, "remove" = clear. */
+  const [photo, setPhoto] = useState<Blob | null | "remove">(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
+  const photoBlobs = useLiveQuery(
+    async () =>
+      storeId
+        ? new Map(
+            (await db().product_photos.where("store_id").equals(storeId).toArray()).map((row) => [
+              row.product_id,
+              row.blob,
+            ]),
+          )
+        : new Map<string, Blob>(),
+    [storeId],
+    new Map<string, Blob>(),
+  );
+
+  const thumbs = useMemo(() => {
+    const map = new Map<string, string>();
+    photoBlobs?.forEach((blob, id) => map.set(id, URL.createObjectURL(blob)));
+    return map;
+  }, [photoBlobs]);
+
+  useEffect(
+    () => () => {
+      thumbs.forEach((url) => URL.revokeObjectURL(url));
+    },
+    [thumbs],
+  );
 
   const products = useLiveQuery(
     async () =>
@@ -132,6 +179,7 @@ function ProductsPage() {
   );
   const limit = limits.products;
   const atLimit = activeCount >= limit;
+  const canPhoto = limits.productPhotos;
 
   function openNew() {
     if (atLimit) {
@@ -139,9 +187,33 @@ function ProductsPage() {
       return;
     }
     setForm(emptyForm(store?.default_low_stock_threshold ?? 5));
+    clearPhotoPick(null);
     setOpen(true);
   }
 
+  /** Resets the picked photo and shows `preview` (an existing photo, or nothing). */
+  function clearPhotoPick(preview: string | null) {
+    setPhoto(null);
+    setPhotoPreview((old) => {
+      if (old && old !== preview) URL.revokeObjectURL(old);
+      return preview;
+    });
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function pickPhoto(file: File | null) {
+    if (!file) return;
+    try {
+      const small = await downscaleImage(file, 800, 0.7);
+      setPhoto(small);
+      setPhotoPreview((old) => {
+        if (old) URL.revokeObjectURL(old);
+        return URL.createObjectURL(small);
+      });
+    } catch {
+      toast.error("Could not read that photo.");
+    }
+  }
 
   function openEdit(p: LocalProduct) {
     setForm({
@@ -156,7 +228,11 @@ function ProductsPage() {
       low_stock_threshold: String(p.low_stock_threshold),
       unit_type: p.unit_type,
     });
+    clearPhotoPick(null);
     setOpen(true);
+    void getProductPhoto(p.id).then((blob) => {
+      if (blob) clearPhotoPick(URL.createObjectURL(blob));
+    });
   }
 
   async function submit() {
@@ -180,7 +256,7 @@ function ProductsPage() {
     try {
       let categoryId: string | null = form.category_id === "none" ? null : form.category_id;
       if (newCategory.trim()) categoryId = await saveCategory(ctx.storeId, newCategory.trim());
-      await saveProduct(ctx, {
+      const saved = await saveProduct(ctx, {
         ...(form.id ? { id: form.id } : {}),
         name: form.name,
         category_id: categoryId,
@@ -192,8 +268,13 @@ function ProductsPage() {
         low_stock_threshold: Number(form.low_stock_threshold) || 0,
         unit_type: form.unit_type,
       });
+      if (canPhoto) {
+        if (photo === "remove") await deleteProductPhoto(saved.id);
+        else if (photo) await putProductPhoto(ctx.storeId, saved.id, photo);
+      }
       toast.success(form.id ? "Product updated." : "Product added.");
       setNewCategory("");
+      clearPhotoPick(null);
       setOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save product.");
@@ -264,11 +345,24 @@ function ProductsPage() {
             {filtered.map((p) => {
               const category = (categories ?? []).find((c) => c.id === p.category_id);
               const low = p.stock_quantity <= p.low_stock_threshold;
+              const thumb = canPhoto ? thumbs.get(p.id) : undefined;
               return (
                 <li
                   key={p.id}
-                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border bg-card p-3"
+                  className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border bg-card p-3"
                 >
+                  {thumb ? (
+                    <img
+                      src={thumb}
+                      alt={p.name}
+                      className="size-14 shrink-0 rounded-xl border object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
+                      <Package className="size-5" />
+                    </div>
+                  )}
                   <div className="min-w-0">
                     <p className="truncate font-semibold">{p.name}</p>
                     <p className="truncate text-xs text-muted-foreground">
@@ -351,6 +445,72 @@ function ProductsPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
+            {canPhoto ? (
+              <Field label="Photo">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    {photoPreview ? (
+                      <>
+                        <img
+                          src={photoPreview}
+                          alt="Product photo"
+                          className="size-20 rounded-xl border object-cover"
+                        />
+                        <button
+                          type="button"
+                          aria-label="Remove photo"
+                          onClick={() => {
+                            setPhoto("remove");
+                            setPhotoPreview((old) => {
+                              if (old) URL.revokeObjectURL(old);
+                              return null;
+                            });
+                            if (fileRef.current) fileRef.current.value = "";
+                          }}
+                          className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </>
+                    ) : (
+                      <div className="flex size-20 items-center justify-center rounded-xl border border-dashed bg-secondary text-muted-foreground">
+                        <ImageIcon className="size-6" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-11 w-full"
+                      onClick={() => fileRef.current?.click()}
+                    >
+                      <Camera className="size-4" /> {photoPreview ? "Change photo" : "Add photo"}
+                    </Button>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Saved on this phone only — it never uses your data to upload.
+                    </p>
+                  </div>
+                </div>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => void pickPhoto(e.target.files?.[0] ?? null)}
+                />
+              </Field>
+            ) : (
+              <Link
+                to="/upgrade"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2.5 text-sm"
+              >
+                <Camera className="size-4 shrink-0 text-primary" />
+                <span className="min-w-0 flex-1">Add product photos with Pro</span>
+                <span className="shrink-0 font-semibold text-primary">Upgrade</span>
+              </Link>
+            )}
             <Field label="Product name">
               <Input
                 value={form.name}
