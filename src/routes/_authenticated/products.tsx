@@ -267,8 +267,13 @@ function ProductsPage() {
         low_stock_threshold: Number(form.low_stock_threshold) || 0,
         unit_type: form.unit_type,
       });
+      if (canPhoto) {
+        if (photo === "remove") await deleteProductPhoto(saved.id);
+        else if (photo) await putProductPhoto(ctx.storeId, saved.id, photo);
+      }
       toast.success(form.id ? "Product updated." : "Product added.");
       setNewCategory("");
+      clearPhotoPick(null);
       setOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save product.");
