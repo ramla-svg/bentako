@@ -445,6 +445,72 @@ function ProductsPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
+            {canPhoto ? (
+              <Field label="Photo">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    {photoPreview ? (
+                      <>
+                        <img
+                          src={photoPreview}
+                          alt="Product photo"
+                          className="size-20 rounded-xl border object-cover"
+                        />
+                        <button
+                          type="button"
+                          aria-label="Remove photo"
+                          onClick={() => {
+                            setPhoto("remove");
+                            setPhotoPreview((old) => {
+                              if (old) URL.revokeObjectURL(old);
+                              return null;
+                            });
+                            if (fileRef.current) fileRef.current.value = "";
+                          }}
+                          className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </>
+                    ) : (
+                      <div className="flex size-20 items-center justify-center rounded-xl border border-dashed bg-secondary text-muted-foreground">
+                        <ImageIcon className="size-6" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-11 w-full"
+                      onClick={() => fileRef.current?.click()}
+                    >
+                      <Camera className="size-4" /> {photoPreview ? "Change photo" : "Add photo"}
+                    </Button>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Saved on this phone only — it never uses your data to upload.
+                    </p>
+                  </div>
+                </div>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => void pickPhoto(e.target.files?.[0] ?? null)}
+                />
+              </Field>
+            ) : (
+              <Link
+                to="/upgrade"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2.5 text-sm"
+              >
+                <Camera className="size-4 shrink-0 text-primary" />
+                <span className="min-w-0 flex-1">Add product photos with Pro</span>
+                <span className="shrink-0 font-semibold text-primary">Upgrade</span>
+              </Link>
+            )}
             <Field label="Product name">
               <Input
                 value={form.name}
