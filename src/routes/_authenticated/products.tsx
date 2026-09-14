@@ -179,6 +179,7 @@ function ProductsPage() {
   );
   const limit = limits.products;
   const atLimit = activeCount >= limit;
+  const canPhoto = limits.productPhotos;
 
   function openNew() {
     if (atLimit) {
