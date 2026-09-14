@@ -26,6 +26,8 @@ export interface PlanLimits {
   reportDays: number;
   cloudBackup: boolean;
   export: boolean;
+  /** true = the shop can attach a photo to each product. */
+  productPhotos: boolean;
   /** true = "Powered by BentaKo" stays on receipts. */
   branding: boolean;
 }

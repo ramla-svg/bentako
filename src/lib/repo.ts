@@ -768,6 +768,37 @@ export async function deleteCashPhoto(cashTransactionId: string): Promise<void> 
   if (rows.length) await db().cash_photos.bulkDelete(rows.map((r) => r.id));
 }
 
+/* -------------------------------------------- device-only product photos */
+
+/** Stores (or replaces) the photo attached to a product. Local only. */
+export async function putProductPhoto(
+  storeId: string,
+  productId: string,
+  blob: Blob,
+): Promise<void> {
+  const existing = await db().product_photos.where("product_id").equals(productId).toArray();
+  if (existing.length) await db().product_photos.bulkDelete(existing.map((p) => p.id));
+  await db().product_photos.put({
+    id: uuid(),
+    store_id: storeId,
+    product_id: productId,
+    blob,
+    content_type: blob.type || "image/jpeg",
+    size: blob.size,
+    created_at: nowIso(),
+  });
+}
+
+export async function getProductPhoto(productId: string): Promise<Blob | null> {
+  const rows = await db().product_photos.where("product_id").equals(productId).toArray();
+  return rows[0]?.blob ?? null;
+}
+
+export async function deleteProductPhoto(productId: string): Promise<void> {
+  const rows = await db().product_photos.where("product_id").equals(productId).toArray();
+  if (rows.length) await db().product_photos.bulkDelete(rows.map((r) => r.id));
+}
+
 /* ------------------------------------------------- manual wallet balance */
 
 /** Current e-wallet balance derived from all non-drawer cash entries. */
