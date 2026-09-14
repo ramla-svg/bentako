@@ -112,7 +112,37 @@ function ProductsPage() {
   const [form, setForm] = useState<FormState>(() => emptyForm(store?.default_low_stock_threshold ?? 5));
   const [newCategory, setNewCategory] = useState("");
   const [busy, setBusy] = useState(false);
+  /** Photo chosen in the form: Blob = new pick, null = leave as-is, "remove" = clear. */
+  const [photo, setPhoto] = useState<Blob | null | "remove">(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
+  const photoBlobs = useLiveQuery(
+    async () =>
+      storeId
+        ? new Map(
+            (await db().product_photos.where("store_id").equals(storeId).toArray()).map((row) => [
+              row.product_id,
+              row.blob,
+            ]),
+          )
+        : new Map<string, Blob>(),
+    [storeId],
+    new Map<string, Blob>(),
+  );
+
+  const thumbs = useMemo(() => {
+    const map = new Map<string, string>();
+    photoBlobs?.forEach((blob, id) => map.set(id, URL.createObjectURL(blob)));
+    return map;
+  }, [photoBlobs]);
+
+  useEffect(
+    () => () => {
+      thumbs.forEach((url) => URL.revokeObjectURL(url));
+    },
+    [thumbs],
+  );
 
   const products = useLiveQuery(
     async () =>
