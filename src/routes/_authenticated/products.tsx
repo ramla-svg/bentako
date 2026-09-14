@@ -345,11 +345,24 @@ function ProductsPage() {
             {filtered.map((p) => {
               const category = (categories ?? []).find((c) => c.id === p.category_id);
               const low = p.stock_quantity <= p.low_stock_threshold;
+              const thumb = canPhoto ? thumbs.get(p.id) : undefined;
               return (
                 <li
                   key={p.id}
-                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border bg-card p-3"
+                  className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border bg-card p-3"
                 >
+                  {thumb ? (
+                    <img
+                      src={thumb}
+                      alt={p.name}
+                      className="size-14 shrink-0 rounded-xl border object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
+                      <Package className="size-5" />
+                    </div>
+                  )}
                   <div className="min-w-0">
                     <p className="truncate font-semibold">{p.name}</p>
                     <p className="truncate text-xs text-muted-foreground">
