@@ -255,7 +255,7 @@ function ProductsPage() {
     try {
       let categoryId: string | null = form.category_id === "none" ? null : form.category_id;
       if (newCategory.trim()) categoryId = await saveCategory(ctx.storeId, newCategory.trim());
-      await saveProduct(ctx, {
+      const saved = await saveProduct(ctx, {
         ...(form.id ? { id: form.id } : {}),
         name: form.name,
         category_id: categoryId,
