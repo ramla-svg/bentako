@@ -80,10 +80,7 @@ export function isPro(store: PlanFields | null | undefined): boolean {
 }
 
 /** True when another product still fits on the current plan. */
-export function canAddProduct(
-  store: PlanFields | null | undefined,
-  activeCount: number,
-): boolean {
+export function canAddProduct(store: PlanFields | null | undefined, activeCount: number): boolean {
   return activeCount < planLimits(store).products;
 }
 
