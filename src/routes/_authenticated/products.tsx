@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-
 import { AppShell, EmptyState } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import {
@@ -109,7 +108,9 @@ function ProductsPage() {
   const [showArchived, setShowArchived] = useState(false);
   const [open, setOpen] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
-  const [form, setForm] = useState<FormState>(() => emptyForm(store?.default_low_stock_threshold ?? 5));
+  const [form, setForm] = useState<FormState>(() =>
+    emptyForm(store?.default_low_stock_threshold ?? 5),
+  );
   const [newCategory, setNewCategory] = useState("");
   const [busy, setBusy] = useState(false);
   /** Photo chosen in the form: Blob = new pick, null = leave as-is, "remove" = clear. */
@@ -173,10 +174,7 @@ function ProductsPage() {
     );
   }, [products, search, showArchived]);
 
-  const activeCount = useMemo(
-    () => (products ?? []).filter((p) => p.is_active).length,
-    [products],
-  );
+  const activeCount = useMemo(() => (products ?? []).filter((p) => p.is_active).length, [products]);
   const limit = limits.products;
   const atLimit = activeCount >= limit;
   const canPhoto = limits.productPhotos;
@@ -327,7 +325,6 @@ function ProductsPage() {
           <span className="text-sm">Show archived</span>
           <Switch checked={showArchived} onCheckedChange={setShowArchived} />
         </div>
-
 
         {filtered.length === 0 ? (
           <EmptyState
@@ -649,7 +646,6 @@ function ProductsPage() {
     </AppShell>
   );
 }
-
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
