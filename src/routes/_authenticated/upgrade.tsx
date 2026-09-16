@@ -47,7 +47,7 @@ const ROWS: Row[] = [
   { label: "Cloud backup & restore", free: false, pro: true },
   { label: "Report history", free: "7 days", pro: "Buong history" },
   { label: "Export to spreadsheet", free: false, pro: true },
-  { label: "Your logo on receipts", free: false, pro: true },
+  { label: "Product photos", free: false, pro: true },
   { label: "Offline POS & receipts", free: true, pro: true },
   { label: "Cash & utang ledger", free: true, pro: true },
 ];
