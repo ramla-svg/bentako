@@ -179,6 +179,25 @@ function ProductsPage() {
   const atLimit = activeCount >= limit;
   const canPhoto = limits.productPhotos;
 
+  const stockValue = useMemo(() => {
+    const inStock = (products ?? []).filter((p) => p.is_active && p.stock_quantity > 0);
+    let capital = 0;
+    let retail = 0;
+    let units = 0;
+    for (const p of inStock) {
+      capital += p.cost_price * p.stock_quantity;
+      retail += p.selling_price * p.stock_quantity;
+      units += p.stock_quantity;
+    }
+    return {
+      capital,
+      retail,
+      income: retail - capital,
+      units,
+      margin: capital > 0 ? ((retail - capital) / capital) * 100 : null,
+    };
+  }, [products]);
+
   function openNew() {
     if (atLimit) {
       setLimitOpen(true);
