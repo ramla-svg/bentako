@@ -1,17 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Check,
-  Minus,
-  Plus,
-  Printer,
-  Search,
-  Share2,
-  ShoppingBasket,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Check, Minus, Plus, Search, ShoppingBasket, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell, EmptyState } from "@/components/app-shell";
