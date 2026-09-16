@@ -330,6 +330,47 @@ function ProductsPage() {
           </Link>
         ) : null}
 
+        <section className="rounded-2xl border bg-card p-3 sm:p-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-display text-sm font-bold">Stock value</h2>
+            <span className="tnum shrink-0 text-xs text-muted-foreground">
+              {formatQty(stockValue.units)} in stock{showArchived ? " · active only" : ""}
+            </span>
+          </div>
+
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <div className="min-w-0 rounded-xl bg-muted/50 px-3 py-2">
+              <p className="text-xs text-muted-foreground">Capital</p>
+              <p className="tnum truncate font-display text-base font-bold">
+                {formatMoney(stockValue.capital, currency)}
+              </p>
+            </div>
+            <div className="min-w-0 rounded-xl bg-muted/50 px-3 py-2">
+              <p className="text-xs text-muted-foreground">Retail</p>
+              <p className="tnum truncate font-display text-base font-bold">
+                {formatMoney(stockValue.retail, currency)}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-primary/10 px-3 py-2">
+            <p className="min-w-0 text-xs font-medium text-muted-foreground">Income if all sold</p>
+            <p className="shrink-0 text-right">
+              <span className="tnum block font-display text-lg font-extrabold text-primary">
+                {formatMoney(stockValue.income, currency)}
+              </span>
+              {stockValue.margin === null ? null : (
+                <span className="tnum block text-xs font-semibold text-muted-foreground">
+                  {stockValue.margin >= 0 ? "+" : ""}
+                  {stockValue.margin.toFixed(1)}% margin
+                </span>
+              )}
+            </p>
+          </div>
+        </section>
+
+
+
         <div className="relative">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
