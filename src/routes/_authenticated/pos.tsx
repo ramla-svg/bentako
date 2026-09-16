@@ -599,38 +599,6 @@ function PosPage() {
                   </p>
                 ) : null}
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  className="h-12"
-                  onClick={() => {
-                    const ok = printReceipt(
-                      buildReceiptPrintDoc(receipt, store, logoUrl),
-                      receipt.sale.transaction_number,
-                    );
-                    if (!ok)
-                      toast.error(
-                        "This device cannot print. Use Share to send the receipt instead.",
-                      );
-                  }}
-                >
-                  <Printer className="size-4" /> Print
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-12"
-                  onClick={async () => {
-                    const result = await shareText({
-                      title: `Receipt ${receipt.sale.transaction_number}`,
-                      text: buildReceiptText(receipt, store),
-                    });
-                    if (result === "copied") toast.success("Receipt copied.");
-                    if (result === "unavailable") toast.error("Sharing is not available here.");
-                  }}
-                >
-                  <Share2 className="size-4" /> Share
-                </Button>
-              </div>
               <Button className="h-12 w-full" onClick={() => setReceipt(null)}>
                 New sale
               </Button>
