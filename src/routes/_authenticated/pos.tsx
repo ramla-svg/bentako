@@ -19,9 +19,6 @@ import {
   type LocalProduct,
   type PaymentMethod,
 } from "@/lib/local-db";
-import { printReceipt } from "@/lib/platform/print-service";
-import { shareText } from "@/lib/platform/share-service";
-import { buildReceiptPrintDoc, buildReceiptText } from "@/lib/receipt";
 import { useStoreLogo } from "@/lib/store-logo";
 import {
   checkout,
