@@ -1,17 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Check,
-  Minus,
-  Plus,
-  Printer,
-  Search,
-  Share2,
-  ShoppingBasket,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Check, Minus, Plus, Search, ShoppingBasket, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell, EmptyState } from "@/components/app-shell";
@@ -29,9 +19,6 @@ import {
   type LocalProduct,
   type PaymentMethod,
 } from "@/lib/local-db";
-import { printReceipt } from "@/lib/platform/print-service";
-import { shareText } from "@/lib/platform/share-service";
-import { buildReceiptPrintDoc, buildReceiptText } from "@/lib/receipt";
 import { useStoreLogo } from "@/lib/store-logo";
 import {
   checkout,
@@ -598,38 +585,6 @@ function PosPage() {
                     {store.receipt_footer}
                   </p>
                 ) : null}
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  className="h-12"
-                  onClick={() => {
-                    const ok = printReceipt(
-                      buildReceiptPrintDoc(receipt, store, logoUrl),
-                      receipt.sale.transaction_number,
-                    );
-                    if (!ok)
-                      toast.error(
-                        "This device cannot print. Use Share to send the receipt instead.",
-                      );
-                  }}
-                >
-                  <Printer className="size-4" /> Print
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-12"
-                  onClick={async () => {
-                    const result = await shareText({
-                      title: `Receipt ${receipt.sale.transaction_number}`,
-                      text: buildReceiptText(receipt, store),
-                    });
-                    if (result === "copied") toast.success("Receipt copied.");
-                    if (result === "unavailable") toast.error("Sharing is not available here.");
-                  }}
-                >
-                  <Share2 className="size-4" /> Share
-                </Button>
               </div>
               <Button className="h-12 w-full" onClick={() => setReceipt(null)}>
                 New sale
