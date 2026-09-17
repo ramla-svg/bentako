@@ -38,6 +38,8 @@ interface Row {
   label: string;
   free: string | boolean;
   pro: string | boolean;
+  /** Highlighted "Coming soon" row — feature not available yet on any plan. */
+  soon?: boolean;
 }
 
 const ROWS: Row[] = [
@@ -48,8 +50,9 @@ const ROWS: Row[] = [
   { label: "Report history", free: "7 days", pro: "Buong history" },
   { label: "Export to spreadsheet", free: false, pro: true },
   { label: "Product photos", free: false, pro: true },
-  { label: "Offline POS & receipts", free: true, pro: true },
   { label: "Cash & utang ledger", free: true, pro: true },
+  { label: "Receipt printing (thermal printer)", free: "—", pro: "—", soon: true },
+  { label: "Offline POS receipts", free: "—", pro: "—", soon: true },
 ];
 
 function Cell({ value }: { value: string | boolean }) {
@@ -152,17 +155,33 @@ function UpgradePage() {
               </tr>
             </thead>
             <tbody>
-              {ROWS.map((row) => (
-                <tr key={row.label} className="border-b last:border-0">
-                  <td className="p-3 text-sm">{row.label}</td>
-                  <td className="p-3 text-center">
-                    <Cell value={row.free} />
-                  </td>
-                  <td className="bg-primary/5 p-3 text-center">
-                    <Cell value={row.pro} />
-                  </td>
-                </tr>
-              ))}
+              {ROWS.map((row) =>
+                row.soon ? (
+                  <tr key={row.label} className="border-b bg-accent/20 last:border-0">
+                    <td className="p-3 text-sm">
+                      <span className="block">{row.label}</span>
+                      <span className="mt-1 inline-block rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-accent-foreground">
+                        Coming soon
+                      </span>
+                    </td>
+                    <td colSpan={2} className="p-3 text-center">
+                      <span className="text-xs font-semibold text-accent-foreground">
+                        In the works — included on all plans once ready
+                      </span>
+                    </td>
+                  </tr>
+                ) : (
+                  <tr key={row.label} className="border-b last:border-0">
+                    <td className="p-3 text-sm">{row.label}</td>
+                    <td className="p-3 text-center">
+                      <Cell value={row.free} />
+                    </td>
+                    <td className="bg-primary/5 p-3 text-center">
+                      <Cell value={row.pro} />
+                    </td>
+                  </tr>
+                ),
+              )}
             </tbody>
           </table>
         </section>
