@@ -155,17 +155,33 @@ function UpgradePage() {
               </tr>
             </thead>
             <tbody>
-              {ROWS.map((row) => (
-                <tr key={row.label} className="border-b last:border-0">
-                  <td className="p-3 text-sm">{row.label}</td>
-                  <td className="p-3 text-center">
-                    <Cell value={row.free} />
-                  </td>
-                  <td className="bg-primary/5 p-3 text-center">
-                    <Cell value={row.pro} />
-                  </td>
-                </tr>
-              ))}
+              {ROWS.map((row) =>
+                row.soon ? (
+                  <tr key={row.label} className="border-b bg-amber-50/70 last:border-0">
+                    <td className="p-3 text-sm">
+                      <span className="block">{row.label}</span>
+                      <span className="mt-1 inline-block rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-950">
+                        Coming soon
+                      </span>
+                    </td>
+                    <td colSpan={2} className="p-3 text-center">
+                      <span className="text-xs font-semibold text-amber-700">
+                        In the works — included on all plans once ready
+                      </span>
+                    </td>
+                  </tr>
+                ) : (
+                  <tr key={row.label} className="border-b last:border-0">
+                    <td className="p-3 text-sm">{row.label}</td>
+                    <td className="p-3 text-center">
+                      <Cell value={row.free} />
+                    </td>
+                    <td className="bg-primary/5 p-3 text-center">
+                      <Cell value={row.pro} />
+                    </td>
+                  </tr>
+                ),
+              )}
             </tbody>
           </table>
         </section>
