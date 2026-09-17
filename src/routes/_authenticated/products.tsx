@@ -605,13 +605,17 @@ function ProductsPage() {
                   className="tnum h-12"
                 />
               </Field>
-              <Field label="Low stock alert">
+              <Field label="Warn me when stock is this low">
                 <Input
                   value={form.low_stock_threshold}
                   onChange={(e) => setForm({ ...form, low_stock_threshold: e.target.value })}
                   inputMode="decimal"
                   className="tnum h-12"
+                  placeholder="5"
                 />
+                <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+                  Not the stock on hand. Keep it small, like 5.
+                </p>
               </Field>
             </div>
             <Field label="Unit">
