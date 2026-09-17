@@ -157,15 +157,15 @@ function UpgradePage() {
             <tbody>
               {ROWS.map((row) =>
                 row.soon ? (
-                  <tr key={row.label} className="border-b bg-amber-50/70 last:border-0">
+                  <tr key={row.label} className="border-b bg-accent/20 last:border-0">
                     <td className="p-3 text-sm">
                       <span className="block">{row.label}</span>
-                      <span className="mt-1 inline-block rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-950">
+                      <span className="mt-1 inline-block rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-accent-foreground">
                         Coming soon
                       </span>
                     </td>
                     <td colSpan={2} className="p-3 text-center">
-                      <span className="text-xs font-semibold text-amber-700">
+                      <span className="text-xs font-semibold text-accent-foreground">
                         In the works — included on all plans once ready
                       </span>
                     </td>
