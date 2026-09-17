@@ -38,6 +38,8 @@ interface Row {
   label: string;
   free: string | boolean;
   pro: string | boolean;
+  /** Highlighted "Coming soon" row — feature not available yet on any plan. */
+  soon?: boolean;
 }
 
 const ROWS: Row[] = [
@@ -48,8 +50,9 @@ const ROWS: Row[] = [
   { label: "Report history", free: "7 days", pro: "Buong history" },
   { label: "Export to spreadsheet", free: false, pro: true },
   { label: "Product photos", free: false, pro: true },
-  { label: "Offline POS & receipts", free: true, pro: true },
   { label: "Cash & utang ledger", free: true, pro: true },
+  { label: "Receipt printing (thermal printer)", free: "—", pro: "—", soon: true },
+  { label: "Offline POS receipts", free: "—", pro: "—", soon: true },
 ];
 
 function Cell({ value }: { value: string | boolean }) {
