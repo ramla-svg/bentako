@@ -53,7 +53,7 @@ function MorePage() {
           <li key={item.to}>
             <Link
               to={item.to}
-              className="flex items-center gap-3 rounded-2xl border bg-card p-4 active:bg-accent/10"
+              className="flex items-center gap-3 fin-card p-4 active:bg-accent/10"
             >
               <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
                 <item.icon className="size-5" />

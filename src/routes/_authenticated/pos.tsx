@@ -338,7 +338,7 @@ function PosPage() {
 
           <div className="space-y-2">
             {lines.map((l) => (
-              <div key={l.product_id} className="flex items-center gap-3 rounded-xl border bg-card p-3">
+              <div key={l.product_id} className="flex items-center gap-3 fin-card p-3">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-base font-semibold">{l.name}</p>
                   <p className="tnum text-sm font-medium text-muted-foreground">
@@ -614,7 +614,7 @@ const ProductTile = memo(function ProductTile({
     <button
       onClick={() => onAdd(product)}
       className={cn(
-        "relative flex min-h-28 flex-col justify-between rounded-2xl border bg-card p-3 text-left",
+        "relative flex min-h-28 flex-col justify-between fin-card p-3 text-left",
         inCart > 0 && "border-primary ring-1 ring-primary",
       )}
     >

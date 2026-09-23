@@ -150,7 +150,7 @@ function SalesPage() {
               <li key={s.id}>
                 <button
                   onClick={() => setDetail(s)}
-                  className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border bg-card p-3 text-left"
+                  className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 fin-card p-3 text-left"
                 >
                   <div className="min-w-0">
                     <p className="truncate font-semibold">{s.transaction_number}</p>

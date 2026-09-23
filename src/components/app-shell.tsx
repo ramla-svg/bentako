@@ -10,6 +10,7 @@ import {
   MoreHorizontal,
   Package,
   Receipt,
+  ScanLine,
   Settings,
   ShoppingBasket,
   Store,
@@ -120,7 +121,7 @@ export function AppShell({
         </aside>
 
         <div className="min-w-0 max-w-full flex-1 overflow-x-clip pb-28 lg:pb-8">
-          <header className="safe-top sticky top-0 z-30 w-full border-b bg-background">
+          <header className="safe-top sticky top-0 z-30 w-full border-b bg-card">
             {brand ? (
               <div className="app-gutter flex items-center gap-2.5 pt-3 sm:gap-3 sm:pt-3.5">
                 <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground sm:size-10 sm:rounded-2xl">
@@ -220,15 +221,15 @@ function BottomNav({ pathname }: { pathname: string }) {
           const active = pathname.startsWith(item.to);
           if (item.to === "/pos") {
             return (
-              <li key={item.to} className="flex justify-center">
+              <li key={item.to} className="flex flex-col items-center justify-end">
                 <Link
                   to="/pos"
-                  aria-label="Open POS"
-                  className="-mt-7 flex size-16 flex-col items-center justify-center gap-0.5 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95"
+                  aria-label="Scan or start a new sale"
+                  className="-mt-8 grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/35 ring-4 ring-card active:scale-95"
                 >
-                  <ShoppingBasket className="size-6" />
-                  <span className="text-[10px] font-bold uppercase tracking-wide">POS</span>
+                  <ScanLine className="size-6" />
                 </Link>
+                <span className="mt-1 text-[11px] font-medium text-muted-foreground">POS</span>
               </li>
             );
           }

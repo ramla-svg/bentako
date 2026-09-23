@@ -136,12 +136,12 @@ export function GcashPaySheet({ open, onOpenChange, period }: Props) {
               <img
                 src={config.gcashQrUrl}
                 alt="GCash QR code for paying BentaKo Pro"
-                className="mx-auto size-44 rounded-2xl border bg-card object-contain p-2"
+                className="mx-auto size-44 fin-card object-contain p-2"
                 loading="lazy"
               />
             ) : null}
 
-            <dl className="space-y-2 rounded-2xl border bg-card p-3 text-sm">
+            <dl className="space-y-2 fin-card p-3 text-sm">
               <div className="flex items-center justify-between gap-3">
                 <dt className="text-muted-foreground">GCash name</dt>
                 <dd className="font-medium">{config?.gcashName || "—"}</dd>

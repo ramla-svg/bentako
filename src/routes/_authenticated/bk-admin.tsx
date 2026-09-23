@@ -131,7 +131,7 @@ function AdminPage() {
   return (
     <AppShell title="Pro payments" subtitle={`${pending.length} waiting to confirm`}>
       <div className="space-y-4">
-        <section className="space-y-3 rounded-2xl border bg-card p-4">
+        <section className="space-y-3 fin-card p-4">
           <h2 className="font-display text-sm font-bold">Where shops send the money</h2>
           <div className="space-y-2">
             <Label htmlFor="gname">GCash name</Label>
@@ -232,12 +232,12 @@ function AdminPage() {
         <section className="space-y-3">
           <h2 className="font-display text-sm font-bold">Waiting to confirm</h2>
           {pending.length === 0 ? (
-            <p className="rounded-2xl border bg-card p-4 text-sm text-muted-foreground">
+            <p className="fin-card p-4 text-sm text-muted-foreground">
               Nothing waiting right now.
             </p>
           ) : (
             pending.map((row) => (
-              <article key={row.id} className="space-y-2 rounded-2xl border bg-card p-4">
+              <article key={row.id} className="space-y-2 fin-card p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate font-semibold">{row.store_name ?? "Unnamed store"}</p>
@@ -283,7 +283,7 @@ function AdminPage() {
           )}
         </section>
 
-        <section className="space-y-2 rounded-2xl border bg-card p-4">
+        <section className="space-y-2 fin-card p-4">
           <h2 className="font-display text-sm font-bold">
             Approved this month · {formatMoney(monthTotal, "PHP")}
           </h2>

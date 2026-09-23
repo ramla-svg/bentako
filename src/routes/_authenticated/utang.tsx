@@ -139,7 +139,7 @@ function UtangPage() {
                 <Link
                   to="/utang/$customerId"
                   params={{ customerId: c.id }}
-                  className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-2xl border bg-card p-4 active:bg-accent/10"
+                  className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 fin-card p-4 active:bg-accent/10"
                 >
                   <span className="min-w-0">
                     <span className="block truncate font-semibold">{c.name}</span>

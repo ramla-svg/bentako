@@ -190,7 +190,7 @@ function InventoryPage() {
                 {filtered.map((p) => {
                   const low = p.stock_quantity <= p.low_stock_threshold;
                   return (
-                    <li key={p.id} className="rounded-2xl border bg-card p-3">
+                    <li key={p.id} className="fin-card p-3">
                       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
                         <div className="min-w-0">
                           <p className="truncate font-semibold">{p.name}</p>
@@ -248,7 +248,7 @@ function InventoryPage() {
               return (
                 <li
                   key={m.id}
-                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border bg-card p-3"
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 fin-card p-3"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold">{product?.name ?? "Product"}</p>
@@ -362,7 +362,7 @@ function SummaryTile({
   return (
     <div
       className={cn(
-        "rounded-2xl border bg-card p-3",
+        "fin-card p-3",
         tone === "warning" && "border-warning/50 bg-warning/10",
         tone === "danger" && "border-destructive/40 bg-destructive/10",
       )}

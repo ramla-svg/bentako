@@ -330,7 +330,7 @@ function ProductsPage() {
           </Link>
         ) : null}
 
-        <section className="rounded-2xl border bg-card p-3 sm:p-4">
+        <section className="fin-card p-3 sm:p-4">
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-display text-sm font-bold">Stock value</h2>
             <span className="tnum shrink-0 text-xs text-muted-foreground">
@@ -381,7 +381,7 @@ function ProductsPage() {
           />
         </div>
 
-        <div className="flex items-center justify-between rounded-xl border bg-card px-4 py-2.5">
+        <div className="flex items-center justify-between fin-card px-4 py-2.5">
           <span className="text-sm">Show archived</span>
           <Switch checked={showArchived} onCheckedChange={setShowArchived} />
         </div>
@@ -406,7 +406,7 @@ function ProductsPage() {
               return (
                 <li
                   key={p.id}
-                  className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border bg-card p-3"
+                  className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 fin-card p-3"
                 >
                   {thumb ? (
                     <img

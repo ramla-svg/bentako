@@ -158,7 +158,7 @@ function SettingsPage() {
   return (
     <AppShell back title="Settings" subtitle={email ?? undefined}>
       <div className="space-y-4">
-        <section className="space-y-3 rounded-2xl border bg-card p-4">
+        <section className="space-y-3 fin-card p-4">
           <h2 className="font-display text-sm font-bold">Store details</h2>
           <div className="space-y-1.5">
             <Label>Store name</Label>
@@ -309,7 +309,7 @@ function SettingsPage() {
           )}
         </section>
 
-        <section className="space-y-3 rounded-2xl border bg-card p-4">
+        <section className="space-y-3 fin-card p-4">
           <h2 className="flex items-center gap-2 font-display text-sm font-bold">
             <Crown className="size-4 text-primary" /> Your plan
           </h2>
@@ -338,7 +338,7 @@ function SettingsPage() {
         </section>
 
         {isAdmin ? (
-          <section className="space-y-3 rounded-2xl border bg-card p-4">
+          <section className="space-y-3 fin-card p-4">
             <h2 className="flex items-center gap-2 font-display text-sm font-bold">
               <Wrench className="size-4 text-primary" /> Owner tools
             </h2>
@@ -354,7 +354,7 @@ function SettingsPage() {
           </section>
         ) : null}
 
-        <section className="space-y-3 rounded-2xl border bg-card p-4">
+        <section className="space-y-3 fin-card p-4">
           <h2 className="flex items-center gap-2 font-display text-sm font-bold">
             <Smartphone className="size-4 text-primary" /> Phones using this shop
           </h2>
@@ -402,7 +402,7 @@ function SettingsPage() {
           )}
         </section>
 
-        <section className="space-y-3 rounded-2xl border bg-card p-4">
+        <section className="space-y-3 fin-card p-4">
           <h2 className="font-display text-sm font-bold">Offline &amp; Sync</h2>
 
           <dl className="space-y-1.5 text-sm">
@@ -461,7 +461,7 @@ function SettingsPage() {
 
         </section>
 
-        <section className="space-y-3 rounded-2xl border bg-card p-4">
+        <section className="space-y-3 fin-card p-4">
           <h2 className="font-display text-sm font-bold">
             {install.installed ? "BentaKo is installed" : "Install BentaKo"}
           </h2>
@@ -498,7 +498,7 @@ function SettingsPage() {
         </section>
 
 
-        <section className="space-y-3 rounded-2xl border bg-card p-4">
+        <section className="space-y-3 fin-card p-4">
           <h2 className="font-display text-sm font-bold">App version</h2>
           <p className="text-sm text-muted-foreground">
             BentaKo updates itself when a new version is published. If this device still shows old
@@ -538,7 +538,7 @@ function SettingsPage() {
 
 
         {isOwner ? (
-          <section className="space-y-3 rounded-2xl border bg-card p-4">
+          <section className="space-y-3 fin-card p-4">
             <h2 className="font-display text-sm font-bold">Data check</h2>
             <p className="text-sm text-muted-foreground">
               Looks for sales without items, totals that don&apos;t match, missing stock movements,
@@ -577,7 +577,7 @@ function SettingsPage() {
 
 
         {isOwner ? (
-          <section className="space-y-3 rounded-2xl border bg-card p-4">
+          <section className="space-y-3 fin-card p-4">
             <h2 className="font-display text-sm font-bold">Sample data</h2>
             <p className="text-sm text-muted-foreground">
               Add common sari-sari products for testing or training.
@@ -596,7 +596,7 @@ function SettingsPage() {
           </section>
         ) : null}
 
-        <section className="space-y-3 rounded-2xl border bg-card p-4">
+        <section className="space-y-3 fin-card p-4">
           <h2 className="flex items-center gap-2 font-display text-sm font-bold">
             <FileText className="size-4 text-primary" /> Legal
           </h2>
