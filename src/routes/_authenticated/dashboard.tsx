@@ -370,8 +370,8 @@ function GlanceCard({
     <Link
       to={to}
       className={cn(
-        "flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl border bg-card px-1 py-2 text-center sm:flex-row sm:gap-2.5 sm:rounded-2xl sm:p-3 sm:text-left",
-        highlight && "border-warning/50 bg-warning/10",
+        "fin-card flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-center sm:flex-row sm:gap-2.5 sm:p-3 sm:text-left",
+        highlight && "border-warning/60 bg-status-warn",
       )}
     >
       <span className={cn("grid size-7 shrink-0 place-items-center rounded-lg sm:size-9 sm:rounded-full", TINT[tint])}>
@@ -401,12 +401,14 @@ function ActionTile({
   return (
     <Link
       to={to}
-      className="flex min-h-16 min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl border bg-card px-1 py-2 text-center active:opacity-90 sm:min-h-24 sm:items-start sm:justify-between sm:rounded-2xl sm:p-3.5 sm:text-left"
+      className="fin-card flex min-h-[4.75rem] min-w-0 flex-col items-center justify-center gap-1.5 px-1 py-2.5 text-center active:opacity-90 sm:min-h-24 sm:items-start sm:justify-between sm:p-3.5 sm:text-left"
     >
       <span className={cn("grid size-9 shrink-0 place-items-center rounded-full", TINT[tint])}>
         <Icon className="size-4.5 sm:size-5" />
       </span>
-      <span className="line-clamp-2 font-display text-[9px] font-bold leading-tight sm:text-sm">{label}</span>
+      <span className="line-clamp-2 font-display text-[10px] font-semibold leading-tight sm:text-sm">
+        {label}
+      </span>
     </Link>
   );
 }
