@@ -135,7 +135,7 @@ function Dashboard() {
         <PlanReminder />
         {/* Sales today */}
 
-        <div className="min-w-0 rounded-2xl bg-primary p-3 text-primary-foreground sm:rounded-3xl sm:p-5">
+        <div className="fin-hero min-w-0 p-4 sm:p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] opacity-80">
@@ -229,14 +229,14 @@ function Dashboard() {
         <section>
           <SectionHead title="Quick actions" to="/more" label="See all" />
           <div className="mt-1.5 grid grid-cols-4 gap-1.5 sm:mt-2 sm:gap-3">
-            <ActionTile to="/products" icon={Package} tint="mint" label="Products" />
-            <ActionTile to="/inventory" icon={Boxes} tint="sky" label="Inventory" />
-            <ActionTile to="/cash" icon={Smartphone} tint="blue" label="GCash Cash In/Out" />
-            
+            <ActionTile to="/pos" icon={ShoppingCart} tint="mint" label="POS" />
+            <ActionTile to="/products" icon={Package} tint="sky" label="Products" />
+            <ActionTile to="/inventory" icon={Boxes} tint="peach" label="Inventory" />
+            <ActionTile to="/utang" icon={HandCoins} tint="lavender" label="Customers" />
+            <ActionTile to="/cash" icon={Smartphone} tint="blue" label="GCash" />
             <ActionTile to="/expenses" icon={Wallet} tint="rose" label="Expenses" />
             <ActionTile to="/sales" icon={Receipt} tint="mint" label="Sales" />
-            <ActionTile to="/reports" icon={BarChart3} tint="lavender" label="Reports" />
-            <ActionTile to="/utang" icon={HandCoins} tint="mint" label="Customers (Utang)" />
+            <ActionTile to="/reports" icon={BarChart3} tint="sky" label="Reports" />
           </div>
         </section>
 
