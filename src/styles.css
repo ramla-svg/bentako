@@ -117,6 +117,22 @@
   --tile-peach-ink: oklch(0.6 0.15 55);
   --tile-blue: oklch(0.94 0.05 255);
   --tile-blue-ink: oklch(0.52 0.2 262);
+
+  /* Fintech status pills + hero card treatment */
+  --status-ok: oklch(0.945 0.045 158);
+  --status-ok-ink: oklch(0.44 0.11 158);
+  --status-warn: oklch(0.96 0.06 85);
+  --status-warn-ink: oklch(0.52 0.13 65);
+  --status-bad: oklch(0.955 0.03 20);
+  --status-bad-ink: oklch(0.54 0.19 22);
+  --gradient-hero: linear-gradient(
+    145deg,
+    oklch(0.44 0.1 162) 0%,
+    oklch(0.36 0.09 160) 55%,
+    oklch(0.3 0.075 158) 100%
+  );
+  --shadow-card: 0 1px 2px oklch(0.21 0.025 155 / 6%), 0 8px 24px -16px oklch(0.21 0.025 155 / 18%);
+  --shadow-hero: 0 18px 40px -22px oklch(0.36 0.09 160 / 55%);
 }
 
 
