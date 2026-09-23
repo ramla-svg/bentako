@@ -385,7 +385,7 @@ function GlanceCard({
   );
 }
 
-type ActionTo = GlanceTo | "/products" | "/sales" | "/reports";
+type ActionTo = GlanceTo | "/products" | "/sales" | "/reports" | "/pos";
 
 function ActionTile({
   to,
