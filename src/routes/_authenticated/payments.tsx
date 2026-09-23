@@ -148,7 +148,7 @@ function PaymentsPage() {
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {[...totals.entries()].map(([type, value]) => (
-            <div key={type} className="rounded-2xl border bg-card p-3">
+            <div key={type} className="fin-card p-3">
               <p className="truncate text-[11px] font-medium text-muted-foreground">
                 {TYPE_LABELS[type] ?? type}
               </p>
@@ -202,12 +202,12 @@ function PaymentsPage() {
                   {r.saleId ? (
                     <Link
                       to="/sales"
-                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border bg-card p-3 active:bg-accent/10"
+                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 fin-card p-3 active:bg-accent/10"
                     >
                       {body}
                     </Link>
                   ) : (
-                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border bg-card p-3">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 fin-card p-3">
                       {body}
                     </div>
                   )}

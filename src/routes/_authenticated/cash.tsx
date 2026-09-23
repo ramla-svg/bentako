@@ -370,7 +370,7 @@ function CashPage() {
                 key={p.key}
                 type="button"
                 onClick={() => openNew(p)}
-                className="flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-2xl border bg-card px-1 text-center active:opacity-90"
+                className="flex min-h-20 flex-col items-center justify-center gap-1.5 fin-card px-1 text-center active:opacity-90"
               >
                 <span className={cn("grid size-10 shrink-0 place-items-center rounded-full", p.tint)}>
                   <Icon className="size-5" />
@@ -423,7 +423,7 @@ function CashPage() {
               return (
                 <li
                   key={e.id}
-                  className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 rounded-2xl border bg-card p-3"
+                  className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 fin-card p-3"
                 >
                   <span
                     className={cn(

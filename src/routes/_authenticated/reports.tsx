@@ -154,7 +154,7 @@ function ReportsPage() {
               link.click();
               URL.revokeObjectURL(url);
             }}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border bg-card text-sm font-semibold"
+            className="flex h-12 w-full items-center justify-center gap-2 fin-card text-sm font-semibold"
           >
             <Download className="size-4" /> Download as spreadsheet
           </button>
@@ -180,7 +180,7 @@ function ReportsPage() {
               <Metric label="Average sale" value={formatMoney(report.average, currency)} />
             </div>
 
-            <section className="rounded-2xl border bg-card p-4">
+            <section className="fin-card p-4">
               <h2 className="font-display text-sm font-bold">Daily sales</h2>
               <div className="mt-3 flex h-32 items-end gap-1.5">
                 {report.perDay.map((d) => (
@@ -196,7 +196,7 @@ function ReportsPage() {
               </div>
             </section>
 
-            <section className="rounded-2xl border bg-card p-4">
+            <section className="fin-card p-4">
               <h2 className="font-display text-sm font-bold">Best sellers</h2>
               <ul className="mt-2 divide-y">
                 {report.topProducts.map((p) => (
@@ -213,7 +213,7 @@ function ReportsPage() {
               </ul>
             </section>
 
-            <section className="rounded-2xl border bg-card p-4">
+            <section className="fin-card p-4">
               <h2 className="font-display text-sm font-bold">Sales by category</h2>
               <ul className="mt-2 space-y-2">
                 {report.categories.map(([name, value]) => (
@@ -255,7 +255,7 @@ function Metric({
       className={
         highlight
           ? "rounded-2xl border border-primary/40 bg-primary/10 p-4"
-          : "rounded-2xl border bg-card p-4"
+          : "fin-card p-4"
       }
     >
       <p className="text-xs text-muted-foreground">{label}</p>

@@ -90,7 +90,7 @@ function UpgradePage() {
             </p>
           </section>
         ) : nativeApp ? (
-          <section className="rounded-2xl border bg-card p-4">
+          <section className="fin-card p-4">
             <p className="font-display text-sm font-bold">Your plan: Free</p>
             <p className="mt-1 text-sm text-muted-foreground">
               BentaKo Pro is ₱{PRO_PRICE_MONTHLY} a month or ₱{PRO_PRICE_YEARLY} a year and is
@@ -131,7 +131,7 @@ function UpgradePage() {
           </div>
         )}
 
-        <section className="overflow-hidden rounded-2xl border bg-card">
+        <section className="overflow-hidden fin-card">
           <table className="w-full table-fixed">
             <thead>
               <tr className="border-b bg-secondary/40 text-xs">
@@ -201,7 +201,7 @@ function UpgradePage() {
           </>
         ) : null}
 
-        <section className="space-y-2 rounded-2xl border bg-card p-4">
+        <section className="space-y-2 fin-card p-4">
           <h2 className="font-display text-sm font-bold">Why Pro costs money</h2>
           <p className="text-sm text-muted-foreground">
             Selling, receipts, cash and utang all run on your phone, so the free plan is free

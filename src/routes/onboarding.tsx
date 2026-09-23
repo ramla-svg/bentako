@@ -166,7 +166,7 @@ function Onboarding() {
               delete them anytime.
             </p>
 
-            <div className="mt-6 flex items-center justify-between rounded-2xl border bg-card p-4">
+            <div className="mt-6 flex items-center justify-between fin-card p-4">
               <div className="min-w-0 pr-3">
                 <p className="font-medium">Add sample products</p>
                 <p className="text-xs text-muted-foreground">
