@@ -241,21 +241,23 @@ function Dashboard() {
         </section>
 
         {alerts > 0 ? (
-          <section className="rounded-2xl border bg-card p-4">
+          <section className="fin-card p-4">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-sm font-bold">Needs restocking</h2>
-              <Link to="/inventory" className="text-xs font-medium text-primary">
+              <Link to="/inventory" className="text-xs font-semibold text-primary">
                 View all
               </Link>
             </div>
             <ul className="mt-2 divide-y">
               {[...(data?.outOfStock ?? []), ...(data?.lowStock ?? [])].slice(0, 5).map((p) => (
-                <li key={p.id} className="flex items-center justify-between gap-3 py-2">
-                  <span className="truncate text-sm">{p.name}</span>
+                <li key={p.id} className="flex items-center justify-between gap-3 py-2.5">
+                  <span className="truncate text-sm font-medium">{p.name}</span>
                   <span
                     className={cn(
-                      "tnum shrink-0 text-xs font-semibold",
-                      p.stock_quantity <= 0 ? "text-destructive" : "text-accent-foreground",
+                      "fin-pill tnum shrink-0",
+                      p.stock_quantity <= 0
+                        ? "bg-status-bad text-status-bad-ink"
+                        : "bg-status-warn text-status-warn-ink",
                     )}
                   >
                     {p.stock_quantity <= 0 ? "Out of stock" : `${formatQty(p.stock_quantity)} left`}
@@ -270,16 +272,14 @@ function Dashboard() {
         <section>
           <SectionHead title="Recent transactions" to="/sales" />
           {(data?.recent.length ?? 0) === 0 ? (
-            <p className="mt-2 rounded-2xl border bg-card p-4 text-sm text-muted-foreground">
-              No sales yet today.
-            </p>
+            <p className="fin-card mt-2 p-4 text-sm text-muted-foreground">No sales yet today.</p>
           ) : (
             <ul className="mt-2 space-y-2">
               {data?.recent.map((s) => (
                 <li key={s.id}>
                   <Link
                     to="/sales"
-                    className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border bg-card p-3"
+                    className="fin-card grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-3"
                   >
                     <span className="grid size-10 shrink-0 place-items-center rounded-full bg-tile-mint text-tile-mint-ink">
                       <ShoppingCart className="size-5" />
