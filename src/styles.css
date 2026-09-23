@@ -217,8 +217,45 @@
   --color-tile-peach-ink: var(--tile-peach-ink);
   --color-tile-blue: var(--tile-blue);
   --color-tile-blue-ink: var(--tile-blue-ink);
+  --color-status-ok: var(--status-ok);
+  --color-status-ok-ink: var(--status-ok-ink);
+  --color-status-warn: var(--status-warn);
+  --color-status-warn-ink: var(--status-warn-ink);
+  --color-status-bad: var(--status-bad);
+  --color-status-bad-ink: var(--status-bad-ink);
   --font-sans: var(--font-body);
   --font-display: var(--font-display);
+}
+
+/* Fintech surfaces ------------------------------------------------------ */
+
+/* Standard content card: hairline border, white surface, soft lift. */
+@utility fin-card {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius) + 4px);
+  box-shadow: var(--shadow-card);
+}
+
+/* Hero money card (Total Sales Today). */
+@utility fin-hero {
+  background-image: var(--gradient-hero);
+  color: var(--color-primary-foreground);
+  border-radius: calc(var(--radius) + 8px);
+  box-shadow: var(--shadow-hero);
+}
+
+/* Small status / filter pill. */
+@utility fin-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 9999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
 
