@@ -167,7 +167,26 @@ export function AppShell({
                   </button>
                 ) : null}
                 <div className="min-w-0">
-                  <h1 className="truncate font-display text-base font-bold sm:text-fluid-title">{title}</h1>
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <h1 className="truncate font-display text-base font-bold sm:text-fluid-title">
+                      {title}
+                    </h1>
+                    {brand ? (
+                      <Link
+                        to="/upgrade"
+                        aria-label={pro ? "BentaKo Pro plan" : "You are on the free plan"}
+                        className={cn(
+                          "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                          pro
+                            ? "bg-primary text-primary-foreground"
+                            : "border border-border bg-secondary text-secondary-foreground",
+                        )}
+                      >
+                        {pro ? <Crown className="size-3" /> : null}
+                        {pro ? "Pro" : "Free"}
+                      </Link>
+                    ) : null}
+                  </div>
                   {subtitle ? (
                     <p className="truncate text-[10px] text-muted-foreground sm:text-xs">{subtitle}</p>
                   ) : null}
