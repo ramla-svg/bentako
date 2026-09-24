@@ -381,11 +381,17 @@ function CashPage() {
           })}
         </div>
 
-        <Tabs value={range} onValueChange={(v) => setRange(v as RangeKey)}>
+        <Tabs
+          value={effectiveRange}
+          onValueChange={(v) => {
+            if (!pro && v === "30d") return;
+            setRange(v as RangeKey);
+          }}
+        >
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="today">Today</TabsTrigger>
             <TabsTrigger value="7d">7 days</TabsTrigger>
-            <TabsTrigger value="30d">30 days</TabsTrigger>
+            <TabsTrigger value="30d">30 days{pro ? "" : " · Pro"}</TabsTrigger>
           </TabsList>
         </Tabs>
 
