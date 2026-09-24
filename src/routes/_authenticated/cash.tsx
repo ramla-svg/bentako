@@ -589,7 +589,7 @@ function CashPage() {
               />
             </div>
 
-            {/* Screenshot of the GCash transaction */}
+            {/* Screenshot of the GCash transaction (Pro) */}
             <div className="space-y-1.5">
               <Label>Transaction photo (optional)</Label>
               <input
@@ -600,7 +600,18 @@ function CashPage() {
                 className="hidden"
                 onChange={(ev) => void pickPhoto(ev.target.files?.[0])}
               />
-              {photoUrl ? (
+              {!pro ? (
+                <Link
+                  to="/upgrade"
+                  className="flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 py-3 text-sm"
+                >
+                  <Camera className="size-4 shrink-0 text-primary" />
+                  <span className="min-w-0 flex-1">
+                    Keep a GCash screenshot with each entry on Pro.
+                  </span>
+                  <span className="shrink-0 font-semibold text-primary">See Pro</span>
+                </Link>
+              ) : photoUrl ? (
                 <div className="flex items-center gap-3 rounded-2xl border p-2">
                   <img
                     src={photoUrl}
@@ -628,9 +639,11 @@ function CashPage() {
                   <Camera className="size-4" /> Take or pick screenshot
                 </Button>
               )}
-              <p className="text-[11px] text-muted-foreground">
-                Photos stay in BentaKo on this phone — never uploaded, so no cloud storage cost.
-              </p>
+              {pro ? (
+                <p className="text-[11px] text-muted-foreground">
+                  Photos stay in BentaKo on this phone — never uploaded, so no cloud storage cost.
+                </p>
+              ) : null}
             </div>
           </div>
           <DialogFooter>
