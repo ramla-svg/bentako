@@ -207,7 +207,7 @@ function CashPage() {
     new Set<string>(),
   );
 
-  const from = rangeStart(range);
+  const from = rangeStart(effectiveRange);
   const today = localDayKey();
 
   const inRange = useMemo(
