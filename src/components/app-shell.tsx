@@ -5,6 +5,7 @@ import {
   Bell,
   Boxes,
   ChevronLeft,
+  Crown,
   LayoutGrid,
   LogOut,
   MoreHorizontal,
