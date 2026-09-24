@@ -55,7 +55,7 @@ export function AppShell({
   alerts?: number;
   children: ReactNode;
 }) {
-  const { store, userName, signOut } = useAppSession();
+  const { store, userName, signOut, pro } = useAppSession();
   const queryClient = useQueryClient();
   const router = useRouter();
 
