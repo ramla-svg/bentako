@@ -156,11 +156,13 @@ const PRESETS: Preset[] = [
 ];
 
 function CashPage() {
-  const { store, ctx } = useAppSession();
+  const { store, ctx, pro } = useAppSession();
   const storeId = store?.id ?? "";
   const currency = store?.currency ?? "PHP";
 
   const [range, setRange] = useState<RangeKey>("today");
+  // The free plan sees the last 7 days of wallet entries; Pro sees everything.
+  const effectiveRange: RangeKey = !pro && range === "30d" ? "7d" : range;
   const [filter, setFilter] = useState<FilterKey>("all");
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<EntryKind>("cash_in");
