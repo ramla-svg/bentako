@@ -53,8 +53,8 @@ const ROWS: Row[] = [
   { label: "GCash & e-wallet records", free: "7 days", pro: "Buong history" },
   { label: "GCash screenshot proof per entry", free: false, pro: true },
   { label: "Payments summary per wallet", free: true, pro: true },
-  { label: "Your logo & message on receipts", free: false, pro: true },
   { label: "Export to spreadsheet", free: "—", pro: "—", soon: true },
+  { label: "Your logo & message on receipts", free: "—", pro: "—", soon: true },
   { label: "Receipt printing (thermal printer)", free: "—", pro: "—", soon: true },
   { label: "Offline POS receipts", free: "—", pro: "—", soon: true },
 ];
