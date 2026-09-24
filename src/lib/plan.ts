@@ -28,6 +28,10 @@ export interface PlanLimits {
   export: boolean;
   /** true = the shop can attach a photo to each product. */
   productPhotos: boolean;
+  /** true = GCash / e-wallet entries can keep a screenshot as proof. */
+  walletPhotos: boolean;
+  /** How far back the GCash & e-wallet list may look, in days. */
+  walletHistoryDays: number;
   /** true = "Powered by BentaKo" stays on receipts. */
   branding: boolean;
 }
@@ -41,6 +45,8 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
     cloudBackup: false,
     export: false,
     productPhotos: false,
+    walletPhotos: false,
+    walletHistoryDays: 7,
     branding: true,
   },
   pro: {
@@ -51,6 +57,8 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
     cloudBackup: true,
     export: true,
     productPhotos: true,
+    walletPhotos: true,
+    walletHistoryDays: Number.POSITIVE_INFINITY,
     branding: false,
   },
 };

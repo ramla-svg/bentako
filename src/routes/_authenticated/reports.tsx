@@ -130,35 +130,13 @@ function ReportsPage() {
           </Link>
         ) : null}
 
-        {pro && report ? (
-          <button
-            type="button"
-            onClick={() => {
-              const rows: string[][] = [["Day", "Sales", "Transactions"]];
-              for (const day of report.perDay) {
-                rows.push([day.key, String(day.total), String(day.count)]);
-              }
-              rows.push([]);
-              rows.push(["Product", "Quantity", "Sales", "Profit"]);
-              for (const item of report.topProducts) {
-                rows.push([item.name, String(item.qty), String(item.revenue), String(item.profit)]);
-              }
-
-              const csv = rows
-                .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
-                .join("\n");
-              const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
-              const link = document.createElement("a");
-              link.href = url;
-              link.download = `bentako-report-${effectiveRange}days.csv`;
-              link.click();
-              URL.revokeObjectURL(url);
-            }}
-            className="flex h-12 w-full items-center justify-center gap-2 fin-card text-sm font-semibold"
-          >
-            <Download className="size-4" /> Download as spreadsheet
-          </button>
-        ) : null}
+        <div className="flex items-center gap-2 rounded-xl border border-accent/50 bg-accent/20 px-4 py-3 text-sm">
+          <Download className="size-4 shrink-0 text-accent-foreground" />
+          <span className="min-w-0 flex-1">Export to spreadsheet</span>
+          <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-accent-foreground">
+            Coming soon
+          </span>
+        </div>
 
 
 

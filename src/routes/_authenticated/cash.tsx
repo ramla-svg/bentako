@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -156,11 +156,13 @@ const PRESETS: Preset[] = [
 ];
 
 function CashPage() {
-  const { store, ctx } = useAppSession();
+  const { store, ctx, pro } = useAppSession();
   const storeId = store?.id ?? "";
   const currency = store?.currency ?? "PHP";
 
   const [range, setRange] = useState<RangeKey>("today");
+  // The free plan sees the last 7 days of wallet entries; Pro sees everything.
+  const effectiveRange: RangeKey = !pro && range === "30d" ? "7d" : range;
   const [filter, setFilter] = useState<FilterKey>("all");
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<EntryKind>("cash_in");
@@ -205,7 +207,7 @@ function CashPage() {
     new Set<string>(),
   );
 
-  const from = rangeStart(range);
+  const from = rangeStart(effectiveRange);
   const today = localDayKey();
 
   const inRange = useMemo(
@@ -381,11 +383,17 @@ function CashPage() {
           })}
         </div>
 
-        <Tabs value={range} onValueChange={(v) => setRange(v as RangeKey)}>
+        <Tabs
+          value={effectiveRange}
+          onValueChange={(v) => {
+            if (!pro && v === "30d") return;
+            setRange(v as RangeKey);
+          }}
+        >
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="today">Today</TabsTrigger>
             <TabsTrigger value="7d">7 days</TabsTrigger>
-            <TabsTrigger value="30d">30 days</TabsTrigger>
+            <TabsTrigger value="30d">30 days{pro ? "" : " · Pro"}</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -581,7 +589,7 @@ function CashPage() {
               />
             </div>
 
-            {/* Screenshot of the GCash transaction */}
+            {/* Screenshot of the GCash transaction (Pro) */}
             <div className="space-y-1.5">
               <Label>Transaction photo (optional)</Label>
               <input
@@ -592,7 +600,18 @@ function CashPage() {
                 className="hidden"
                 onChange={(ev) => void pickPhoto(ev.target.files?.[0])}
               />
-              {photoUrl ? (
+              {!pro ? (
+                <Link
+                  to="/upgrade"
+                  className="flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 py-3 text-sm"
+                >
+                  <Camera className="size-4 shrink-0 text-primary" />
+                  <span className="min-w-0 flex-1">
+                    Keep a GCash screenshot with each entry on Pro.
+                  </span>
+                  <span className="shrink-0 font-semibold text-primary">See Pro</span>
+                </Link>
+              ) : photoUrl ? (
                 <div className="flex items-center gap-3 rounded-2xl border p-2">
                   <img
                     src={photoUrl}
@@ -620,9 +639,11 @@ function CashPage() {
                   <Camera className="size-4" /> Take or pick screenshot
                 </Button>
               )}
-              <p className="text-[11px] text-muted-foreground">
-                Photos stay in BentaKo on this phone — never uploaded, so no cloud storage cost.
-              </p>
+              {pro ? (
+                <p className="text-[11px] text-muted-foreground">
+                  Photos stay in BentaKo on this phone — never uploaded, so no cloud storage cost.
+                </p>
+              ) : null}
             </div>
           </div>
           <DialogFooter>
