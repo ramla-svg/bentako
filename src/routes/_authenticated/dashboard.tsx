@@ -5,6 +5,7 @@ import {
   BarChart3,
   Boxes,
   ChevronRight,
+  Crown,
   HandCoins,
   Package,
   Receipt,
@@ -43,7 +44,7 @@ function dayKeyOffset(days: number): string {
 }
 
 function Dashboard() {
-  const { store, userName, role } = useAppSession();
+  const { store, userName, role, pro } = useAppSession();
   const storeId = store?.id ?? "";
   const currency = store?.currency ?? "PHP";
   const today = localDayKey();
@@ -188,6 +189,29 @@ function Dashboard() {
             <ShoppingCart className="size-4.5 sm:size-5" /> New Sale
           </Link>
         </div>
+
+        {pro ? null : (
+          <Link
+            to="/upgrade"
+            className="fin-card flex items-center gap-3 border-primary/40 bg-primary/5 p-3.5 active:opacity-90 sm:p-4"
+          >
+            <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary sm:size-11">
+              <Crown className="size-5 sm:size-5.5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-sm font-bold sm:text-base">
+                BentaKo Pro · ₱99 / buwan
+              </p>
+              <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground sm:text-xs">
+                Walang limit sa produkto, cloud backup, 3 phones. Tingnan kung paano magbayad.
+              </p>
+            </div>
+            <span className="flex shrink-0 items-center gap-0.5 text-xs font-bold text-primary">
+              Tingnan
+              <ChevronRight className="size-4" />
+            </span>
+          </Link>
+        )}
 
         {/* Today at a glance */}
         <section>
