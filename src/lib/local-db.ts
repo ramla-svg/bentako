@@ -287,6 +287,12 @@ export interface SyncQueueItem {
   last_error: string | null;
   created_at: string;
   updated_at: string;
+  /**
+   * Token of the upload attempt currently in flight. Set atomically with the
+   * payload read; enqueue() clears it, so a mismatch means newer intent exists.
+   * Optional and unindexed: older queue rows simply lack it.
+   */
+  attempt_token?: string | null;
 }
 
 export interface SettingRow {

@@ -209,6 +209,8 @@ export async function enqueue(
     last_error: null,
     created_at: existing?.created_at ?? nowIso(),
     updated_at: nowIso(),
+    // New intent: invalidates any in-flight attempt for this record.
+    attempt_token: null,
   };
   await db().sync_queue.put(item);
   void refreshPending();
@@ -221,16 +223,38 @@ function stripLocalFields(row: Record<string, unknown>): Record<string, unknown>
   return copy;
 }
 
-async function readLocal(
-  entity: SyncEntity,
-  id: string,
-): Promise<Record<string, unknown> | undefined> {
-  return (await db().table(entity).get(id)) as Record<string, unknown> | undefined;
+function attemptChanged(current: SyncQueueItem | undefined, attemptToken: string): boolean {
+  return !current || current.attempt_token !== attemptToken;
 }
 
-async function changedDuringUpload(queueId: string, attemptStamp: string): Promise<boolean> {
-  const current = await db().sync_queue.get(queueId);
-  return !current || current.updated_at !== attemptStamp;
+/**
+ * Atomically reads the current queue item + local row and marks the attempt.
+ * Returns null when there is nothing to upload (item gone or record removed).
+ */
+export async function claimAttempt(
+  snapshot: SyncQueueItem,
+  attemptToken: string,
+): Promise<{ item: SyncQueueItem; row: Record<string, unknown> } | null> {
+  const local = db();
+  return local.transaction("rw", [local.sync_queue, local.table(snapshot.entity)], async () => {
+    const item = await local.sync_queue.get(snapshot.id);
+    if (!item) return null;
+    const current = (await local.table(item.entity).get(item.entity_id)) as
+      Record<string, unknown> | undefined;
+    const row = current ? stripLocalFields(current) : item.payload;
+    if (!current && Object.keys(row).length === 0) {
+      // Nothing left locally and no snapshot: the record was removed.
+      await local.sync_queue.delete(item.id);
+      return null;
+    }
+    const attemptAt = nowIso();
+    await local.sync_queue.update(item.id, {
+      status: "syncing",
+      last_attempt_at: attemptAt,
+      attempt_token: attemptToken,
+    });
+    return { item: { ...item, attempt_token: attemptToken }, row };
+  });
 }
 
 /**
@@ -238,12 +262,48 @@ async function changedDuringUpload(queueId: string, attemptStamp: string): Promi
  * re-queued while the request was in flight, the queue item and the row's
  * pending status are kept so the newer change uploads on the next pass.
  */
-export async function finishUpload(item: SyncQueueItem, attemptStamp: string): Promise<void> {
+export async function finishUpload(item: SyncQueueItem, attemptToken: string): Promise<void> {
   const local = db();
   await local.transaction("rw", [local.sync_queue, local.table(item.entity)], async () => {
-    if (await changedDuringUpload(item.id, attemptStamp)) return;
+    if (attemptChanged(await local.sync_queue.get(item.id), attemptToken)) return;
     await local.table(item.entity).update(item.entity_id, { sync_status: "synced" });
     await local.sync_queue.delete(item.id);
+  });
+}
+
+/**
+ * Records a failed attempt atomically. Skips entirely when newer intent was
+ * queued during the request, so that intent keeps its pending status.
+ */
+export async function failUpload(
+  item: SyncQueueItem,
+  attemptToken: string,
+  message: string,
+  network: boolean,
+): Promise<"superseded" | "retry-later" | "failed"> {
+  const local = db();
+  return local.transaction("rw", [local.sync_queue, local.table(item.entity)], async () => {
+    const current = await local.sync_queue.get(item.id);
+    if (!current || attemptChanged(current, attemptToken)) return "superseded";
+    if (network) {
+      // Connectivity failure is not a data failure: stay pending, retry later.
+      await local.sync_queue.update(item.id, {
+        status: "pending",
+        last_error: message,
+        attempt_token: null,
+        updated_at: nowIso(),
+      });
+      return "retry-later";
+    }
+    await local.sync_queue.update(item.id, {
+      status: "failed",
+      retry_count: current.retry_count + 1,
+      last_error: message,
+      attempt_token: null,
+      updated_at: nowIso(),
+    });
+    await local.table(item.entity).update(item.entity_id, { sync_status: "failed" });
+    return "failed";
   });
 }
 
@@ -307,28 +367,18 @@ export async function syncNow(): Promise<void> {
     const brokenGroups = new Set<string>();
     let lastIssue: string | null = null;
 
-    for (const item of queue) {
+    for (const snapshot of queue) {
       if (networkDown) break;
       // A group is atomic: if one member is rejected, stop pushing the rest so
       // the cloud never ends up with a sale header and no items.
-      if (item.group_id && brokenGroups.has(item.group_id)) continue;
+      if (snapshot.group_id && brokenGroups.has(snapshot.group_id)) continue;
 
-      const local = await readLocal(item.entity, item.entity_id);
-      const row = local ? stripLocalFields(local) : item.payload;
-      if (!local && Object.keys(row).length === 0) {
-        // Nothing left locally and no snapshot: the record was removed.
-        await db().sync_queue.delete(item.id);
-        continue;
-      }
-
-      // Stamp the attempt; if enqueue() rewrites this item while the upload is
-      // in flight, its updated_at changes and the newer intent is preserved.
-      const attemptStamp = `${nowIso()}#${uuid()}`;
-      await db().sync_queue.update(item.id, {
-        status: "syncing",
-        last_attempt_at: nowIso(),
-        updated_at: attemptStamp,
-      });
+      // Read the CURRENT queue item and local row and mark the attempt in one
+      // transaction, so no edit+enqueue can land between the read and the mark.
+      const attemptToken = uuid();
+      const claim = await claimAttempt(snapshot, attemptToken);
+      if (!claim) continue;
+      const { item, row } = claim;
 
       // Upsert on the client-generated UUID primary key: replaying the same
       // record can never create a second cloud row.
@@ -341,34 +391,16 @@ export async function syncNow(): Promise<void> {
       }
 
       if (!error) {
-        await finishUpload(item, attemptStamp);
+        await finishUpload(item, attemptToken);
         continue;
       }
 
       lastIssue = friendlyIssue(error.message);
-      if (await changedDuringUpload(item.id, attemptStamp)) continue; // newer intent queued
-      if (isNetworkError(error.message)) {
-        // Connectivity failure is not a data failure: stay pending, retry later.
-        networkDown = true;
-        if (item.group_id) brokenGroups.add(item.group_id);
-        await db().sync_queue.update(item.id, {
-          status: "pending",
-          last_error: error.message,
-          updated_at: nowIso(),
-        });
-        log("retry-later", { entity: item.entity, reason: "network" });
-        continue;
-      }
-
+      const network = isNetworkError(error.message);
+      if (network) networkDown = true;
       if (item.group_id) brokenGroups.add(item.group_id);
-      await db().sync_queue.update(item.id, {
-        status: "failed",
-        retry_count: item.retry_count + 1,
-        last_error: error.message,
-        updated_at: nowIso(),
-      });
-      await db().table(item.entity).update(item.entity_id, { sync_status: "failed" });
-      log("failed", { entity: item.entity, attempt: item.retry_count + 1 });
+      const outcome = await failUpload(item, attemptToken, error.message, network);
+      log(outcome, { entity: item.entity, attempt: item.retry_count + 1 });
     }
 
     const { pending, failed } = await countQueue();
