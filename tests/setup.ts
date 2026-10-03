@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- test-only global hooks */
 import "fake-indexeddb/auto";
 import { vi } from "vitest";
 
@@ -8,12 +9,12 @@ export const upsertMock = vi.fn(async () => ({ error: null as { message: string 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: { getSession: async () => ({ data: { session: { access_token: "test" } } }) },
-    from: () => ({ upsert: (...args: unknown[]) => (globalThis as any).__upsert(...args) }),
+    from: () => ({ upsert: (...args: unknown[]) => (globalThis as Record<string, any>).__upsert(...args) }),
   },
 }));
 vi.mock("@/lib/platform/network-service", () => ({
-  isOnline: () => (globalThis as any).__online ?? false,
+  isOnline: () => (globalThis as Record<string, any>).__online ?? false,
   probeReachable: async () => false,
   subscribeNetwork: () => () => {},
 }));
-(globalThis as any).__upsert = upsertMock;
+(globalThis as Record<string, any>).__upsert = upsertMock;

@@ -3,7 +3,7 @@ import { db } from "@/lib/local-db";
 import { enqueue, syncNow } from "@/lib/sync-service";
 import { addProduct, resetDb } from "./helpers";
 
-const g = globalThis as any;
+const g = globalThis as unknown as { __online?: boolean; __upsert?: unknown };
 
 beforeEach(async () => {
   await resetDb();
