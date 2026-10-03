@@ -15,10 +15,10 @@ describe("sync race", () => {
     const p = await addProduct({ sync_status: "pending" });
     await enqueue("products", p.id);
 
-    let edited = false;
-    g.__upsert = async () => {
-      if (!edited) {
-        edited = true;
+    const uploaded: number[] = [];
+    g.__upsert = async (row: { stock_quantity: number }) => {
+      uploaded.push(row.stock_quantity);
+      if (uploaded.length === 1) {
         // The shopkeeper edits the product while the request is on the wire.
         await db().products.update(p.id, { stock_quantity: 3, sync_status: "pending" });
         await enqueue("products", p.id);
@@ -28,15 +28,14 @@ describe("sync race", () => {
     g.__online = true;
     await syncNow();
 
-    const row = await db().products.get(p.id);
-    const queued = await db().sync_queue.where("entity_id").equals(p.id).toArray();
-    // Newer edit must still be waiting for upload, not silently marked synced.
-    expect(row!.stock_quantity).toBe(3);
-    expect(row!.sync_status === "pending" || queued.length === 0).toBe(true);
-    if (queued.length === 0) {
-      // Only acceptable if a second pass already uploaded the newer payload.
-      expect(row!.sync_status).toBe("synced");
-    }
+    // The newer edit must still be queued and pending, not marked synced.
+    expect((await db().products.get(p.id))!.sync_status).toBe("pending");
+    expect(await db().sync_queue.where("entity_id").equals(p.id).count()).toBe(1);
+
+    await syncNow();
+    expect(uploaded).toEqual([10, 3]);
+    expect((await db().products.get(p.id))!.sync_status).toBe("synced");
+    expect(await db().sync_queue.count()).toBe(0);
   });
 
   it("deletes queue item and marks synced when nothing changed", async () => {

@@ -64,7 +64,12 @@ describe("checkout validation", () => {
     const other = await addCustomer({ store_id: OTHER });
     for (const id of [other.id, "missing-customer"]) {
       await expect(
-        checkout(ctx, { lines: [line(p)], cash_received: 0, payment_method: "utang", customer_id: id }),
+        checkout(ctx, {
+          lines: [line(p)],
+          cash_received: 0,
+          payment_method: "utang",
+          customer_id: id,
+        }),
       ).rejects.toThrow(/Customer/);
     }
     expect(await db().sales.count()).toBe(0);
@@ -113,7 +118,11 @@ describe("voidSale", () => {
 
   it("restores once under concurrent voids", async () => {
     const { p, c, sale } = await utangSale();
-    const results = await Promise.all([voidSale(ctx, sale.id), voidSale(ctx, sale.id), voidSale(ctx, sale.id)]);
+    const results = await Promise.all([
+      voidSale(ctx, sale.id),
+      voidSale(ctx, sale.id),
+      voidSale(ctx, sale.id),
+    ]);
     expect(results.filter(Boolean)).toHaveLength(1);
     expect((await db().products.get(p.id))!.stock_quantity).toBe(10);
     expect((await db().customers.get(c.id))!.credit_balance).toBe(0);
