@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "build:apk": "BENTAKO_APK=1 vite build",
     "cap:sync": "BENTAKO_APK=1 vite build && cap sync android",
-    "cap:open": "cap open android"
+    "cap:open": "cap open android",
+    "test": "vitest run"
   },
   "overrides": {
     "rolldown": "1.2.1"
