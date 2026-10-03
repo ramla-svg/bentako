@@ -240,8 +240,7 @@ export async function claimAttempt(
     const item = await local.sync_queue.get(snapshot.id);
     if (!item) return null;
     const current = (await local.table(item.entity).get(item.entity_id)) as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     const row = current ? stripLocalFields(current) : item.payload;
     if (!current && Object.keys(row).length === 0) {
       // Nothing left locally and no snapshot: the record was removed.
