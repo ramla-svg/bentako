@@ -26,6 +26,31 @@ export interface StoreContext {
   userName: string | null;
 }
 
+/* ------------------------------------------------------------- guards */
+
+/** Finite number check that never accepts NaN/Infinity from form parsing. */
+function finite(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+/**
+ * Runs `fn` as one Dexie read-write transaction while holding critical-work
+ * protection, so a sync pass never reads half-written state and every row,
+ * audit entry and upload intent commits (or rolls back) together.
+ */
+async function atomic<T>(tableNames: string[], fn: () => Promise<T>): Promise<T> {
+  beginCriticalWork();
+  try {
+    const local = db();
+    const tables = [...new Set([...tableNames, "sync_queue", "audit_logs"])].map((n) =>
+      local.table(n),
+    );
+    return await local.transaction("rw", tables, fn);
+  } finally {
+    endCriticalWork();
+  }
+}
+
 /* ------------------------------------------------------------------ audit */
 
 export async function logAudit(
@@ -107,6 +132,8 @@ export interface ProductInput {
 
 export async function saveProduct(ctx: StoreContext, input: ProductInput): Promise<LocalProduct> {
   const existing = input.id ? await db().products.get(input.id) : undefined;
+  if (existing && existing.store_id !== ctx.storeId)
+    throw new Error("Product not found in this store");
   const product: LocalProduct = {
     id: existing?.id ?? input.id ?? uuid(),
     store_id: ctx.storeId,
@@ -158,18 +185,39 @@ export async function saveProduct(ctx: StoreContext, input: ProductInput): Promi
 }
 
 export async function archiveProduct(ctx: StoreContext, id: string): Promise<void> {
-  await db().products.update(id, { is_active: false, updated_at: nowIso(), sync_status: "pending" });
-  await enqueue("products", id);
-  await logAudit(ctx, "product.archived", "product", id);
+  await atomic(["products"], async () => {
+    const product = await db().products.get(id);
+    if (!product || product.store_id !== ctx.storeId)
+      throw new Error("Product not found in this store");
+    await db().products.update(id, {
+      is_active: false,
+      updated_at: nowIso(),
+      sync_status: "pending",
+    });
+    await enqueue("products", id);
+    await logAudit(ctx, "product.archived", "product", id);
+  });
 }
 
 export async function restoreProduct(ctx: StoreContext, id: string): Promise<void> {
-  await db().products.update(id, { is_active: true, updated_at: nowIso(), sync_status: "pending" });
-  await enqueue("products", id);
-  await logAudit(ctx, "product.restored", "product", id);
+  await atomic(["products"], async () => {
+    const product = await db().products.get(id);
+    if (!product || product.store_id !== ctx.storeId)
+      throw new Error("Product not found in this store");
+    await db().products.update(id, {
+      is_active: true,
+      updated_at: nowIso(),
+      sync_status: "pending",
+    });
+    await enqueue("products", id);
+    await logAudit(ctx, "product.restored", "product", id);
+  });
 }
 
-export async function duplicateProduct(ctx: StoreContext, id: string): Promise<LocalProduct | null> {
+export async function duplicateProduct(
+  ctx: StoreContext,
+  id: string,
+): Promise<LocalProduct | null> {
   const source = await db().products.get(id);
   if (!source) return null;
   return saveProduct(ctx, {
@@ -234,27 +282,33 @@ export async function stockIn(
     notes?: string | null;
   },
 ): Promise<void> {
-  const product = await db().products.get(input.product_id);
-  if (!product) throw new Error("Product not found on this device");
-  const newStock = product.stock_quantity + input.quantity;
-  await db().products.update(product.id, {
-    stock_quantity: newStock,
-    ...(input.unit_cost ? { cost_price: input.unit_cost } : {}),
-    updated_at: nowIso(),
-    sync_status: "pending",
+  if (!finite(input.quantity) || input.quantity <= 0) throw new Error("Enter a quantity.");
+  if (input.unit_cost != null && (!finite(input.unit_cost) || input.unit_cost < 0))
+    throw new Error("Enter a valid cost.");
+  await atomic(["products", "inventory_movements"], async () => {
+    const product = await db().products.get(input.product_id);
+    if (!product || product.store_id !== ctx.storeId)
+      throw new Error("Product not found on this device");
+    const newStock = product.stock_quantity + input.quantity;
+    await db().products.update(product.id, {
+      stock_quantity: newStock,
+      ...(input.unit_cost ? { cost_price: input.unit_cost } : {}),
+      updated_at: nowIso(),
+      sync_status: "pending",
+    });
+    await enqueue("products", product.id);
+    await recordMovement(ctx, {
+      product_id: product.id,
+      movement_type: "stock_in",
+      quantity: input.quantity,
+      previous_stock: product.stock_quantity,
+      new_stock: newStock,
+      unit_cost: input.unit_cost ?? null,
+      supplier: input.supplier ?? null,
+      notes: input.notes ?? null,
+    });
+    await logAudit(ctx, "stock.in", "product", product.id, { quantity: input.quantity });
   });
-  await enqueue("products", product.id);
-  await recordMovement(ctx, {
-    product_id: product.id,
-    movement_type: "stock_in",
-    quantity: input.quantity,
-    previous_stock: product.stock_quantity,
-    new_stock: newStock,
-    unit_cost: input.unit_cost ?? null,
-    supplier: input.supplier ?? null,
-    notes: input.notes ?? null,
-  });
-  await logAudit(ctx, "stock.in", "product", product.id, { quantity: input.quantity });
 }
 
 export async function adjustStock(
@@ -267,27 +321,31 @@ export async function adjustStock(
     notes?: string | null;
   },
 ): Promise<void> {
-  const product = await db().products.get(input.product_id);
-  if (!product) throw new Error("Product not found on this device");
-  const delta = input.direction === "add" ? input.quantity : -input.quantity;
-  const newStock = product.stock_quantity + delta;
-  await db().products.update(product.id, {
-    stock_quantity: newStock,
-    updated_at: nowIso(),
-    sync_status: "pending",
-  });
-  await enqueue("products", product.id);
-  await recordMovement(ctx, {
-    product_id: product.id,
-    movement_type: input.movement_type,
-    quantity: input.quantity,
-    previous_stock: product.stock_quantity,
-    new_stock: newStock,
-    notes: input.notes ?? null,
-  });
-  await logAudit(ctx, "stock.adjusted", "product", product.id, {
-    movement_type: input.movement_type,
-    quantity: input.quantity,
+  if (!finite(input.quantity) || input.quantity <= 0) throw new Error("Enter a quantity.");
+  await atomic(["products", "inventory_movements"], async () => {
+    const product = await db().products.get(input.product_id);
+    if (!product || product.store_id !== ctx.storeId)
+      throw new Error("Product not found on this device");
+    const delta = input.direction === "add" ? input.quantity : -input.quantity;
+    const newStock = product.stock_quantity + delta;
+    await db().products.update(product.id, {
+      stock_quantity: newStock,
+      updated_at: nowIso(),
+      sync_status: "pending",
+    });
+    await enqueue("products", product.id);
+    await recordMovement(ctx, {
+      product_id: product.id,
+      movement_type: input.movement_type,
+      quantity: input.quantity,
+      previous_stock: product.stock_quantity,
+      new_stock: newStock,
+      notes: input.notes ?? null,
+    });
+    await logAudit(ctx, "stock.adjusted", "product", product.id, {
+      movement_type: input.movement_type,
+      quantity: input.quantity,
+    });
   });
 }
 
@@ -324,7 +382,6 @@ async function nextTransactionNumber(storeId: string): Promise<string> {
   while (todaysNumbers.has(candidate)) candidate = makeTransactionNumber(++sequence);
   return candidate;
 }
-
 
 function buildMovement(
   ctx: StoreContext,
@@ -374,6 +431,20 @@ export async function checkout(
   const method: PaymentMethod = input.payment_method ?? "cash";
   const customerId = method === "utang" ? (input.customer_id ?? null) : null;
   if (method === "utang" && !customerId) throw new Error("Choose a customer for this utang.");
+
+  const seen = new Set<string>();
+  for (const l of input.lines) {
+    if (seen.has(l.product_id)) throw new Error("The same product appears twice in the cart.");
+    seen.add(l.product_id);
+    if (!finite(l.quantity) || l.quantity <= 0) throw new Error(`Invalid quantity for ${l.name}.`);
+    if (!finite(l.selling_price) || l.selling_price < 0)
+      throw new Error(`Invalid price for ${l.name}.`);
+    if (!finite(l.cost_price) || l.cost_price < 0) throw new Error(`Invalid cost for ${l.name}.`);
+  }
+  if (input.discount != null && (!finite(input.discount) || input.discount < 0))
+    throw new Error("Invalid discount.");
+  if (method === "cash" && (!finite(input.cash_received) || input.cash_received < 0))
+    throw new Error("Invalid cash received.");
 
   const subtotal = input.lines.reduce((sum, l) => sum + l.quantity * l.selling_price, 0);
   const discount = input.discount ?? 0;
@@ -440,6 +511,8 @@ export async function checkout(
 
         for (const line of input.lines) {
           const product = await local.products.get(line.product_id);
+          if (product && product.store_id !== ctx.storeId)
+            throw new Error("A product in the cart belongs to another store.");
           if (!product) continue;
           const newStock = product.stock_quantity - line.quantity;
           await local.products.update(product.id, {
@@ -466,7 +539,9 @@ export async function checkout(
         // same commit as the sale, so the two can never disagree on device.
         if (customerId) {
           const customer = await local.customers.get(customerId);
-          if (customer) {
+          if (!customer || customer.store_id !== ctx.storeId)
+            throw new Error("Customer not found in this store.");
+          {
             await local.customers.update(customerId, {
               credit_balance: customer.credit_balance + total,
               updated_at: nowIso(),
@@ -494,57 +569,70 @@ export async function checkout(
   return { sale, items };
 }
 
-
-
-export async function voidSale(ctx: StoreContext, saleId: string): Promise<void> {
-  const sale = await db().sales.get(saleId);
-  if (!sale || sale.status === "voided") return;
-  await db().sales.update(saleId, {
-    status: "voided",
-    updated_at: nowIso(),
-    sync_status: "pending",
-  });
-  await enqueue("sales", saleId);
-
-  // Voiding an utang sale gives the customer their balance back.
-  if (sale.payment_method === "utang" && sale.customer_id) {
-    const customer = await db().customers.get(sale.customer_id);
-    if (customer) {
-      await db().customers.update(sale.customer_id, {
-        credit_balance: customer.credit_balance - sale.total,
-        updated_at: nowIso(),
+/**
+ * Voids a sale once. Status is re-checked inside the transaction, so repeated
+ * or concurrent taps restore stock and utang exactly once; every change and its
+ * upload intent commit together.
+ */
+export async function voidSale(ctx: StoreContext, saleId: string): Promise<boolean> {
+  return atomic(
+    ["sales", "sale_items", "products", "customers", "inventory_movements"],
+    async () => {
+      const local = db();
+      const sale = await local.sales.get(saleId);
+      if (!sale || sale.store_id !== ctx.storeId || sale.status === "voided") return false;
+      const now = nowIso();
+      await local.sales.update(saleId, {
+        status: "voided",
+        updated_at: now,
         sync_status: "pending",
       });
-      await enqueue("customers", sale.customer_id);
-    }
-  }
+      const group = `void:${saleId}`;
+      await enqueue("sales", saleId, { groupId: group });
 
-  const items = await db().sale_items.where("sale_id").equals(saleId).toArray();
-  for (const item of items) {
-    if (!item.product_id) continue;
-    const product = await db().products.get(item.product_id);
-    if (!product) continue;
-    const newStock = product.stock_quantity + item.quantity;
-    await db().products.update(product.id, {
-      stock_quantity: newStock,
-      updated_at: nowIso(),
-      sync_status: "pending",
-    });
-    await enqueue("products", product.id);
-    await recordMovement(ctx, {
-      product_id: product.id,
-      movement_type: "void_restore",
-      quantity: item.quantity,
-      previous_stock: product.stock_quantity,
-      new_stock: newStock,
-      reference_id: saleId,
-      notes: `Voided ${sale.transaction_number}`,
-    });
-  }
-  await logAudit(ctx, "sale.voided", "sale", saleId, {
-    transaction_number: sale.transaction_number,
-    total: sale.total,
-  });
+      if (sale.payment_method === "utang" && sale.customer_id) {
+        const customer = await local.customers.get(sale.customer_id);
+        if (customer && customer.store_id === ctx.storeId) {
+          await local.customers.update(customer.id, {
+            credit_balance: customer.credit_balance - sale.total,
+            updated_at: now,
+            sync_status: "pending",
+          });
+          await enqueue("customers", customer.id, { groupId: group });
+        }
+      }
+
+      const items = await local.sale_items.where("sale_id").equals(saleId).toArray();
+      for (const item of items) {
+        if (!item.product_id || item.store_id !== ctx.storeId) continue;
+        const product = await local.products.get(item.product_id);
+        if (!product || product.store_id !== ctx.storeId) continue;
+        const newStock = product.stock_quantity + item.quantity;
+        await local.products.update(product.id, {
+          stock_quantity: newStock,
+          updated_at: now,
+          sync_status: "pending",
+        });
+        await enqueue("products", product.id, { groupId: group });
+        const movement = buildMovement(ctx, {
+          product_id: product.id,
+          movement_type: "void_restore",
+          quantity: item.quantity,
+          previous_stock: product.stock_quantity,
+          new_stock: newStock,
+          reference_id: saleId,
+          notes: `Voided ${sale.transaction_number}`,
+        });
+        await local.inventory_movements.put(movement);
+        await enqueue("inventory_movements", movement.id, { groupId: group });
+      }
+      await logAudit(ctx, "sale.voided", "sale", saleId, {
+        transaction_number: sale.transaction_number,
+        total: sale.total,
+      });
+      return true;
+    },
+  );
 }
 
 /* -------------------------------------------------------------- expenses */
@@ -584,7 +672,11 @@ export async function saveExpense(ctx: StoreContext, input: ExpenseInput): Promi
 }
 
 export async function archiveExpense(ctx: StoreContext, id: string): Promise<void> {
-  await db().expenses.update(id, { is_active: false, updated_at: nowIso(), sync_status: "pending" });
+  await db().expenses.update(id, {
+    is_active: false,
+    updated_at: nowIso(),
+    sync_status: "pending",
+  });
   await enqueue("expenses", id);
   await logAudit(ctx, "expense.archived", "expense", id);
 }
@@ -600,8 +692,22 @@ export const DEMO_PRODUCTS: {
   unit: UnitType;
 }[] = [
   { name: "Coke Mismo", category: "Drinks", cost: 16, price: 20, stock: 24, unit: "bottle" },
-  { name: "Mineral Water 500ml", category: "Drinks", cost: 11, price: 15, stock: 24, unit: "bottle" },
-  { name: "Lucky Me Pancit Canton", category: "Noodles", cost: 12, price: 15, stock: 30, unit: "pack" },
+  {
+    name: "Mineral Water 500ml",
+    category: "Drinks",
+    cost: 11,
+    price: 15,
+    stock: 24,
+    unit: "bottle",
+  },
+  {
+    name: "Lucky Me Pancit Canton",
+    category: "Noodles",
+    cost: 12,
+    price: 15,
+    stock: 30,
+    unit: "pack",
+  },
   { name: "Nescafé 3-in-1", category: "Coffee", cost: 6, price: 8, stock: 40, unit: "sachet" },
   { name: "SkyFlakes", category: "Snacks", cost: 7, price: 9, stock: 25, unit: "pack" },
   { name: "Sardines 155g", category: "Canned Goods", cost: 20, price: 25, stock: 18, unit: "can" },
@@ -647,10 +753,7 @@ export async function findProductByCode(
 }
 
 /** Pure matcher so screens with products already in memory can reuse it. */
-export function matchProductByCode(
-  products: LocalProduct[],
-  code: string,
-): LocalProduct | null {
+export function matchProductByCode(products: LocalProduct[], code: string): LocalProduct | null {
   const needle = code.trim().toLowerCase();
   if (!needle) return null;
   const active = products.filter((p) => p.is_active);
@@ -687,6 +790,8 @@ export async function saveCashTransaction(
 ): Promise<LocalCashTransaction> {
   const amount = Number(input.amount);
   if (!Number.isFinite(amount) || amount <= 0) throw new Error("Enter an amount.");
+  const fee = input.service_fee == null ? 0 : Number(input.service_fee);
+  if (!Number.isFinite(fee) || fee < 0) throw new Error("Enter a valid service fee.");
   const now = nowIso();
   const row: LocalCashTransaction = {
     id: uuid(),
@@ -696,7 +801,7 @@ export async function saveCashTransaction(
     customer_name: input.customer_name?.trim() || null,
     customer_mobile_number: input.customer_mobile_number?.trim() || null,
     amount,
-    service_fee: Number(input.service_fee ?? 0) || 0,
+    service_fee: fee,
     reference_number: input.reference_number?.trim() || null,
     notes: input.notes?.trim() || null,
     wallet_before: null,
@@ -709,13 +814,15 @@ export async function saveCashTransaction(
     updated_at: now,
     sync_status: "pending",
   };
-  await db().cash_transactions.put(row);
-  if (input.photo) await putCashPhoto(ctx.storeId, row.id, input.photo);
-  await enqueue("cash_transactions", row.id);
-  await logAudit(ctx, "cash.recorded", "cash_transaction", row.id, {
-    transaction_type: row.transaction_type,
-    provider: row.provider,
-    amount: row.amount,
+  await atomic(["cash_transactions", "cash_photos"], async () => {
+    await db().cash_transactions.put(row);
+    if (input.photo) await putCashPhoto(ctx.storeId, row.id, input.photo);
+    await enqueue("cash_transactions", row.id);
+    await logAudit(ctx, "cash.recorded", "cash_transaction", row.id, {
+      transaction_type: row.transaction_type,
+      provider: row.provider,
+      amount: row.amount,
+    });
   });
   return row;
 }
@@ -811,7 +918,6 @@ export async function walletBalance(storeId: string): Promise<number> {
 
 /* ---------------------------------------------------------- credit ledger */
 
-
 export interface CustomerInput {
   id?: string;
   name: string;
@@ -866,32 +972,22 @@ async function writeCustomerLedger(
     sync_status: "pending",
   };
 
-  beginCriticalWork();
-  try {
+  await atomic(["customer_payments", "customers"], async () => {
     const local = db();
-    await local.transaction(
-      "rw",
-      [local.customer_payments, local.customers, local.sync_queue],
-      async () => {
-        await local.customer_payments.put(row);
-        const customer = await local.customers.get(customerId);
-        if (customer) {
-          await local.customers.update(customerId, {
-            credit_balance: customer.credit_balance - amount,
-            updated_at: nowIso(),
-            sync_status: "pending",
-          });
-        }
-        const group = row.id;
-        await enqueue("customers", customerId, { groupId: group });
-        await enqueue("customer_payments", row.id, { groupId: group });
-      },
-    );
-  } finally {
-    endCriticalWork();
-  }
-
-  await logAudit(ctx, action, "customer_payment", row.id, { customer_id: customerId, amount });
+    const customer = await local.customers.get(customerId);
+    if (!customer || customer.store_id !== ctx.storeId)
+      throw new Error("Customer not found in this store.");
+    await local.customer_payments.put(row);
+    await local.customers.update(customerId, {
+      credit_balance: customer.credit_balance - amount,
+      updated_at: nowIso(),
+      sync_status: "pending",
+    });
+    const group = row.id;
+    await enqueue("customers", customerId, { groupId: group });
+    await enqueue("customer_payments", row.id, { groupId: group });
+    await logAudit(ctx, action, "customer_payment", row.id, { customer_id: customerId, amount });
+  });
   return row;
 }
 
@@ -928,10 +1024,7 @@ export async function addManualCharge(
 }
 
 /** Charges minus payments, derived locally so devices cannot drift apart. */
-export function deriveBalance(
-  charges: { total: number }[],
-  ledger: { amount: number }[],
-): number {
+export function deriveBalance(charges: { total: number }[], ledger: { amount: number }[]): number {
   const charged = charges.reduce((s, c) => s + c.total, 0);
   const net = ledger.reduce((s, l) => s + l.amount, 0);
   return charged - net;
