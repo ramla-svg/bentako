@@ -9,7 +9,9 @@ export const upsertMock = vi.fn(async () => ({ error: null as { message: string 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: { getSession: async () => ({ data: { session: { access_token: "test" } } }) },
-    from: () => ({ upsert: (...args: unknown[]) => (globalThis as Record<string, any>).__upsert(...args) }),
+    from: () => ({
+      upsert: (...args: unknown[]) => (globalThis as Record<string, any>).__upsert(...args),
+    }),
   },
 }));
 vi.mock("@/lib/platform/network-service", () => ({
