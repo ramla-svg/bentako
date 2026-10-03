@@ -94,8 +94,11 @@ describe("sync race: pre-request read/stamp and failure path", () => {
       await db().products.update(p.id, { stock_quantity: 3, sync_status: "pending" });
       await enqueue("products", p.id);
       await run;
-      await syncNow();
-      await syncNow();
+      // enqueue() also kicks a background sync; drain until idle.
+      for (let i = 0; i < 50 && (await db().sync_queue.count()) > 0; i++) {
+        await new Promise((r) => setTimeout(r, 5));
+        await syncNow();
+      }
       expect(uploaded[uploaded.length - 1]).toBe(3);
       expect(await db().sync_queue.count()).toBe(0);
       expect((await db().products.get(p.id))!.sync_status).toBe("synced");
