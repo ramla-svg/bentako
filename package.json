@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "build:apk": "BENTAKO_APK=1 vite build",
     "cap:sync": "BENTAKO_APK=1 vite build && cap sync android",
-    "cap:open": "cap open android"
+    "cap:open": "cap open android",
+    "test": "vitest run"
   },
   "overrides": {
     "rolldown": "1.2.1"
@@ -97,6 +98,7 @@
     "eslint-plugin-prettier": "^5.2.6",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
+    "fake-indexeddb": "^6.2.5",
     "globals": "^15.15.0",
     "nitro": "3.0.260603-beta",
     "postgres": "^3.4.9",
@@ -104,6 +106,7 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "8.1.5",
-    "vite-plugin-pwa": "^1.3.0"
+    "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^5.0.3"
   }
 }

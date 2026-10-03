@@ -134,7 +134,6 @@ export function isCloudBackupEnabled(): boolean {
   return cloudBackupEnabled;
 }
 
-
 /** Checkout sets this so a sync pass never competes with an in-flight sale. */
 let criticalDepth = 0;
 const criticalIdleListeners = new Set<() => void>();
@@ -229,8 +228,23 @@ async function readLocal(
   return (await db().table(entity).get(id)) as Record<string, unknown> | undefined;
 }
 
-async function markSynced(entity: SyncEntity, id: string) {
-  await db().table(entity).update(id, { sync_status: "synced" });
+async function changedDuringUpload(queueId: string, attemptStamp: string): Promise<boolean> {
+  const current = await db().sync_queue.get(queueId);
+  return !current || current.updated_at !== attemptStamp;
+}
+
+/**
+ * Completes a successful upload atomically. If the row was edited and
+ * re-queued while the request was in flight, the queue item and the row's
+ * pending status are kept so the newer change uploads on the next pass.
+ */
+export async function finishUpload(item: SyncQueueItem, attemptStamp: string): Promise<void> {
+  const local = db();
+  await local.transaction("rw", [local.sync_queue, local.table(item.entity)], async () => {
+    if (await changedDuringUpload(item.id, attemptStamp)) return;
+    await local.table(item.entity).update(item.entity_id, { sync_status: "synced" });
+    await local.sync_queue.delete(item.id);
+  });
 }
 
 /** Exponential backoff so a permanently-failing row can't hammer the network. */
@@ -307,31 +321,32 @@ export async function syncNow(): Promise<void> {
         continue;
       }
 
+      // Stamp the attempt; if enqueue() rewrites this item while the upload is
+      // in flight, its updated_at changes and the newer intent is preserved.
+      const attemptStamp = `${nowIso()}#${uuid()}`;
       await db().sync_queue.update(item.id, {
         status: "syncing",
         last_attempt_at: nowIso(),
-        updated_at: nowIso(),
+        updated_at: attemptStamp,
       });
 
       // Upsert on the client-generated UUID primary key: replaying the same
       // record can never create a second cloud row.
       let error: { message: string } | null = null;
       try {
-        const res = await supabase
-          .from(item.entity)
-          .upsert(row as never, { onConflict: "id" });
+        const res = await supabase.from(item.entity).upsert(row as never, { onConflict: "id" });
         error = res.error;
       } catch (err) {
         error = { message: err instanceof Error ? err.message : "Network error" };
       }
 
       if (!error) {
-        await markSynced(item.entity, item.entity_id);
-        await db().sync_queue.delete(item.id);
+        await finishUpload(item, attemptStamp);
         continue;
       }
 
       lastIssue = friendlyIssue(error.message);
+      if (await changedDuringUpload(item.id, attemptStamp)) continue; // newer intent queued
       if (isNetworkError(error.message)) {
         // Connectivity failure is not a data failure: stay pending, retry later.
         networkDown = true;
@@ -442,7 +457,11 @@ export async function pullAll(storeId: string): Promise<void> {
         const local = (await table.get(id)) as Record<string, unknown> | undefined;
         if (local) {
           if (local["sync_status"] !== "synced") continue; // local edit wins for now
-          if (entity === "sales" && local["status"] === "completed" && raw["status"] === "completed")
+          if (
+            entity === "sales" &&
+            local["status"] === "completed" &&
+            raw["status"] === "completed"
+          )
             continue; // a completed local sale is never rewritten
           if (entity === "products" && lockedProducts.has(id)) continue; // stock ledger pending
           if (!newerThan(raw, local)) {
