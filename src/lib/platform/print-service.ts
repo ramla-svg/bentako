@@ -50,8 +50,8 @@ const RECEIPT_CSS =
   `.head th{font-size:9.5px;font-weight:700;border-bottom:1px dashed #000}` +
   `.totals{margin-top:2px;border-top:1px dashed #000}` +
   `.totals .label{width:auto;text-align:left}` +
-  `.totals .amt{width:24mm;text-align:right;white-space:nowrap;padding-left:1mm}` +
-  `.totals .total th,.totals .total td{padding:3px 0 2px;font-size:16px;font-weight:700;line-height:1.15;border-top:1px dashed #000}` +
+  `.totals .amt{width:27mm;text-align:right;white-space:nowrap;padding-left:1mm}` +
+  `.totals .total th,.totals .total td{padding:3px 0 2px;font-size:15px;font-weight:700;line-height:1.15;border-top:1px dashed #000}` +
   `.foot{text-align:center;font-size:10px;line-height:1.25;margin-top:4px;white-space:pre-line}`;
 
 type ReceiptPrinterPlugin = {
@@ -260,8 +260,8 @@ function printActiveDocument(bodyHtml: string, title: string): boolean {
     `#bentako-print-receipt .head th{font-size:9.5px!important;font-weight:700!important;border-bottom:1px dashed #000!important}` +
     `#bentako-print-receipt .totals{margin-top:2px!important;border-top:1px dashed #000!important}` +
     `#bentako-print-receipt .totals .label{width:auto!important;text-align:left!important}` +
-    `#bentako-print-receipt .totals .amt{width:24mm!important;text-align:right!important;white-space:nowrap!important;padding-left:1mm!important}` +
-    `#bentako-print-receipt .totals .total th,#bentako-print-receipt .totals .total td{padding:3px 0 2px!important;font-size:16px!important;font-weight:700!important;line-height:1.15!important;border-top:1px dashed #000!important}` +
+    `#bentako-print-receipt .totals .amt{width:27mm!important;text-align:right!important;white-space:nowrap!important;padding-left:1mm!important}` +
+    `#bentako-print-receipt .totals .total th,#bentako-print-receipt .totals .total td{padding:3px 0 2px!important;font-size:15px!important;font-weight:700!important;line-height:1.15!important;border-top:1px dashed #000!important}` +
     `#bentako-print-receipt .foot{text-align:center;font-size:10px;line-height:1.25;margin-top:4px;white-space:pre-line}` +
     `}`;
 
