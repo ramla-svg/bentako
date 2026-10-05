@@ -13,6 +13,7 @@ No release version convention exists in the repository (`package.json` has no `v
 | 5 | **Sync race:** `syncNow` uploaded a row, then unconditionally marked it synced and deleted its queue item. An edit re-queued during the upload was lost and the newer local row was marked synced. | `src/lib/sync-service.ts`, `src/lib/local-db.ts` | New optional, unindexed `attempt_token` on queue items (additive; no schema/version bump; `updated_at` stays a valid ISO time). `claimAttempt` reads the **current** queue item and local row and sets the token in one rw transaction over entity + `sync_queue` (not the stale enumeration snapshot). `enqueue` clears the token, so any newer intent invalidates the attempt. `finishUpload` and `failUpload` each check the token and write status/retry/row `sync_status` in a single transaction; a superseded attempt leaves the newer intent pending. |
 | 5b | Review follow-up: the first race fix read the row, then stamped the queue separately (an edit between them could be overwritten and later deleted), and the failure check and status writes were separate steps. | `src/lib/sync-service.ts` | Fixed by the transactional claim/finish/fail above. |
 | 6 | Analogous issues in other mutations: `stockIn`, `adjustStock`, `archiveProduct`, `restoreProduct` non-atomic and not store-scoped; `saveProduct` could rewrite another store's product id into this store. | `src/lib/repo.ts` | Made atomic, store-scoped, with finite positive quantity checks. `saveProduct` rejects other-store ids. |
+| 7 | Structured grocery receipt code existed but neither the completed-sale dialog nor Sales history had a Print action. Users could only use an external page/share workflow, which bypassed the structured HTML and could appear as plain text. | `src/routes/_authenticated/pos.tsx`, `src/routes/_authenticated/sales.tsx`, `src/lib/receipt.ts`, `src/lib/platform/print-service.ts` | Both receipt screens now call the same structured print builder. Share text remains separate. Receipt rows use print-safe tables with wrapping item names, protected amount columns, a prominent total, and payment-specific labels. Android retains each receipt WebView until its print job completes and ignores duplicate page-finished callbacks. |
 
 Not changed (audited, lower priority): `saveProduct`/`saveExpense`/`saveCategory`/`ensureDefaultCategories` still write row, queue and audit in separate steps (no money/stock double-apply risk; a crash leaves a row with `sync_status: "pending"` that is re-queued on next edit only). `nextTransactionNumber` runs outside the checkout transaction (display number only; UUID is identity).
 
@@ -21,6 +22,8 @@ Not changed (audited, lower priority): `saveProduct`/`saveExpense`/`saveCategory
 New: `vitest.config.ts`, `tests/setup.ts`, `tests/helpers.ts`, `tests/repo.test.ts`, `tests/sync.test.ts`; script `npm test` (`vitest run`). Tests use `fake-indexeddb` and fixture stores `store-test-a`/`store-test-b`; the backend client and network are mocked — no production records are touched.
 
 Coverage: repeated and concurrent void, rollback on other-store product, stock and utang restore, invalid/nonfinite values, wrong-store and missing customers, cash atomicity incl. rollback when photo write fails, checkout negative/nonfinite/duplicate inputs, sync upload race, pre-request read/claim interleaving (stale snapshot, enqueue after claim, 12-step timing sweep), failure-path requeue for rejected and network errors, and atomic failed marking.
+
+Receipt coverage uses synthetic data only: long/HTML-sensitive product names, large amounts, 40-item baskets, cash, utang and GCash labels, text-share separation, and both visible Print call sites.
 
 Evidence: against the original code (commit `c628bfb`) 21 of 30 tests fail (20 repo + the sync race); with the fixes all 30 pass. Follow-up adds 6 sync tests: 36 pass.
 
@@ -38,6 +41,10 @@ Evidence: against the original code (commit `c628bfb`) 21 of 30 tests fail (20 r
 
 Not done: Gradle/JDK APK compile, signed APK, physical-device testing.
 
+### Printing boundary
+
+BentaKo does not send raw Bluetooth/ESC-POS commands. The Android plugin renders HTML in a dedicated WebView and hands it to Android `PrintManager`; the installed Bluetooth printer service controls final rasterization, paper-size support and scaling. A service that strips HTML or exposes only plain-text printing cannot be corrected from the web receipt formatter. Use the printer maker's Android print-service/driver, select its 58 mm paper option when available, and use BentaKo's **Print grocery receipt** button rather than sharing the text receipt. Native plugin changes require `npm run cap:sync`, a Gradle APK build, and an in-place app update; the web-assets build alone is not an installable APK.
+
 ## Known limitations
 
 - Dexie transactions protect the device only; cloud upload of a sync group is still per-row (a group stops on first rejection, as before).
@@ -52,4 +59,4 @@ Not done: Gradle/JDK APK compile, signed APK, physical-device testing.
 4. Add a GCash cash-in with fee and screenshot (Pro); try a negative fee — it must be refused.
 5. Force-close the app, reopen offline: all records still there, "Not yet synced" shown.
 6. Airplane mode off: pending count drains to 0; edit a product during sync and confirm the edit uploads (check on a second signed-in device or in the backend). Never uninstall/reinstall or clear app data to test sync: it destroys unsynced records and phone-only photos/logs.
-7. Open a sale receipt from Sales history; confirm totals, cash and change are correct.
+7. Open a sale receipt from both the completed-sale screen and Sales history. Tap **Print grocery receipt**; confirm centered store details, QTY/ITEM/AMOUNT columns, wrapped long names, right-aligned prices, prominent TOTAL, and correct cash/change, utang or non-cash label. Test a basket longer than one 105 mm page. If the printer service still emits plain text, record its exact printer model and Android print-service app/version; this app does not claim direct Bluetooth/ESC-POS support.

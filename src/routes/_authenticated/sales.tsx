@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo, useState } from "react";
-import { Ban, Receipt, Search } from "lucide-react";
+import { Ban, Printer, Receipt, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell, EmptyState } from "@/components/app-shell";
@@ -22,6 +22,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppSession } from "@/hooks/use-app-session";
 import { formatDateTime, formatMoney, formatQty, localDayKey } from "@/lib/format";
 import { db, type LocalSale, type LocalSaleItem } from "@/lib/local-db";
+import { printReceipt } from "@/lib/platform/print-service";
+import { buildReceiptPrintDoc } from "@/lib/receipt";
 import { voidSale } from "@/lib/repo";
 import { useStoreLogo } from "@/lib/store-logo";
 import { cn } from "@/lib/utils";
@@ -226,6 +228,19 @@ function SalesPage() {
                   </p>
                 ) : null}
               </div>
+              <Button
+                variant="outline"
+                className="h-11 w-full"
+                onClick={() => {
+                  const started = printReceipt(
+                    buildReceiptPrintDoc({ sale: detail, items: items ?? [] }, store, logoUrl),
+                    detail.transaction_number,
+                  );
+                  if (!started) toast.error("Printing is unavailable here.");
+                }}
+              >
+                <Printer className="size-4" /> Print grocery receipt
+              </Button>
               {role === "owner" && detail.status === "completed" ? (
                 <Button
                   variant="outline"

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Minus, Plus, Search, ShoppingBasket, Trash2, X } from "lucide-react";
+import { Check, Minus, Plus, Printer, Search, ShoppingBasket, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell, EmptyState } from "@/components/app-shell";
@@ -12,6 +12,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useAppSession } from "@/hooks/use-app-session";
 import { useBackHandler } from "@/hooks/use-back-handler";
 import { formatMoney, formatQty } from "@/lib/format";
+import { buildReceiptPrintDoc } from "@/lib/receipt";
+import { printReceipt } from "@/lib/platform/print-service";
 import {
   PAYMENT_METHODS,
   db,
@@ -586,6 +588,19 @@ function PosPage() {
                   </p>
                 ) : null}
               </div>
+              <Button
+                variant="outline"
+                className="h-12 w-full"
+                onClick={() => {
+                  const started = printReceipt(
+                    buildReceiptPrintDoc(receipt, store, logoUrl),
+                    receipt.sale.transaction_number,
+                  );
+                  if (!started) toast.error("Printing is unavailable here.");
+                }}
+              >
+                <Printer className="size-4" /> Print grocery receipt
+              </Button>
               <Button className="h-12 w-full" onClick={() => setReceipt(null)}>
                 New sale
               </Button>
