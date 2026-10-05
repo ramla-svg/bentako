@@ -25,13 +25,13 @@ Coverage: repeated and concurrent void, rollback on other-store product, stock a
 
 Receipt coverage uses synthetic data only: long/HTML-sensitive product names, large amounts, 40-item baskets, cash, utang and GCash labels, text-share separation, and both visible Print call sites.
 
-Evidence: against the original code (commit `c628bfb`) 21 of 30 tests fail (20 repo + the sync race); with the fixes all 30 pass. Follow-up adds 6 sync tests: 36 pass.
+Evidence: against the original code (commit `c628bfb`) 21 of 30 tests fail (20 repo + the sync race); with the fixes all 30 pass. Follow-ups add 6 sync tests and 7 receipt tests: 43 pass.
 
 ## Command results
 
 | Command                                                                     | Result                                                                                                                             |
 | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `bunx vitest run`                                                           | 2 files, 36 passed                                                                                                                 |
+| `bunx vitest run`                                                           | 3 files, 43 passed                                                                                                                 |
 | `bunx tsgo --noEmit`                                                        | exit 0                                                                                                                             |
 | `npx eslint src/lib/repo.ts src/lib/sync-service.ts tests vitest.config.ts` | exit 0                                                                                                                             |
 | `npx eslint src/lib/local-db.ts`                                            | 8 prettier errors, all pre-existing (same 8 on the previous commit); none on the added lines                                       |
