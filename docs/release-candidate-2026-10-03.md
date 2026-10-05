@@ -38,7 +38,7 @@ Evidence: against the original code (commit `c628bfb`) 21 of 30 tests fail (20 r
 | `npm run build`                                                             | exit 0                                                                                                                             |
 | `npm run build:apk`                                                         | exit 0 (20/20 pages prerendered)                                                                                                   |
 | Synthetic Chromium receipt render                                           | 40 items at 54 mm printable width; long name wrapped, no amount overflow, TOTAL 15 px                                              |
-| `cd android && ./gradlew :app:compileDebugJavaWithJavac`                     | unavailable: environment has no Java/JDK (`JAVA_HOME` unset)                                                                      |
+| `cd android && ./gradlew :app:compileDebugJavaWithJavac`                    | unavailable: environment has no Java/JDK (`JAVA_HOME` unset)                                                                       |
 | `npx eslint .`                                                              | **baseline, unrelated:** ~1009 pre-existing problems (mostly prettier formatting) in files not touched here; none in changed files |
 
 Not done: Gradle/JDK APK compile, signed APK, physical-device testing.
