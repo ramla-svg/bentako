@@ -11,9 +11,8 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.getcapacitor.JSObject;
@@ -24,7 +23,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 
 @CapacitorPlugin(name = "ReceiptPrinter")
 public class ReceiptPrinterPlugin extends Plugin {
-    private final Set<WebView> receiptViews = Collections.newSetFromMap(new WeakHashMap<>());
+    private final Set<WebView> receiptViews = new HashSet<>();
 
     @PluginMethod
     public void print(PluginCall call) {
