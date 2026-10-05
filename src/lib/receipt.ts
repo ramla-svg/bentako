@@ -46,7 +46,10 @@ export function buildReceiptPrintDoc(
     .filter(Boolean)
     .join("\n");
 
-  const info = [`Receipt : ${result.sale.transaction_number}`, `Date    : ${formatDateTime(result.sale.created_at)}`];
+  const info = [
+    `Receipt : ${result.sale.transaction_number}`,
+    `Date    : ${formatDateTime(result.sale.created_at)}`,
+  ];
   if (result.sale.cashier_name) info.push(`Cashier : ${result.sale.cashier_name}`);
 
   return {
@@ -71,7 +74,11 @@ export function buildReceiptPrintDoc(
 export function buildReceiptText(
   result: CheckoutResult,
   store:
-    | ({ name?: string | null; currency?: string | null; receipt_footer?: string | null } & PlanFields)
+    | ({
+        name?: string | null;
+        currency?: string | null;
+        receipt_footer?: string | null;
+      } & PlanFields)
     | null,
 ): string {
   const currency = store?.currency ?? "PHP";
@@ -112,4 +119,3 @@ export function buildReceiptText(
 
   return lines.join("\n");
 }
-

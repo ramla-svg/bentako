@@ -29,8 +29,8 @@ function escapeHtml(value: string): string {
  */
 const RECEIPT_CSS =
   `@page{size:58mm 105mm;margin:2mm}` +
-  `html,body{margin:0!important;padding:0!important;background:#fff!important;width:54mm!important}` +
-  `body{color:#000!important;font:11px/1.2 monospace;width:54mm!important;` +
+  `html,body{margin:0!important;padding:0!important;background:#fff!important;width:54mm!important;min-height:0!important}` +
+  `body{color:#000!important;font:10.5px/1.25 monospace;width:54mm!important;` +
   `-webkit-print-color-adjust:exact;print-color-adjust:exact}` +
   `*{color:#000!important;background:transparent!important;box-shadow:none!important}` +
   `img.logo{display:block;margin:0 auto 2px;max-width:28mm;max-height:12mm;` +
@@ -40,14 +40,18 @@ const RECEIPT_CSS =
   `.meta{text-align:center;font-size:10px;line-height:1.2}` +
   `hr{border:none;border-top:1px dashed #000;margin:3px 0}` +
   `.info{font-size:10px;line-height:1.3}` +
-  `.head{font-size:10px;font-weight:700;letter-spacing:.02em}` +
-  `.row{display:grid;grid-template-columns:6mm minmax(0,1fr) auto;column-gap:1mm;` +
-  `font-size:11px;page-break-inside:avoid;break-inside:avoid}` +
-  `.row .qty{text-align:right}` +
-  `.row .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` +
-  `.row .amt{text-align:right;white-space:nowrap}` +
-  `.row:not(.head) .nm:first-child{grid-column:1/3;text-align:left}` +
-  `.total{font-size:16px;font-weight:700;line-height:1.3}` +
+  `table{width:100%;border-collapse:collapse;table-layout:fixed;font:inherit}` +
+  `thead{display:table-header-group}` +
+  `tr{page-break-inside:avoid;break-inside:avoid}` +
+  `th,td{padding:1px 0;vertical-align:top}` +
+  `.items .qty{width:6mm;text-align:right;padding-right:1.5mm}` +
+  `.items .nm{width:auto;overflow-wrap:anywhere;word-break:normal}` +
+  `.items .amt{width:20mm;text-align:right;white-space:nowrap;padding-left:1mm;font-size:10px}` +
+  `.head th{font-size:9.5px;font-weight:700;border-bottom:1px dashed #000}` +
+  `.totals{margin-top:2px;border-top:1px dashed #000}` +
+  `.totals .label{width:auto;text-align:left}` +
+  `.totals .amt{width:27mm;text-align:right;white-space:nowrap;padding-left:1mm}` +
+  `.totals .total th,.totals .total td{padding:3px 0 2px;font-size:15px;font-weight:700;line-height:1.15;border-top:1px dashed #000}` +
   `.foot{text-align:center;font-size:10px;line-height:1.25;margin-top:4px;white-space:pre-line}`;
 
 type ReceiptPrinterPlugin = {
@@ -56,7 +60,7 @@ type ReceiptPrinterPlugin = {
 
 const NativeReceiptPrinter = registerPlugin<ReceiptPrinterPlugin>("ReceiptPrinter");
 
-function receiptDocument(bodyHtml: string, title: string): string {
+export function receiptDocument(bodyHtml: string, title: string): string {
   return (
     `<!doctype html><html><head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=58mm">` +
@@ -100,7 +104,7 @@ export type ReceiptPrintDoc = {
   footer?: string | null;
 };
 
-function buildReceiptHtml(doc: ReceiptPrintDoc): string {
+export function buildReceiptHtml(doc: ReceiptPrintDoc): string {
   const parts: string[] = [];
   if (doc.logoUrl) parts.push(`<img class="logo" src="${escapeHtml(doc.logoUrl)}" alt="">`);
   parts.push(`<div class="name">${escapeHtml(doc.storeName)}</div>`);
@@ -109,26 +113,26 @@ function buildReceiptHtml(doc: ReceiptPrintDoc): string {
   for (const line of doc.info ?? []) parts.push(`<div class="info">${escapeHtml(line)}</div>`);
   if ((doc.info ?? []).length > 0) parts.push("<hr>");
   parts.push(
-    `<div class="row head"><span class="qty">QTY</span><span class="nm">ITEM</span>` +
-      `<span class="amt">AMOUNT</span></div>`,
+    `<table class="items"><thead><tr class="head"><th class="qty" scope="col">QTY</th>` +
+      `<th class="nm" scope="col">ITEM</th><th class="amt" scope="col">AMOUNT</th>` +
+      `</tr></thead><tbody>`,
   );
   for (const it of doc.items) {
     parts.push(
-      `<div class="row"><span class="qty">${escapeHtml(it.qty ?? "")}</span>` +
-        `<span class="nm">${escapeHtml(it.left)}</span>` +
-        `<span class="amt">${escapeHtml(it.right)}</span></div>`,
+      `<tr><td class="qty">${escapeHtml(it.qty ?? "")}</td>` +
+        `<td class="nm">${escapeHtml(it.left)}</td>` +
+        `<td class="amt">${escapeHtml(it.right)}</td></tr>`,
     );
   }
-  parts.push("<hr>");
+  parts.push('</tbody></table><table class="totals"><tbody>');
   for (const t of doc.totals) {
-    if (t.strong) parts.push("<hr>");
-    const cls = `row${t.strong ? " total" : ""}`;
+    const cls = t.strong ? ` class="total"` : "";
     parts.push(
-      `<div class="${cls}"><span class="nm">${escapeHtml(t.left)}</span>` +
-        `<span class="amt">${escapeHtml(t.right)}</span></div>`,
+      `<tr${cls}><th class="label" scope="row">${escapeHtml(t.left)}</th>` +
+        `<td class="amt">${escapeHtml(t.right)}</td></tr>`,
     );
   }
-  parts.push("<hr>");
+  parts.push("</tbody></table><hr>");
   if (doc.footer) parts.push(`<div class="foot">${escapeHtml(doc.footer)}</div>`);
   return parts.join("");
 }
@@ -229,7 +233,7 @@ function printActiveDocument(bodyHtml: string, title: string): boolean {
   style.id = "bentako-print-style";
   style.textContent =
     `#bentako-print-receipt{position:fixed;left:-10000px;top:0;width:54mm;` +
-    `color:#000;background:#fff;font:11px/1.25 ui-monospace,Menlo,Consolas,monospace}` +
+    `color:#000;background:#fff;font:10.5px/1.25 ui-monospace,Menlo,Consolas,monospace}` +
     `@media print{` +
     `@page{size:58mm 105mm;margin:2mm}` +
     `html,body{width:54mm!important;min-width:54mm!important;max-width:54mm!important;` +
@@ -237,7 +241,7 @@ function printActiveDocument(bodyHtml: string, title: string): boolean {
     `body>*:not(#bentako-print-receipt){display:none!important}` +
     `#bentako-print-receipt{display:block!important;position:static!important;left:auto!important;top:auto!important;` +
     `width:54mm!important;margin:0!important;padding:0!important;color:#000!important;background:#fff!important;` +
-    `font:11px/1.25 ui-monospace,Menlo,Consolas,monospace!important;` +
+    `font:10.5px/1.25 ui-monospace,Menlo,Consolas,monospace!important;` +
     `-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}` +
     `#bentako-print-receipt *{color:#000!important;background:transparent!important;box-shadow:none!important}` +
     `#bentako-print-receipt img.logo{display:block!important;margin:0 auto 2px!important;max-width:28mm!important;` +
@@ -246,14 +250,18 @@ function printActiveDocument(bodyHtml: string, title: string): boolean {
     `#bentako-print-receipt .meta{text-align:center;font-size:10px;line-height:1.2}` +
     `#bentako-print-receipt hr{border:0!important;border-top:1px dashed #000!important;margin:3px 0!important}` +
     `#bentako-print-receipt .info{font-size:10px;line-height:1.3}` +
-    `#bentako-print-receipt .head{font-size:10px;font-weight:700}` +
-    `#bentako-print-receipt .row{display:grid!important;grid-template-columns:6mm minmax(0,1fr) auto;` +
-    `column-gap:1mm;font-size:11px;break-inside:avoid}` +
-    `#bentako-print-receipt .qty{text-align:right}` +
-    `#bentako-print-receipt .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` +
-    `#bentako-print-receipt .amt{text-align:right;white-space:nowrap}` +
-    `#bentako-print-receipt .row:not(.head) .nm:first-child{grid-column:1/3;text-align:left}` +
-    `#bentako-print-receipt .total{font-size:16px;font-weight:700;line-height:1.3}` +
+    `#bentako-print-receipt table{width:100%!important;border-collapse:collapse!important;table-layout:fixed!important;font:inherit!important}` +
+    `#bentako-print-receipt thead{display:table-header-group!important}` +
+    `#bentako-print-receipt tr{break-inside:avoid!important}` +
+    `#bentako-print-receipt th,#bentako-print-receipt td{padding:1px 0!important;vertical-align:top!important}` +
+    `#bentako-print-receipt .items .qty{width:6mm!important;text-align:right!important;padding-right:1.5mm!important}` +
+    `#bentako-print-receipt .items .nm{width:auto!important;overflow-wrap:anywhere!important;word-break:normal!important}` +
+    `#bentako-print-receipt .items .amt{width:20mm!important;text-align:right!important;white-space:nowrap!important;padding-left:1mm!important;font-size:10px!important}` +
+    `#bentako-print-receipt .head th{font-size:9.5px!important;font-weight:700!important;border-bottom:1px dashed #000!important}` +
+    `#bentako-print-receipt .totals{margin-top:2px!important;border-top:1px dashed #000!important}` +
+    `#bentako-print-receipt .totals .label{width:auto!important;text-align:left!important}` +
+    `#bentako-print-receipt .totals .amt{width:27mm!important;text-align:right!important;white-space:nowrap!important;padding-left:1mm!important}` +
+    `#bentako-print-receipt .totals .total th,#bentako-print-receipt .totals .total td{padding:3px 0 2px!important;font-size:15px!important;font-weight:700!important;line-height:1.15!important;border-top:1px dashed #000!important}` +
     `#bentako-print-receipt .foot{text-align:center;font-size:10px;line-height:1.25;margin-top:4px;white-space:pre-line}` +
     `}`;
 

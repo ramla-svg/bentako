@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo, useState } from "react";
-import { Ban, Receipt, Search } from "lucide-react";
+import { Ban, Printer, Receipt, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell, EmptyState } from "@/components/app-shell";
@@ -22,6 +22,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppSession } from "@/hooks/use-app-session";
 import { formatDateTime, formatMoney, formatQty, localDayKey } from "@/lib/format";
 import { db, type LocalSale, type LocalSaleItem } from "@/lib/local-db";
+import { printReceipt } from "@/lib/platform/print-service";
+import { buildReceiptPrintDoc } from "@/lib/receipt";
 import { voidSale } from "@/lib/repo";
 import { useStoreLogo } from "@/lib/store-logo";
 import { cn } from "@/lib/utils";
@@ -31,9 +33,15 @@ export const Route = createFileRoute("/_authenticated/sales")({
   head: () => ({
     meta: [
       { title: "Sales history — BentaKo" },
-      { name: "description", content: "Browse past transactions, view receipts, and void mistakes." },
+      {
+        name: "description",
+        content: "Browse past transactions, view receipts, and void mistakes.",
+      },
       { property: "og:title", content: "Sales history — BentaKo" },
-      { property: "og:description", content: "Every sale saved on this device, synced when online." },
+      {
+        property: "og:description",
+        content: "Every sale saved on this device, synced when online.",
+      },
     ],
   }),
   component: SalesPage,
@@ -66,8 +74,7 @@ function SalesPage() {
   );
 
   const items = useLiveQuery(
-    async () =>
-      detail ? await db().sale_items.where("sale_id").equals(detail.id).toArray() : [],
+    async () => (detail ? await db().sale_items.where("sale_id").equals(detail.id).toArray() : []),
     [detail?.id],
     [] as LocalSaleItem[],
   );
@@ -126,7 +133,6 @@ function SalesPage() {
             <TabsTrigger value="all">{pro ? "All" : "All · Pro"}</TabsTrigger>
           </TabsList>
         </Tabs>
-
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -226,6 +232,19 @@ function SalesPage() {
                   </p>
                 ) : null}
               </div>
+              <Button
+                variant="outline"
+                className="h-11 w-full"
+                onClick={() => {
+                  const started = printReceipt(
+                    buildReceiptPrintDoc({ sale: detail, items: items ?? [] }, store, logoUrl),
+                    detail.transaction_number,
+                  );
+                  if (!started) toast.error("Printing is unavailable here.");
+                }}
+              >
+                <Printer className="size-4" /> Print grocery receipt
+              </Button>
               {role === "owner" && detail.status === "completed" ? (
                 <Button
                   variant="outline"
@@ -245,8 +264,8 @@ function SalesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Void this sale?</AlertDialogTitle>
             <AlertDialogDescription>
-              The items go back to your stock and the sale is marked voided. This is recorded in your
-              activity log.
+              The items go back to your stock and the sale is marked voided. This is recorded in
+              your activity log.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
