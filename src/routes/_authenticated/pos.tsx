@@ -276,7 +276,6 @@ function PosPage() {
           />
         </div>
 
-
         <div className="scroll-rail -mx-4 flex gap-2 px-4 pb-1 sm:-mx-6 sm:px-6">
           <CategoryChip active={categoryId === "all"} onClick={() => setCategoryId("all")}>
             All
@@ -357,7 +356,11 @@ function PosPage() {
                     className="size-9"
                     onClick={() => setQty(l.product_id, l.quantity - 1)}
                   >
-                    {l.quantity === 1 ? <Trash2 className="size-4" /> : <Minus className="size-4" />}
+                    {l.quantity === 1 ? (
+                      <Trash2 className="size-4" />
+                    ) : (
+                      <Minus className="size-4" />
+                    )}
                   </Button>
                   <span className="tnum w-8 text-center text-sm font-bold">{l.quantity}</span>
                   <Button

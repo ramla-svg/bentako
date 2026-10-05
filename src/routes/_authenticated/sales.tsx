@@ -33,9 +33,15 @@ export const Route = createFileRoute("/_authenticated/sales")({
   head: () => ({
     meta: [
       { title: "Sales history — BentaKo" },
-      { name: "description", content: "Browse past transactions, view receipts, and void mistakes." },
+      {
+        name: "description",
+        content: "Browse past transactions, view receipts, and void mistakes.",
+      },
       { property: "og:title", content: "Sales history — BentaKo" },
-      { property: "og:description", content: "Every sale saved on this device, synced when online." },
+      {
+        property: "og:description",
+        content: "Every sale saved on this device, synced when online.",
+      },
     ],
   }),
   component: SalesPage,
@@ -68,8 +74,7 @@ function SalesPage() {
   );
 
   const items = useLiveQuery(
-    async () =>
-      detail ? await db().sale_items.where("sale_id").equals(detail.id).toArray() : [],
+    async () => (detail ? await db().sale_items.where("sale_id").equals(detail.id).toArray() : []),
     [detail?.id],
     [] as LocalSaleItem[],
   );
@@ -128,7 +133,6 @@ function SalesPage() {
             <TabsTrigger value="all">{pro ? "All" : "All · Pro"}</TabsTrigger>
           </TabsList>
         </Tabs>
-
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -260,8 +264,8 @@ function SalesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Void this sale?</AlertDialogTitle>
             <AlertDialogDescription>
-              The items go back to your stock and the sale is marked voided. This is recorded in your
-              activity log.
+              The items go back to your stock and the sale is marked voided. This is recorded in
+              your activity log.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

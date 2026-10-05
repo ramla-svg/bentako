@@ -124,7 +124,7 @@ export function buildReceiptHtml(doc: ReceiptPrintDoc): string {
         `<td class="amt">${escapeHtml(it.right)}</td></tr>`,
     );
   }
-  parts.push("</tbody></table><table class=\"totals\"><tbody>");
+  parts.push('</tbody></table><table class="totals"><tbody>');
   for (const t of doc.totals) {
     const cls = t.strong ? ` class="total"` : "";
     parts.push(
