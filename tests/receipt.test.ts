@@ -57,12 +57,36 @@ const freeStore = {
 describe("structured grocery receipt", () => {
   it.each([
     ["cash", "Cash", "Change"],
-    ["utang", "UNPAID", "charged to utang"],
-    ["gcash", "Paid", "GCASH"],
-  ] as const)("maps %s payment labels", (method, label, value) => {
+    ["utang", "UNPAID", null],
+    ["gcash", "Paid", null],
+  ] as const)("maps %s payment labels", (method, firstLabel, secondLabel) => {
     const doc = buildReceiptPrintDoc(receipt(method), freeStore);
-    expect(doc.info).toEqual(expect.arrayContaining([expect.stringContaining("Receipt"), expect.stringContaining("Cashier") ]));
-    expect(doc.totals).toEqual(expect.arrayContaining([expect.objectContaining({ left: label, right: expect.stringContaining(value) })]));
+    expect(doc.info).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("Receipt"),
+        expect.stringContaining("Cashier"),
+      ]),
+    );
+    expect(doc.totals).toEqual(
+      expect.arrayContaining([expect.objectContaining({ left: firstLabel })]),
+    );
+    if (secondLabel) {
+      expect(doc.totals).toEqual(
+        expect.arrayContaining([expect.objectContaining({ left: secondLabel })]),
+      );
+    }
+    if (method === "utang") {
+      expect(doc.totals).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ left: "UNPAID", right: "charged to utang" }),
+        ]),
+      );
+    }
+    if (method === "gcash") {
+      expect(doc.totals).toEqual(
+        expect.arrayContaining([expect.objectContaining({ left: "Paid", right: "GCASH" })]),
+      );
+    }
   });
 
   it("builds semantic wrapping columns, prominent total, and escaped content", () => {
