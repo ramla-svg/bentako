@@ -95,4 +95,12 @@ public class ReceiptPrinterPlugin extends Plugin {
         view.setWebViewClient(null);
         view.destroy();
     }
+
+    @Override
+    protected void handleOnDestroy() {
+        for (WebView view : new HashSet<>(receiptViews)) {
+            releaseView(view);
+        }
+        super.handleOnDestroy();
+    }
 }
