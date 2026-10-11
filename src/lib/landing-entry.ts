@@ -14,7 +14,5 @@ export function landingDestination(
 export function authSearch(search: Record<string, unknown>): {
   mode?: "signin" | "signup";
 } {
-  return search.mode === "signup" || search.mode === "signin"
-    ? { mode: search.mode }
-    : {};
+  return search.mode === "signup" || search.mode === "signin" ? { mode: search.mode } : {};
 }

@@ -1,6 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Loader2, Store } from "lucide-react";
+import { PublicLanding } from "@/components/public-landing";
+import { landingDestination } from "@/lib/landing-entry";
+import { platformKind } from "@/lib/platform/platform-service";
 
 import { useAppSession } from "@/hooks/use-app-session";
 
@@ -8,18 +11,22 @@ export const Route = createFileRoute("/")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "BentaKo — Sari-Sari Store POS that works offline" },
+      { title: "BentaKo — Benta, Stock at Utang para sa Sari-Sari Store" },
       {
         name: "description",
         content:
-          "Sell fast, track stock, and record expenses in your sari-sari store — even with no internet. BentaKo syncs automatically when you're back online.",
+          "Itala ang benta, bantayan ang stock, at subaybayan ang utang sa BentaKo. May libreng plano at offline na pagtatala para sa sari-sari store.",
       },
-      { property: "og:title", content: "BentaKo — Sari-Sari Store POS that works offline" },
+      { property: "og:title", content: "BentaKo — Benta, Stock at Utang para sa Sari-Sari Store" },
       {
         property: "og:description",
-        content: "Tap product, enter payment, see change. Built for Philippine sari-sari stores.",
+        content: "Mas malinaw ang takbo ng tindahan. Benta, stock, utang at gastos sa isang app.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:url", content: "https://bentako.lovable.app/" },
     ],
+    links: [{ rel: "canonical", href: "https://bentako.lovable.app/" }],
   }),
   component: Landing,
 });
@@ -29,10 +36,13 @@ function Landing() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (status === "ready") void navigate({ to: "/dashboard", replace: true });
-    if (status === "no-store") void navigate({ to: "/onboarding", replace: true });
-    if (status === "signed-out") void navigate({ to: "/auth", replace: true });
+    const destination = landingDestination(status, platformKind());
+    if (destination) void navigate({ to: destination, replace: true });
   }, [status, navigate]);
+
+  if (status === "signed-out" && !landingDestination(status, platformKind())) {
+    return <PublicLanding />;
+  }
 
   return (
     <div className="grid min-h-screen place-items-center bg-background px-6">
@@ -41,7 +51,9 @@ function Landing() {
           <Store className="size-8" />
         </div>
         <h1 className="mt-5 font-display text-3xl font-extrabold">BentaKo</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Bilis ng tindahan, kahit walang internet.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Bilis ng tindahan, kahit walang internet.
+        </p>
         <Loader2 className="mx-auto mt-6 size-5 animate-spin text-primary" />
       </div>
     </div>

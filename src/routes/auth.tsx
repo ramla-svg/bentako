@@ -10,11 +10,15 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { useAppSession } from "@/hooks/use-app-session";
+import { authSearch } from "@/lib/landing-entry";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  validateSearch: authSearch,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Sign in — BentaKo" },
       { name: "description", content: "Sign in to your BentaKo store to start selling." },
       { property: "og:title", content: "Sign in — BentaKo" },
@@ -27,7 +31,12 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const { status, refresh } = useAppSession();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const search = Route.useSearch();
+  const [mode, setMode] = useState<"signin" | "signup">(search.mode ?? "signin");
+
+  useEffect(() => {
+    setMode(search.mode ?? "signin");
+  }, [search.mode]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
