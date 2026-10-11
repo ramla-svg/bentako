@@ -108,7 +108,31 @@ function SamplePhone() {
                 aria-label={name}
               >
                 <svg viewBox="0 0 44 44" width="35" height="35" aria-hidden="true">
-                  {index === 2 ? <><rect x="11" y="9" width="22" height="28" rx="4" fill="var(--primary)" /><ellipse cx="22" cy="9" rx="11" ry="3" fill="var(--border)" /><rect x="12" y="18" width="20" height="10" fill="var(--landing-peach)" /><path d="M16 23h12" stroke="var(--primary)" /></> : <><path d="M12 5h20l-2 7 4 25H10l4-25z" fill={index === 0 ? "var(--landing-peach)" : "var(--primary)"} stroke="var(--border)" /><rect x="14" y="16" width="16" height="12" rx="2" fill="var(--landing-white)" /><path d="M18 20h8m-8 4h8" stroke="var(--primary)" /></>}
+                  {index === 2 ? (
+                    <>
+                      <rect x="11" y="9" width="22" height="28" rx="4" fill="var(--primary)" />
+                      <ellipse cx="22" cy="9" rx="11" ry="3" fill="var(--border)" />
+                      <rect x="12" y="18" width="20" height="10" fill="var(--landing-peach)" />
+                      <path d="M16 23h12" stroke="var(--primary)" />
+                    </>
+                  ) : (
+                    <>
+                      <path
+                        d="M12 5h20l-2 7 4 25H10l4-25z"
+                        fill={index === 0 ? "var(--landing-peach)" : "var(--primary)"}
+                        stroke="var(--border)"
+                      />
+                      <rect
+                        x="14"
+                        y="16"
+                        width="16"
+                        height="12"
+                        rx="2"
+                        fill="var(--landing-white)"
+                      />
+                      <path d="M18 20h8m-8 4h8" stroke="var(--primary)" />
+                    </>
+                  )}
                 </svg>
               </span>
               <span>{name}</span>
