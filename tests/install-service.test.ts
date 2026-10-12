@@ -65,11 +65,18 @@ describe("install prompt", () => {
     expect(isInstallPromptSnoozed(now + 7.1 * 864e5)).toBe(false);
   });
   it("blocked storage does not crash", () => {
-    const spy = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-      throw new Error("blocked");
-    });
+    const blocked = {
+      getItem: () => {
+        throw new Error("blocked");
+      },
+      setItem: () => {
+        throw new Error("blocked");
+      },
+    };
+    Object.defineProperty(globalThis, "localStorage", { value: blocked, configurable: true });
+    expect(() => snoozeInstallPrompt()).not.toThrow();
     expect(isInstallPromptSnoozed()).toBe(false);
-    spy.mockRestore();
+    Object.defineProperty(globalThis, "localStorage", { value: memStorage, configurable: true });
   });
   it("picks manual guides per browser", () => {
     expect(
