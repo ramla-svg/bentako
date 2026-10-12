@@ -200,6 +200,9 @@ export function PublicLanding() {
           </Button>
           <StartButton />
         </div>
+        <div className="landing-mobile-install">
+          <InstallButton />
+        </div>
         <Button
           variant="ghost"
           size="icon"
