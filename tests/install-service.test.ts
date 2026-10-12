@@ -8,8 +8,20 @@ import {
   snoozeInstallPrompt,
 } from "@/lib/platform/install-service";
 
+const mem = new Map<string, string>();
+const memStorage = {
+  getItem: (k: string) => mem.get(k) ?? null,
+  setItem: (k: string, v: string) => void mem.set(k, v),
+  clear: () => mem.clear(),
+};
+Object.defineProperty(globalThis, "localStorage", {
+  value: memStorage,
+  configurable: true,
+  writable: true,
+});
+
 function fakeEvent(outcome: "accepted" | "dismissed", fail = false) {
-  return Object.assign(new Event("beforeinstallprompt"), {
+  return Object.assign({ type: "beforeinstallprompt" } as unknown as Event, {
     prompt: vi.fn(async () => {
       if (fail) throw new Error("x");
     }),

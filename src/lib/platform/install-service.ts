@@ -27,7 +27,8 @@ function emit(): void {
 }
 
 export function bindInstallListeners(): void {
-  if (bound || typeof window === "undefined") return;
+  if (bound || typeof window === "undefined" || typeof window.addEventListener !== "function")
+    return;
   bound = true;
   window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault(); // suppress the browser's own mini-infobar
