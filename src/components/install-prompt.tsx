@@ -19,7 +19,7 @@ import {
 } from "@/lib/platform/install-service";
 import { isNative } from "@/lib/platform/platform-service";
 
-const DELAY_MS = 12_000;
+const DELAY_MS = 3_000;
 
 const BENEFITS = [
   "Mabilis buksan mula sa home screen o desktop",
@@ -60,10 +60,10 @@ export function InstallPrompt() {
 
   const suppressed = installed || isNative();
 
-  // Automatic invitation: real prompt available (or iOS Safari steps).
+  // Automatic invitation: one-tap prompt when available, otherwise device steps.
   useEffect(() => {
     if (!ready || suppressed) return;
-    if (!(available || guide === "ios-safari")) return;
+    void guide;
     if (wasInstallPromptShown() || isInstallPromptSnoozed() || otherModalOpen()) return;
     markInstallPromptShown();
     manual.current = false;

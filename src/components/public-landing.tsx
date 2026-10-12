@@ -192,6 +192,7 @@ export function PublicLanding() {
           <a href="#paano-gumagana">Paano Gumagana</a>
         </nav>
         <div className="landing-header-actions">
+          <InstallButton />
           <Button asChild variant="outline" className="landing-signin">
             <Link to="/auth" search={{ mode: "signin" }}>
               Mag-sign in
