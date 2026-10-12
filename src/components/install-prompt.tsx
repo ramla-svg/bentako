@@ -97,7 +97,13 @@ export function InstallPrompt() {
   const body = (
     <>
       <div className="flex items-center gap-3">
-        <img src={brandMark} alt="" width={816} height={816} className="size-12 shrink-0 rounded-xl" />
+        <img
+          src={brandMark}
+          alt=""
+          width={816}
+          height={816}
+          className="size-12 shrink-0 rounded-xl"
+        />
         <div className="min-w-0 text-left">
           <TitleTag isMobile={isMobile}>I-install ang BentaKo</TitleTag>
           <p className="text-sm text-muted-foreground">
@@ -139,7 +145,11 @@ export function InstallPrompt() {
             <Download className="size-4" aria-hidden="true" /> I-install ang BentaKo
           </Button>
         ) : null}
-        <Button variant={showSteps ? "default" : "ghost"} className="h-11 w-full" onClick={() => close(true)}>
+        <Button
+          variant={showSteps ? "default" : "ghost"}
+          className="h-11 w-full"
+          onClick={() => close(true)}
+        >
           {showSteps ? "Sige" : "Mamaya na"}
         </Button>
       </div>
@@ -149,7 +159,11 @@ export function InstallPrompt() {
   if (isMobile) {
     return (
       <Sheet open={open} onOpenChange={(next) => (next ? setOpen(true) : close(true))}>
-        <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-6 pt-5" aria-describedby={undefined}>
+        <SheetContent
+          side="bottom"
+          className="rounded-t-3xl px-5 pb-6 pt-5"
+          aria-describedby={undefined}
+        >
           {body}
         </SheetContent>
       </Sheet>

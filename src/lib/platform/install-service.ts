@@ -124,13 +124,7 @@ export function wasInstallPromptShown(): boolean {
 }
 
 export type InstallGuide =
-  | "ios-safari"
-  | "ios-other"
-  | "mac-safari"
-  | "firefox"
-  | "in-app"
-  | "chromium"
-  | "other";
+  "ios-safari" | "ios-other" | "mac-safari" | "firefox" | "in-app" | "chromium" | "other";
 
 /** Which manual steps fit this browser when no prompt event is available. */
 export function installGuideFor(ua: string): InstallGuide {
@@ -156,10 +150,7 @@ export const GUIDE_STEPS: Record<InstallGuide, string[]> = {
     "Hindi makakapag-install mula sa app browser na ito.",
     "Buksan ang link sa Chrome (Android) o Safari (iPhone).",
   ],
-  chromium: [
-    "Buksan ang menu ng browser (⋮).",
-    "Piliin ang “Install app” o “Add to Home screen”.",
-  ],
+  chromium: ["Buksan ang menu ng browser (⋮).", "Piliin ang “Install app” o “Add to Home screen”."],
   other: ["Buksan ang BentaKo sa Chrome, Edge, o Safari para ma-install."],
 };
 
