@@ -499,3 +499,9 @@
  .landing-steps { padding-block: 37px; }.landing-step-grid { grid-template-columns: 1fr; gap: 25px; text-align: left; padding-left: 14px; }.landing-step-grid li { display: grid; grid-template-columns: 43px minmax(0,1fr); gap: 20px; align-items: center; }.landing-step-grid h3 { margin: 0; }.landing-step-grid li:not(:last-child)::after { top: 48px; left: 21px; height: 15px; width: 0; border-top: 0; border-left: 1px dashed var(--primary); }
  .landing-bottom-wrap { padding-block: 32px; }.landing-bottom-cta { grid-template-columns: 1fr; border-radius: 16px; }.landing-bottom-copy { padding: 30px 24px; }.landing-bottom-copy h2 { font-size: 27px; }.landing-bottom-cta > img { min-height: 0; height: 235px; }.landing-footer { grid-template-columns: 1fr auto; gap: 20px; }.landing-footer > span { grid-column: span 2; grid-row: 2; font-size: 10px; }.landing-footer nav { gap: 17px; }
 }
+.landing-mobile-install { display: none; }
+@media (max-width: 639px) {
+ .landing-header { grid-template-columns: minmax(0,1fr) auto auto; gap: 8px; }
+ .landing-mobile-install { display: block; }
+ .landing-mobile-install .landing-signin { height: 40px; padding-inline: 10px; font-size: 12px; }
+}
