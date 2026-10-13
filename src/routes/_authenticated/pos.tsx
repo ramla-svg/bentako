@@ -394,7 +394,7 @@ function PosPage() {
             className="sticky top-24 min-w-0 rounded-lg border bg-card p-4"
           >
             <h2 className="mb-3 font-display text-lg font-bold">Current sale</h2>
-            <div className="max-h-[calc(100dvh-210px)] overflow-y-auto">{review}</div>
+            {review}
           </aside>
         ) : null}
       </div>
@@ -562,161 +562,163 @@ function ReviewSale({
   onClear: () => void;
 }) {
   return (
-    <>
-      <div className="min-h-0 space-y-2 lg:max-h-[24vh] lg:overflow-y-auto lg:pr-1">
-        {lines.length === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">Cart is empty</p>
-        ) : null}
-        {lines.map((l) => (
-          <div
-            key={l.product_id}
-            className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 fin-card p-3"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="break-words text-sm font-semibold">{l.name}</p>
-              <p className="tnum break-words text-xs font-medium text-muted-foreground">
-                {formatMoney(l.selling_price, currency)} × {formatQty(l.quantity)} ={" "}
-                <span className="font-bold text-foreground">
-                  {formatMoney(l.selling_price * l.quantity, currency)}
-                </span>
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <Button
-                size="icon"
-                aria-label={`Decrease ${l.name}`}
-                variant="outline"
-                className="size-9"
-                onClick={() => setQty(l.product_id, l.quantity - 1)}
-              >
-                {l.quantity === 1 ? <Trash2 className="size-4" /> : <Minus className="size-4" />}
-              </Button>
-              <span className="tnum w-8 text-center text-sm font-bold">{l.quantity}</span>
-              <Button
-                size="icon"
-                aria-label={`Increase ${l.name}`}
-                variant="outline"
-                className="size-9"
-                onClick={() => setQty(l.product_id, l.quantity + 1)}
-              >
-                <Plus className="size-4" />
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 rounded-2xl bg-secondary p-4">
-        <div className="flex items-center justify-between">
-          <span className="text-base font-bold">Total</span>
-          <span className="tnum break-all text-right font-display text-2xl font-extrabold">
-            {formatMoney(total, currency)}
-          </span>
-        </div>
-      </div>
-      <div className="mt-4 space-y-2">
-        <p className="text-sm font-medium">Payment</p>
-        <div className="flex flex-wrap gap-2">
-          {PAYMENT_METHODS.map((m) => (
-            <Button
-              key={m.value}
-              type="button"
-              aria-pressed={method === m.value}
-              variant="outline"
-              onClick={() => setMethod(m.value)}
-              className={cn(
-                "rounded-full border px-3.5 py-2 text-sm font-medium",
-                method === m.value ? "bg-primary text-primary-foreground" : "bg-card",
-              )}
+    <div className="lg:flex lg:max-h-[calc(100dvh-210px)] lg:flex-col">
+      <div className="lg:min-h-0 lg:overflow-y-auto">
+        <div className="min-h-0 space-y-2 lg:max-h-[24vh] lg:overflow-y-auto lg:pr-1">
+          {lines.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">Cart is empty</p>
+          ) : null}
+          {lines.map((l) => (
+            <div
+              key={l.product_id}
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 fin-card p-3"
             >
-              {m.label}
-            </Button>
+              <div className="min-w-0 flex-1">
+                <p className="break-words text-sm font-semibold">{l.name}</p>
+                <p className="tnum break-words text-xs font-medium text-muted-foreground">
+                  {formatMoney(l.selling_price, currency)} × {formatQty(l.quantity)} ={" "}
+                  <span className="font-bold text-foreground">
+                    {formatMoney(l.selling_price * l.quantity, currency)}
+                  </span>
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button
+                  size="icon"
+                  aria-label={`Decrease ${l.name}`}
+                  variant="outline"
+                  className="size-9"
+                  onClick={() => setQty(l.product_id, l.quantity - 1)}
+                >
+                  {l.quantity === 1 ? <Trash2 className="size-4" /> : <Minus className="size-4" />}
+                </Button>
+                <span className="tnum w-8 text-center text-sm font-bold">{l.quantity}</span>
+                <Button
+                  size="icon"
+                  aria-label={`Increase ${l.name}`}
+                  variant="outline"
+                  className="size-9"
+                  onClick={() => setQty(l.product_id, l.quantity + 1)}
+                >
+                  <Plus className="size-4" />
+                </Button>
+              </div>
+            </div>
           ))}
         </div>
-      </div>
-      {method === "utang" ? (
-        <div className="mt-4 space-y-2">
-          <p className="text-sm font-medium">Customer</p>
-          {(customers ?? []).length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {(customers ?? []).map((c) => (
-                <Button
-                  key={c.id}
-                  type="button"
-                  aria-pressed={customerId === c.id}
-                  variant="outline"
-                  onClick={() => setCustomerId(c.id)}
-                  className={cn(
-                    "h-auto whitespace-normal break-words rounded-full border px-3.5 py-2 text-sm font-medium",
-                    customerId === c.id ? "bg-primary text-primary-foreground" : "bg-card",
-                  )}
-                >
-                  {c.name}
-                </Button>
-              ))}
-            </div>
-          ) : null}
-          <div className="flex gap-2">
-            <Input
-              value={newCustomer}
-              onChange={(e) => setNewCustomer(e.target.value)}
-              placeholder="New customer name"
-              className="h-12"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              className="h-12 shrink-0"
-              onClick={() => void onAddCustomer()}
-            >
-              <Plus className="size-4" /> Add
-            </Button>
+        <div className="mt-4 rounded-2xl bg-secondary p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-base font-bold">Total</span>
+            <span className="tnum break-all text-right font-display text-2xl font-extrabold">
+              {formatMoney(total, currency)}
+            </span>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Nothing is received now — this amount is added to their utang.
-          </p>
         </div>
-      ) : null}
-      {method === "cash" ? (
         <div className="mt-4 space-y-2">
-          <label className="text-sm font-medium" htmlFor="cash">
-            Cash received
-          </label>
-          <Input
-            id="cash"
-            value={cash}
-            onChange={(e) => setCash(e.target.value.replace(/[^0-9.]/g, ""))}
-            inputMode="decimal"
-            placeholder="0.00"
-            className="tnum h-14 text-xl font-bold"
-          />
+          <p className="text-sm font-medium">Payment</p>
           <div className="flex flex-wrap gap-2">
-            {[total, 20, 50, 100, 200, 500, 1000].map((amount, i) => (
+            {PAYMENT_METHODS.map((m) => (
               <Button
-                key={`${amount}-${i}`}
+                key={m.value}
                 type="button"
+                aria-pressed={method === m.value}
                 variant="outline"
-                className="h-10 flex-1 min-w-16"
-                onClick={() => setCash(String(amount))}
+                onClick={() => setMethod(m.value)}
+                className={cn(
+                  "rounded-full border px-3.5 py-2 text-sm font-medium",
+                  method === m.value ? "bg-primary text-primary-foreground" : "bg-card",
+                )}
               >
-                {i === 0 ? "Exact" : `₱${amount}`}
+                {m.label}
               </Button>
             ))}
           </div>
-          {cashNumber > 0 ? (
-            <p
-              className={cn(
-                "tnum text-sm font-semibold",
-                change < 0 ? "text-destructive" : "text-primary",
-              )}
-            >
-              {change < 0
-                ? `Short by ${formatMoney(Math.abs(change), currency)}`
-                : `Change: ${formatMoney(change, currency)}`}
-            </p>
-          ) : null}
         </div>
-      ) : null}
-      <div className="sticky bottom-0 mt-4 bg-card pt-2">
+        {method === "utang" ? (
+          <div className="mt-4 space-y-2">
+            <p className="text-sm font-medium">Customer</p>
+            {(customers ?? []).length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {(customers ?? []).map((c) => (
+                  <Button
+                    key={c.id}
+                    type="button"
+                    aria-pressed={customerId === c.id}
+                    variant="outline"
+                    onClick={() => setCustomerId(c.id)}
+                    className={cn(
+                      "h-auto whitespace-normal break-words rounded-full border px-3.5 py-2 text-sm font-medium",
+                      customerId === c.id ? "bg-primary text-primary-foreground" : "bg-card",
+                    )}
+                  >
+                    {c.name}
+                  </Button>
+                ))}
+              </div>
+            ) : null}
+            <div className="flex gap-2">
+              <Input
+                value={newCustomer}
+                onChange={(e) => setNewCustomer(e.target.value)}
+                placeholder="New customer name"
+                className="h-12"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12 shrink-0"
+                onClick={() => void onAddCustomer()}
+              >
+                <Plus className="size-4" /> Add
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Nothing is received now — this amount is added to their utang.
+            </p>
+          </div>
+        ) : null}
+        {method === "cash" ? (
+          <div className="mt-4 space-y-2">
+            <label className="text-sm font-medium" htmlFor="cash">
+              Cash received
+            </label>
+            <Input
+              id="cash"
+              value={cash}
+              onChange={(e) => setCash(e.target.value.replace(/[^0-9.]/g, ""))}
+              inputMode="decimal"
+              placeholder="0.00"
+              className="tnum h-14 text-xl font-bold"
+            />
+            <div className="flex flex-wrap gap-2">
+              {[total, 20, 50, 100, 200, 500, 1000].map((amount, i) => (
+                <Button
+                  key={`${amount}-${i}`}
+                  type="button"
+                  variant="outline"
+                  className="h-10 flex-1 min-w-16"
+                  onClick={() => setCash(String(amount))}
+                >
+                  {i === 0 ? "Exact" : `₱${amount}`}
+                </Button>
+              ))}
+            </div>
+            {cashNumber > 0 ? (
+              <p
+                className={cn(
+                  "tnum text-sm font-semibold",
+                  change < 0 ? "text-destructive" : "text-primary",
+                )}
+              >
+                {change < 0
+                  ? `Short by ${formatMoney(Math.abs(change), currency)}`
+                  : `Change: ${formatMoney(change, currency)}`}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+      <div className="mt-4 shrink-0 bg-card pt-2">
         <Button
           className="h-14 w-full text-base"
           onClick={() => void onCheckout()}
@@ -733,7 +735,7 @@ function ReviewSale({
           <X className="size-4" /> Clear cart
         </Button>
       </div>
-    </>
+    </div>
   );
 }
 
