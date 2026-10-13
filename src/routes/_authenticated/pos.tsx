@@ -563,7 +563,6 @@ function ReviewSale({
 }) {
   return (
     <>
-      {" "}
       <div className="min-h-0 space-y-2 lg:max-h-[24vh] lg:overflow-y-auto lg:pr-1">
         {lines.length === 0 ? (
           <p className="py-4 text-center text-sm text-muted-foreground">Cart is empty</p>
@@ -647,7 +646,7 @@ function ReviewSale({
                   variant="outline"
                   onClick={() => setCustomerId(c.id)}
                   className={cn(
-                    "rounded-full border px-3.5 py-2 text-sm font-medium",
+                    "h-auto whitespace-normal break-words rounded-full border px-3.5 py-2 text-sm font-medium",
                     customerId === c.id ? "bg-primary text-primary-foreground" : "bg-card",
                   )}
                 >
@@ -717,21 +716,23 @@ function ReviewSale({
           ) : null}
         </div>
       ) : null}
-      <Button
-        className="sticky bottom-0 mt-4 h-14 w-full text-base shadow-lg"
-        onClick={() => void onCheckout()}
-        disabled={
-          busy ||
-          lines.length === 0 ||
-          (method === "cash" && cashNumber < total) ||
-          (method === "utang" && !customerId)
-        }
-      >
-        <Check className="size-5" /> Complete sale
-      </Button>
-      <Button variant="ghost" className="mt-2 h-11 w-full text-destructive" onClick={onClear}>
-        <X className="size-4" /> Clear cart
-      </Button>
+      <div className="sticky bottom-0 mt-4 bg-card pt-2">
+        <Button
+          className="h-14 w-full text-base"
+          onClick={() => void onCheckout()}
+          disabled={
+            busy ||
+            lines.length === 0 ||
+            (method === "cash" && cashNumber < total) ||
+            (method === "utang" && !customerId)
+          }
+        >
+          <Check className="size-5" /> Complete sale
+        </Button>
+        <Button variant="ghost" className="mt-2 h-11 w-full text-destructive" onClick={onClear}>
+          <X className="size-4" /> Clear cart
+        </Button>
+      </div>
     </>
   );
 }
