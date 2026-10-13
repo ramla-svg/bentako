@@ -34,8 +34,13 @@ export const Route = createFileRoute("/_authenticated/inventory")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Inventory — BentaKo" },
-      { name: "description", content: "Receive deliveries, fix stock counts, and see stock history." },
+      {
+        name: "description",
+        content: "Receive deliveries, fix stock counts, and see stock history.",
+      },
       { property: "og:title", content: "Inventory — BentaKo" },
       { property: "og:description", content: "Stock in, adjustments, and movement history." },
     ],
@@ -61,7 +66,9 @@ function InventoryPage() {
 
   const [tab, setTab] = useState<"stock" | "history">("stock");
   const [search, setSearch] = useState("");
-  const [dialog, setDialog] = useState<{ mode: "in" | "adjust"; product: LocalProduct } | null>(null);
+  const [dialog, setDialog] = useState<{ mode: "in" | "adjust"; product: LocalProduct } | null>(
+    null,
+  );
   const [qty, setQty] = useState("");
   const [unitCost, setUnitCost] = useState("");
   const [supplier, setSupplier] = useState("");
@@ -153,7 +160,11 @@ function InventoryPage() {
   }
 
   return (
-    <AppShell back title="Inventory" subtitle={`Stock value ${formatMoney(totals.value, currency)}`}>
+    <AppShell
+      back
+      title="Inventory"
+      subtitle={`Stock value ${formatMoney(totals.value, currency)}`}
+    >
       <div className="space-y-3">
         <div className="grid grid-cols-3 gap-2 text-center">
           <SummaryTile label="Products" value={String((products ?? []).length)} />
@@ -190,10 +201,15 @@ function InventoryPage() {
                 {filtered.map((p) => {
                   const low = p.stock_quantity <= p.low_stock_threshold;
                   return (
-                    <li key={p.id} className="fin-card p-3">
+                    <li
+                      key={p.id}
+                      className="fin-card p-3 lg:grid lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center lg:gap-6"
+                    >
                       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
                         <div className="min-w-0">
-                          <p className="truncate font-semibold">{p.name}</p>
+                          <p className="truncate font-semibold lg:whitespace-normal lg:break-words">
+                            {p.name}
+                          </p>
                           <p className="tnum text-xs text-muted-foreground">
                             Alert at {formatQty(p.low_stock_threshold)} · cost{" "}
                             {formatMoney(p.cost_price, currency)}
@@ -212,7 +228,7 @@ function InventoryPage() {
                           {formatQty(p.stock_quantity)} {p.unit_type}
                         </span>
                       </div>
-                      <div className="mt-3 flex gap-2">
+                      <div className="mt-3 flex gap-2 lg:mt-0">
                         <Button
                           variant="outline"
                           className="h-10 flex-1"

@@ -28,6 +28,8 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Dashboard — BentaKo" },
       { name: "description", content: "Today's sales, profit, expenses, and low-stock alerts." },
       { property: "og:title", content: "Dashboard — BentaKo" },
@@ -132,17 +134,19 @@ function Dashboard() {
       title={`Kumusta, ${userName?.split(" ")[0] ?? "boss"}!`}
       subtitle={`${userName ?? store?.name ?? ""} · ${role === "owner" ? "Owner" : "Cashier"}`}
     >
-      <div className="space-y-3 sm:space-y-5">
-        <PlanReminder />
+      <div className="space-y-3 sm:space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
+        <div className="lg:col-span-2">
+          <PlanReminder />
+        </div>
         {/* Sales today */}
 
-        <div className="fin-hero min-w-0 p-4 sm:p-5">
+        <div className="fin-hero min-w-0 p-4 sm:p-5 lg:row-span-2">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] opacity-80">
                 Sales today
               </p>
-              <p className="tnum truncate font-display text-xl font-extrabold sm:text-fluid-amount">
+              <p className="tnum truncate font-display text-xl font-extrabold sm:text-fluid-amount lg:text-4xl">
                 {formatMoney(revenue, currency)}
               </p>
               {change === null ? null : (
@@ -193,7 +197,7 @@ function Dashboard() {
         {pro ? null : (
           <Link
             to="/upgrade"
-            className="fin-card flex items-center gap-3 border-primary/40 bg-primary/5 p-3.5 active:opacity-90 sm:p-4"
+            className="fin-card flex items-center gap-3 lg:col-span-2 lg:row-start-5 border-primary/40 bg-primary/5 p-3.5 active:opacity-90 sm:p-4"
           >
             <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary sm:size-11">
               <Crown className="size-5 sm:size-5.5" />
@@ -265,7 +269,7 @@ function Dashboard() {
         </section>
 
         {alerts > 0 ? (
-          <section className="fin-card p-4">
+          <section className="min-w-0 border-t pt-4">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-sm font-bold">Needs restocking</h2>
               <Link to="/inventory" className="text-xs font-semibold text-primary">
@@ -345,7 +349,10 @@ function SectionHead({
   return (
     <div className="flex items-center justify-between gap-3">
       <h2 className="truncate font-display text-sm font-bold sm:text-base">{title}</h2>
-      <Link to={to} className="flex shrink-0 items-center gap-0.5 text-xs font-semibold text-primary">
+      <Link
+        to={to}
+        className="flex shrink-0 items-center gap-0.5 text-xs font-semibold text-primary"
+      >
         {label}
         <ChevronRight className="size-3.5" />
       </Link>
@@ -368,7 +375,7 @@ function MiniStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 rounded-lg bg-primary-foreground/15 px-1.5 py-1.5 sm:rounded-xl sm:px-2 sm:py-2">
       <p className="truncate opacity-80">{label}</p>
-      <p className="tnum truncate font-display text-xs font-bold sm:text-sm">{value}</p>
+      <p className="tnum truncate font-display text-xs font-bold sm:text-sm lg:text-lg">{value}</p>
     </div>
   );
 }
@@ -398,12 +405,19 @@ function GlanceCard({
         highlight && "border-warning/60 bg-status-warn",
       )}
     >
-      <span className={cn("grid size-7 shrink-0 place-items-center rounded-lg sm:size-9 sm:rounded-full", TINT[tint])}>
+      <span
+        className={cn(
+          "grid size-7 shrink-0 place-items-center rounded-lg sm:size-9 sm:rounded-full",
+          TINT[tint],
+        )}
+      >
         <Icon className="size-3.5 sm:size-4.5" />
       </span>
       <span className="min-w-0">
         <span className="block truncate text-[9px] text-muted-foreground sm:text-xs">{label}</span>
-        <span className="tnum block truncate font-display text-[10px] font-bold sm:text-sm">{value}</span>
+        <span className="tnum block truncate font-display text-[10px] font-bold sm:text-sm lg:text-lg">
+          {value}
+        </span>
       </span>
     </Link>
   );
