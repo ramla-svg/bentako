@@ -37,6 +37,8 @@ export const Route = createFileRoute("/_authenticated/pos")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "New sale — BentaKo" },
       { name: "description", content: "Tap products, take cash, and give change fast." },
       { property: "og:title", content: "New sale — BentaKo" },
@@ -76,7 +78,17 @@ function PosPage() {
   useEffect(() => {
     const focusSearch = (event: KeyboardEvent) => {
       const target = event.target instanceof Element ? event.target : null;
-      if (shouldFocusPosSearch(event, Boolean(target?.closest("input, textarea, select, [contenteditable]:not([contenteditable=\"false\"]), [role=\"textbox\"]")), Boolean(document.querySelector("[role=dialog], [role=alertdialog]")))) {
+      if (
+        shouldFocusPosSearch(
+          event,
+          Boolean(
+            target?.closest(
+              'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]',
+            ),
+          ),
+          Boolean(document.querySelector("[role=dialog], [role=alertdialog]")),
+        )
+      ) {
         event.preventDefault();
         searchRef.current?.focus();
       }
@@ -275,115 +287,148 @@ function PosPage() {
     }
   }
 
-  const review = <ReviewSale lines={lines} total={total} currency={currency} setQty={setQty}
-    method={method} setMethod={setMethod} customers={customers ?? []} customerId={customerId}
-    setCustomerId={setCustomerId} newCustomer={newCustomer} setNewCustomer={setNewCustomer}
-    cash={cash} setCash={setCash} cashNumber={cashNumber} change={change} busy={busy}
-    onCheckout={handleCheckout} onAddCustomer={async () => {
-      if (!ctx || !newCustomer.trim()) return;
-      try {
-        const created = await saveCustomer(ctx, { name: newCustomer });
-        setCustomerId(created.id); setNewCustomer(""); toast.success("Customer added.");
-      } catch (err) { toast.error(err instanceof Error ? err.message : "Could not add customer."); }
-    }} onClear={() => { setCart({}); setCash(""); setMethod("cash"); setCustomerId(""); setCartOpen(false); }} />;
+  const review = (
+    <ReviewSale
+      lines={lines}
+      total={total}
+      currency={currency}
+      setQty={setQty}
+      method={method}
+      setMethod={setMethod}
+      customers={customers ?? []}
+      customerId={customerId}
+      setCustomerId={setCustomerId}
+      newCustomer={newCustomer}
+      setNewCustomer={setNewCustomer}
+      cash={cash}
+      setCash={setCash}
+      cashNumber={cashNumber}
+      change={change}
+      busy={busy}
+      onCheckout={handleCheckout}
+      onAddCustomer={async () => {
+        if (!ctx || !newCustomer.trim()) return;
+        try {
+          const created = await saveCustomer(ctx, { name: newCustomer });
+          setCustomerId(created.id);
+          setNewCustomer("");
+          toast.success("Customer added.");
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : "Could not add customer.");
+        }
+      }}
+      onClear={() => {
+        setCart({});
+        setCash("");
+        setMethod("cash");
+        setCustomerId("");
+        setCartOpen(false);
+      }}
+    />
+  );
 
   return (
     <AppShell back title="New sale" subtitle={store?.name}>
       <div className="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_380px]">
-      <div className="min-w-0 space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            ref={searchRef}
-            aria-label="Search product or scan code"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && search.trim()) {
-                e.preventDefault();
-                scanCode(search);
-              }
-            }}
-            placeholder="Search product or scan code"
-            className="h-12 pl-9"
-            inputMode="search"
-            enterKeyHint="search"
-            autoComplete="off"
-          />
-        </div>
+        <div className="min-w-0 space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              ref={searchRef}
+              aria-label="Search product or scan code"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && search.trim()) {
+                  e.preventDefault();
+                  scanCode(search);
+                }
+              }}
+              placeholder="Search product or scan code"
+              className="h-12 pl-9"
+              inputMode="search"
+              enterKeyHint="search"
+              autoComplete="off"
+            />
+          </div>
 
-        <div className="scroll-rail -mx-4 flex gap-2 px-4 pb-1 sm:-mx-6 sm:px-6">
-          <CategoryChip active={categoryId === "all"} onClick={() => setCategoryId("all")}>
-            All
-          </CategoryChip>
-          {(categories ?? []).map((c) => (
-            <CategoryChip
-              key={c.id}
-              active={categoryId === c.id}
-              onClick={() => setCategoryId(c.id)}
-            >
-              {c.name}
+          <div className="scroll-rail -mx-4 flex gap-2 px-4 pb-1 sm:-mx-6 sm:px-6">
+            <CategoryChip active={categoryId === "all"} onClick={() => setCategoryId("all")}>
+              All
             </CategoryChip>
-          ))}
-        </div>
-
-        {filtered.length === 0 ? (
-          <EmptyState
-            icon={ShoppingBasket}
-            title="No products found"
-            description="Add products first, or try a different search."
-          />
-        ) : (
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
-            {filtered.map((p) => (
-              <ProductTile
-                key={p.id}
-                product={p}
-                inCart={cart[p.id] ?? 0}
-                currency={currency}
-                onAdd={add}
-              />
+            {(categories ?? []).map((c) => (
+              <CategoryChip
+                key={c.id}
+                active={categoryId === c.id}
+                onClick={() => setCategoryId(c.id)}
+              >
+                {c.name}
+              </CategoryChip>
             ))}
           </div>
-        )}
-      </div>
 
-      {desktop ? (
-        <aside aria-label="Current sale" className="sticky top-24 min-w-0 rounded-lg border bg-card p-4">
-          <h2 className="mb-3 font-display text-lg font-bold">Current sale</h2>
-          <div className="max-h-[calc(100dvh-210px)] overflow-y-auto">{review}</div>
-        </aside>
-      ) : null}
-      </div>
+          {filtered.length === 0 ? (
+            <EmptyState
+              icon={ShoppingBasket}
+              title="No products found"
+              description="Add products first, or try a different search."
+            />
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+              {filtered.map((p) => (
+                <ProductTile
+                  key={p.id}
+                  product={p}
+                  inCart={cart[p.id] ?? 0}
+                  currency={currency}
+                  onAdd={add}
+                />
+              ))}
+            </div>
+          )}
+        </div>
 
-      {!desktop ? <Sheet open={cartOpen} onOpenChange={setCartOpen}>
-        {itemCount > 0 ? (
-          <div className="safe-nav-offset app-gutter fixed inset-x-0 z-30">
-            <SheetTrigger asChild>
-              <Button
-                type="button"
-                className="mx-auto flex h-auto w-full max-w-md items-center justify-between rounded-2xl px-4 py-3.5 shadow-lg shadow-primary/30 active:scale-[0.99]"
-              >
-                <span className="flex items-center gap-2 text-sm font-semibold">
-                  <ShoppingBasket className="size-4" />
-                  {itemCount} item{itemCount > 1 ? "s" : ""}
-                </span>
-                <span className="tnum font-display text-2xl font-extrabold">
-                  {formatMoney(total, currency)}
-                </span>
-              </Button>
-            </SheetTrigger>
-          </div>
+        {desktop ? (
+          <aside
+            aria-label="Current sale"
+            className="sticky top-24 min-w-0 rounded-lg border bg-card p-4"
+          >
+            <h2 className="mb-3 font-display text-lg font-bold">Current sale</h2>
+            <div className="max-h-[calc(100dvh-210px)] overflow-y-auto">{review}</div>
+          </aside>
         ) : null}
+      </div>
 
-        <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-3xl">
-          <SheetHeader className="px-0">
-            <SheetTitle className="font-display">Review sale</SheetTitle>
-          </SheetHeader>
+      {!desktop ? (
+        <Sheet open={cartOpen} onOpenChange={setCartOpen}>
+          {itemCount > 0 ? (
+            <div className="safe-nav-offset app-gutter fixed inset-x-0 z-30">
+              <SheetTrigger asChild>
+                <Button
+                  type="button"
+                  className="mx-auto flex h-auto w-full max-w-md items-center justify-between rounded-2xl px-4 py-3.5 shadow-lg shadow-primary/30 active:scale-[0.99]"
+                >
+                  <span className="flex items-center gap-2 text-sm font-semibold">
+                    <ShoppingBasket className="size-4" />
+                    {itemCount} item{itemCount > 1 ? "s" : ""}
+                  </span>
+                  <span className="tnum font-display text-2xl font-extrabold">
+                    {formatMoney(total, currency)}
+                  </span>
+                </Button>
+              </SheetTrigger>
+            </div>
+          ) : null}
 
-          {review}
-        </SheetContent>
-      </Sheet> : null}
+          <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-3xl">
+            <SheetHeader className="px-0">
+              <SheetTitle className="font-display">Review sale</SheetTitle>
+            </SheetHeader>
+
+            {review}
+          </SheetContent>
+        </Sheet>
+      ) : null}
 
       <Dialog open={!!receipt} onOpenChange={(open) => !open && setReceipt(null)}>
         <DialogContent className="max-w-sm">
@@ -475,194 +520,220 @@ function PosPage() {
   );
 }
 
-
-function ReviewSale({ lines, total, currency, setQty, method, setMethod, customers, customerId,
-  setCustomerId, newCustomer, setNewCustomer, cash, setCash, cashNumber, change, busy,
-  onCheckout, onAddCustomer, onClear }: {
-  lines: CartLine[]; total: number; currency: string; setQty: (id: string, qty: number) => void;
-  method: PaymentMethod; setMethod: (method: PaymentMethod) => void; customers: LocalCustomer[];
-  customerId: string; setCustomerId: (id: string) => void; newCustomer: string;
-  setNewCustomer: (name: string) => void; cash: string; setCash: (cash: string) => void;
-  cashNumber: number; change: number; busy: boolean; onCheckout: () => Promise<void>;
-  onAddCustomer: () => Promise<void>; onClear: () => void;
+function ReviewSale({
+  lines,
+  total,
+  currency,
+  setQty,
+  method,
+  setMethod,
+  customers,
+  customerId,
+  setCustomerId,
+  newCustomer,
+  setNewCustomer,
+  cash,
+  setCash,
+  cashNumber,
+  change,
+  busy,
+  onCheckout,
+  onAddCustomer,
+  onClear,
+}: {
+  lines: CartLine[];
+  total: number;
+  currency: string;
+  setQty: (id: string, qty: number) => void;
+  method: PaymentMethod;
+  setMethod: (method: PaymentMethod) => void;
+  customers: LocalCustomer[];
+  customerId: string;
+  setCustomerId: (id: string) => void;
+  newCustomer: string;
+  setNewCustomer: (name: string) => void;
+  cash: string;
+  setCash: (cash: string) => void;
+  cashNumber: number;
+  change: number;
+  busy: boolean;
+  onCheckout: () => Promise<void>;
+  onAddCustomer: () => Promise<void>;
+  onClear: () => void;
 }) {
-  return <>          <div className="min-h-0 space-y-2 lg:max-h-[24vh] lg:overflow-y-auto lg:pr-1">
-            {lines.length === 0 ? <p className="py-4 text-center text-sm text-muted-foreground">Cart is empty</p> : null}
-            {lines.map((l) => (
-              <div key={l.product_id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 fin-card p-3">
-                <div className="min-w-0 flex-1">
-                  <p className="break-words text-sm font-semibold">{l.name}</p>
-                  <p className="tnum break-words text-xs font-medium text-muted-foreground">
-                    {formatMoney(l.selling_price, currency)} × {formatQty(l.quantity)} ={" "}
-                    <span className="font-bold text-foreground">
-                      {formatMoney(l.selling_price * l.quantity, currency)}
-                    </span>
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  <Button
-                    size="icon"
-                    aria-label={`Decrease ${l.name}`}
-                    variant="outline"
-                    className="size-9"
-                    onClick={() => setQty(l.product_id, l.quantity - 1)}
-                  >
-                    {l.quantity === 1 ? (
-                      <Trash2 className="size-4" />
-                    ) : (
-                      <Minus className="size-4" />
-                    )}
-                  </Button>
-                  <span className="tnum w-8 text-center text-sm font-bold">{l.quantity}</span>
-                  <Button
-                    size="icon"
-                    aria-label={`Increase ${l.name}`}
-                    variant="outline"
-                    className="size-9"
-                    onClick={() => setQty(l.product_id, l.quantity + 1)}
-                  >
-                    <Plus className="size-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 rounded-2xl bg-secondary p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-base font-bold">Total</span>
-              <span className="tnum break-all text-right font-display text-2xl font-extrabold">
-                {formatMoney(total, currency)}
-              </span>
+  return (
+    <>
+      {" "}
+      <div className="min-h-0 space-y-2 lg:max-h-[24vh] lg:overflow-y-auto lg:pr-1">
+        {lines.length === 0 ? (
+          <p className="py-4 text-center text-sm text-muted-foreground">Cart is empty</p>
+        ) : null}
+        {lines.map((l) => (
+          <div
+            key={l.product_id}
+            className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 fin-card p-3"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="break-words text-sm font-semibold">{l.name}</p>
+              <p className="tnum break-words text-xs font-medium text-muted-foreground">
+                {formatMoney(l.selling_price, currency)} × {formatQty(l.quantity)} ={" "}
+                <span className="font-bold text-foreground">
+                  {formatMoney(l.selling_price * l.quantity, currency)}
+                </span>
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <Button
+                size="icon"
+                aria-label={`Decrease ${l.name}`}
+                variant="outline"
+                className="size-9"
+                onClick={() => setQty(l.product_id, l.quantity - 1)}
+              >
+                {l.quantity === 1 ? <Trash2 className="size-4" /> : <Minus className="size-4" />}
+              </Button>
+              <span className="tnum w-8 text-center text-sm font-bold">{l.quantity}</span>
+              <Button
+                size="icon"
+                aria-label={`Increase ${l.name}`}
+                variant="outline"
+                className="size-9"
+                onClick={() => setQty(l.product_id, l.quantity + 1)}
+              >
+                <Plus className="size-4" />
+              </Button>
             </div>
           </div>
-
-          <div className="mt-4 space-y-2">
-            <p className="text-sm font-medium">Payment</p>
+        ))}
+      </div>
+      <div className="mt-4 rounded-2xl bg-secondary p-4">
+        <div className="flex items-center justify-between">
+          <span className="text-base font-bold">Total</span>
+          <span className="tnum break-all text-right font-display text-2xl font-extrabold">
+            {formatMoney(total, currency)}
+          </span>
+        </div>
+      </div>
+      <div className="mt-4 space-y-2">
+        <p className="text-sm font-medium">Payment</p>
+        <div className="flex flex-wrap gap-2">
+          {PAYMENT_METHODS.map((m) => (
+            <Button
+              key={m.value}
+              type="button"
+              aria-pressed={method === m.value}
+              variant="outline"
+              onClick={() => setMethod(m.value)}
+              className={cn(
+                "rounded-full border px-3.5 py-2 text-sm font-medium",
+                method === m.value ? "bg-primary text-primary-foreground" : "bg-card",
+              )}
+            >
+              {m.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+      {method === "utang" ? (
+        <div className="mt-4 space-y-2">
+          <p className="text-sm font-medium">Customer</p>
+          {(customers ?? []).length > 0 ? (
             <div className="flex flex-wrap gap-2">
-              {PAYMENT_METHODS.map((m) => (
+              {(customers ?? []).map((c) => (
                 <Button
-                  key={m.value}
+                  key={c.id}
                   type="button"
-                  aria-pressed={method === m.value}
+                  aria-pressed={customerId === c.id}
                   variant="outline"
-                  onClick={() => setMethod(m.value)}
+                  onClick={() => setCustomerId(c.id)}
                   className={cn(
                     "rounded-full border px-3.5 py-2 text-sm font-medium",
-                    method === m.value ? "bg-primary text-primary-foreground" : "bg-card",
+                    customerId === c.id ? "bg-primary text-primary-foreground" : "bg-card",
                   )}
                 >
-                  {m.label}
+                  {c.name}
                 </Button>
               ))}
             </div>
+          ) : null}
+          <div className="flex gap-2">
+            <Input
+              value={newCustomer}
+              onChange={(e) => setNewCustomer(e.target.value)}
+              placeholder="New customer name"
+              className="h-12"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 shrink-0"
+              onClick={() => void onAddCustomer()}
+            >
+              <Plus className="size-4" /> Add
+            </Button>
           </div>
-
-          {method === "utang" ? (
-            <div className="mt-4 space-y-2">
-              <p className="text-sm font-medium">Customer</p>
-              {(customers ?? []).length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {(customers ?? []).map((c) => (
-                    <Button
-                      key={c.id}
-                      type="button"
-                      aria-pressed={customerId === c.id}
-                      variant="outline"
-                      onClick={() => setCustomerId(c.id)}
-                      className={cn(
-                        "rounded-full border px-3.5 py-2 text-sm font-medium",
-                        customerId === c.id ? "bg-primary text-primary-foreground" : "bg-card",
-                      )}
-                    >
-                      {c.name}
-                    </Button>
-                  ))}
-                </div>
-              ) : null}
-              <div className="flex gap-2">
-                <Input
-                  value={newCustomer}
-                  onChange={(e) => setNewCustomer(e.target.value)}
-                  placeholder="New customer name"
-                  className="h-12"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-12 shrink-0"
-                  onClick={() => void onAddCustomer()}
-                >
-                  <Plus className="size-4" /> Add
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Nothing is received now — this amount is added to their utang.
-              </p>
-            </div>
+          <p className="text-xs text-muted-foreground">
+            Nothing is received now — this amount is added to their utang.
+          </p>
+        </div>
+      ) : null}
+      {method === "cash" ? (
+        <div className="mt-4 space-y-2">
+          <label className="text-sm font-medium" htmlFor="cash">
+            Cash received
+          </label>
+          <Input
+            id="cash"
+            value={cash}
+            onChange={(e) => setCash(e.target.value.replace(/[^0-9.]/g, ""))}
+            inputMode="decimal"
+            placeholder="0.00"
+            className="tnum h-14 text-xl font-bold"
+          />
+          <div className="flex flex-wrap gap-2">
+            {[total, 20, 50, 100, 200, 500, 1000].map((amount, i) => (
+              <Button
+                key={`${amount}-${i}`}
+                type="button"
+                variant="outline"
+                className="h-10 flex-1 min-w-16"
+                onClick={() => setCash(String(amount))}
+              >
+                {i === 0 ? "Exact" : `₱${amount}`}
+              </Button>
+            ))}
+          </div>
+          {cashNumber > 0 ? (
+            <p
+              className={cn(
+                "tnum text-sm font-semibold",
+                change < 0 ? "text-destructive" : "text-primary",
+              )}
+            >
+              {change < 0
+                ? `Short by ${formatMoney(Math.abs(change), currency)}`
+                : `Change: ${formatMoney(change, currency)}`}
+            </p>
           ) : null}
-
-          {method === "cash" ? (
-            <div className="mt-4 space-y-2">
-              <label className="text-sm font-medium" htmlFor="cash">
-                Cash received
-              </label>
-              <Input
-                id="cash"
-                value={cash}
-                onChange={(e) => setCash(e.target.value.replace(/[^0-9.]/g, ""))}
-                inputMode="decimal"
-                placeholder="0.00"
-                className="tnum h-14 text-xl font-bold"
-              />
-              <div className="flex flex-wrap gap-2">
-                {[total, 20, 50, 100, 200, 500, 1000].map((amount, i) => (
-                  <Button
-                    key={`${amount}-${i}`}
-                    type="button"
-                    variant="outline"
-                    className="h-10 flex-1 min-w-16"
-                    onClick={() => setCash(String(amount))}
-                  >
-                    {i === 0 ? "Exact" : `₱${amount}`}
-                  </Button>
-                ))}
-              </div>
-              {cashNumber > 0 ? (
-                <p
-                  className={cn(
-                    "tnum text-sm font-semibold",
-                    change < 0 ? "text-destructive" : "text-primary",
-                  )}
-                >
-                  {change < 0
-                    ? `Short by ${formatMoney(Math.abs(change), currency)}`
-                    : `Change: ${formatMoney(change, currency)}`}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-
-          <Button
-            className="sticky bottom-0 mt-4 h-14 w-full text-base shadow-lg"
-            onClick={() => void onCheckout()}
-            disabled={
-              busy ||
-              lines.length === 0 ||
-              (method === "cash" && cashNumber < total) ||
-              (method === "utang" && !customerId)
-            }
-          >
-            <Check className="size-5" /> Complete sale
-          </Button>
-          <Button
-            variant="ghost"
-            className="mt-2 h-11 w-full text-destructive"
-            onClick={onClear}
-          >
-            <X className="size-4" /> Clear cart
-          </Button>
-</>;
+        </div>
+      ) : null}
+      <Button
+        className="sticky bottom-0 mt-4 h-14 w-full text-base shadow-lg"
+        onClick={() => void onCheckout()}
+        disabled={
+          busy ||
+          lines.length === 0 ||
+          (method === "cash" && cashNumber < total) ||
+          (method === "utang" && !customerId)
+        }
+      >
+        <Check className="size-5" /> Complete sale
+      </Button>
+      <Button variant="ghost" className="mt-2 h-11 w-full text-destructive" onClick={onClear}>
+        <X className="size-4" /> Clear cart
+      </Button>
+    </>
+  );
 }
 
 /** Memoized so tapping one product does not re-render the whole grid. */

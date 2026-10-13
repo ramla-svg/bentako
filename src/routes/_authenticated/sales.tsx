@@ -32,6 +32,8 @@ export const Route = createFileRoute("/_authenticated/sales")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Sales history — BentaKo" },
       {
         name: "description",
@@ -154,9 +156,10 @@ function SalesPage() {
           <ul className="space-y-2">
             {filtered.map((s) => (
               <li key={s.id}>
-                <button
+                <Button
+                  variant="outline"
                   onClick={() => setDetail(s)}
-                  className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 fin-card p-3 text-left"
+                  className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 fin-card h-auto whitespace-normal p-3 text-left lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
                 >
                   <div className="min-w-0">
                     <p className="truncate font-semibold">{s.transaction_number}</p>
@@ -165,6 +168,10 @@ function SalesPage() {
                       {s.cashier_name ? ` · ${s.cashier_name}` : ""}
                     </p>
                   </div>
+                  <p className="hidden min-w-0 text-sm text-muted-foreground lg:block">
+                    {s.payment_method === "utang" ? "Utang" : s.payment_method.toUpperCase()} ·{" "}
+                    {s.status === "voided" ? "Voided" : "Completed"}
+                  </p>
                   <div className="shrink-0 text-right">
                     <p
                       className={cn(
@@ -180,7 +187,7 @@ function SalesPage() {
                       <p className="text-xs text-muted-foreground">Not yet synced</p>
                     ) : null}
                   </div>
-                </button>
+                </Button>
               </li>
             ))}
           </ul>

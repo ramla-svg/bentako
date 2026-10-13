@@ -22,11 +22,9 @@ import {
 
 import type { ReactNode } from "react";
 
-
 import { ConnectionChip, useConnection } from "@/components/connection-chip";
 import { useAppSession } from "@/hooks/use-app-session";
 import { cn } from "@/lib/utils";
-
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutGrid },
@@ -146,7 +144,7 @@ export function AppShell({
                   aria-label={alerts > 0 ? `${alerts} stock alerts` : "Stock alerts"}
                   className="relative grid size-9 shrink-0 place-items-center rounded-lg text-muted-foreground sm:size-10 sm:rounded-xl"
                 >
-                    <Bell className="size-4.5 sm:size-5" />
+                  <Bell className="size-4.5 sm:size-5" />
                   {alerts > 0 ? (
                     <span className="absolute right-2 top-2 size-2 rounded-full bg-destructive" />
                   ) : null}
@@ -194,7 +192,9 @@ export function AppShell({
                     ) : null}
                   </div>
                   {subtitle ? (
-                    <p className="truncate text-[10px] text-muted-foreground sm:text-xs">{subtitle}</p>
+                    <p className="truncate text-[10px] text-muted-foreground sm:text-xs">
+                      {subtitle}
+                    </p>
                   ) : null}
                 </div>
               </div>
@@ -219,7 +219,6 @@ export function AppShell({
               </p>
             ) : null}
           </header>
-
 
           <main className="app-gutter min-w-0 max-w-full py-4 sm:py-5">{children}</main>
         </div>

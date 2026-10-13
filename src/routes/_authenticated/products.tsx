@@ -62,6 +62,8 @@ export const Route = createFileRoute("/_authenticated/products")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Products — BentaKo" },
       { name: "description", content: "Manage your product list, prices, and stock levels." },
       { property: "og:title", content: "Products — BentaKo" },
@@ -369,8 +371,6 @@ function ProductsPage() {
           </div>
         </section>
 
-
-
         <div className="relative">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -406,7 +406,7 @@ function ProductsPage() {
               return (
                 <li
                   key={p.id}
-                  className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 fin-card p-3"
+                  className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 fin-card p-3 lg:grid-cols-[auto_minmax(0,1fr)_220px_auto] lg:gap-5"
                 >
                   {thumb ? (
                     <img
@@ -421,17 +421,27 @@ function ProductsPage() {
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="truncate font-semibold">{p.name}</p>
+                    <p className="truncate font-semibold lg:whitespace-normal lg:break-words">
+                      {p.name}
+                    </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {category?.name ?? "Uncategorized"} · {p.unit_type}
                     </p>
-                    <p className="tnum mt-1 text-sm">
+                    <p className="tnum mt-1 text-sm lg:hidden">
                       <span className="font-bold text-primary">
                         {formatMoney(p.selling_price, currency)}
                       </span>{" "}
                       <span className="text-xs text-muted-foreground">
                         cost {formatMoney(p.cost_price, currency)}
                       </span>
+                    </p>
+                  </div>
+                  <div className="hidden min-w-0 lg:block">
+                    <p className="tnum break-words font-display text-xl font-bold text-primary">
+                      {formatMoney(p.selling_price, currency)}
+                    </p>
+                    <p className="tnum text-xs text-muted-foreground">
+                      Cost {formatMoney(p.cost_price, currency)}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
