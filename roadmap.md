@@ -10,7 +10,7 @@
 - [x] Add synthetic receipt tests.
 - [x] Run tests, typecheck, web/APK web-assets builds, changed-file lint, and update release notes.
 
-- [ ] Widen desktop shell and expose store ledgers in sidebar.
-- [ ] Share POS review content between persistent desktop checkout and mobile sheet; safe search shortcut.
-- [ ] Improve desktop dashboard and product/inventory/sales scanning without changing mobile workflows.
-- [ ] Verify synthetic checkout, resizing, keyboard behavior, responsive screenshots, regression tests and diagnostics; document limits.
+- [x] Widen desktop shell and expose store ledgers in sidebar.
+- [x] Share POS review content between persistent desktop checkout and mobile sheet; safe search shortcut.
+- [x] Improve desktop dashboard and product/inventory/sales scanning without changing mobile workflows.
+- [x] Verify synthetic checkout, resizing, keyboard behavior, responsive screenshots, regression tests and diagnostics; document limits.
