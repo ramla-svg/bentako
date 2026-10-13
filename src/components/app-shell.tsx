@@ -14,6 +14,8 @@ import {
   ScanLine,
   Settings,
   ShoppingBasket,
+  Smartphone,
+  HandCoins,
   Store,
   Wallet,
 } from "lucide-react";
@@ -32,6 +34,9 @@ const NAV = [
   { to: "/products", label: "Products", icon: Package },
   { to: "/inventory", label: "Inventory", icon: Boxes },
   { to: "/sales", label: "Sales", icon: Receipt },
+  { to: "/cash", label: "GCash / E-wallet", icon: Smartphone },
+  { to: "/utang", label: "Utang / Customers", icon: HandCoins },
+  { to: "/payments", label: "Payments", icon: Wallet },
   { to: "/expenses", label: "Expenses", icon: Wallet },
   { to: "/reports", label: "Reports", icon: BarChart3 },
   { to: "/settings", label: "Settings", icon: Settings },
@@ -89,9 +94,9 @@ export function AppShell({
 
   return (
     <div className="app-pan-y min-h-screen w-full max-w-full overflow-x-clip bg-background">
-      <div className="mx-auto flex w-full max-w-6xl min-w-0">
+      <div className="mx-auto flex w-full max-w-[1440px] min-w-0">
         {/* Desktop sidebar */}
-        <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col gap-1 border-r bg-sidebar p-4 lg:flex">
+        <aside className="sticky top-0 hidden h-screen w-52 overflow-y-auto shrink-0 flex-col gap-1 border-r bg-sidebar p-4 lg:flex">
           <div className="mb-4 flex items-center gap-2">
             <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
               <Store className="size-5" />
