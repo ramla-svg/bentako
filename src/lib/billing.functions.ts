@@ -93,7 +93,8 @@ export const listPlanPayments = createServerFn({ method: "GET" })
       .limit(40);
     if (error) throw new Error(error.message);
     // Every pending request, not just the newest, so none is hidden.
-    const pendingRows = await fetchAllPages((from, to) =>
+    type PayRow = NonNullable<typeof data>[number];
+    const pendingRows = await fetchAllPages<PayRow>((from, to) =>
       supabaseAdmin
         .from("plan_payments")
         .select(
