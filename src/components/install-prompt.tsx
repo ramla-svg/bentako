@@ -107,7 +107,7 @@ export function InstallPrompt() {
         <div className="min-w-0 text-left">
           <TitleTag isMobile={isMobile}>I-install ang BentaKo</TitleTag>
           <p className="text-sm text-muted-foreground">
-            Idagdag sa iyong phone o computer para parang app.
+            Web app ito para sa phone o computer — walang .exe download.
           </p>
         </div>
       </div>
