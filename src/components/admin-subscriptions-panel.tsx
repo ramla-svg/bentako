@@ -16,13 +16,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { canSubmitRevoke, type AdminMetrics } from "@/lib/admin-subscriptions";
 import {
-  getAdminMetrics,
-  listAdminStores,
-  revokeStoreProPlan,
+  canSubmitRevoke,
+  type AdminMetrics,
   type AdminStoreListItem,
-} from "@/lib/billing.functions";
+} from "@/lib/admin-subscriptions";
+import { getAdminMetrics, listAdminStores, revokeStoreProPlan } from "@/lib/billing.functions";
 import { formatDate, formatMoney } from "@/lib/format";
 
 const peso = (cents: number) => formatMoney(cents / 100, "PHP");
@@ -35,8 +34,15 @@ const monthLabel = (key: string) => {
   });
 };
 
-export function AdminOverview({ version }: { version: number }) {
-  const load = useServerFn(getAdminMetrics);
+export function AdminOverview({
+  version,
+  api,
+}: {
+  version: number;
+  api?: { load: () => Promise<AdminMetrics> };
+}) {
+  const loadFn = useServerFn(getAdminMetrics);
+  const load = api?.load ?? loadFn;
   const [m, setM] = useState<AdminMetrics | null>(null);
   const [error, setError] = useState(false);
   useEffect(() => {
@@ -120,9 +126,29 @@ const STATUS_LABEL = {
   pro_expired: "Expired Pro",
 } as const;
 
-export function AdminStores({ version, onChanged }: { version: number; onChanged: () => void }) {
-  const list = useServerFn(listAdminStores);
-  const revoke = useServerFn(revokeStoreProPlan);
+export interface AdminStoresApi {
+  list: (a: {
+    data: { q: string; status: string; page: number };
+  }) => Promise<{ items: AdminStoreListItem[]; total: number; pageSize: number }>;
+  revoke: (a: {
+    data: { storeId: string; reason: string; expectedExpiresAt: string | null };
+  }) => Promise<{ status: string }>;
+}
+
+export function AdminStores({
+  version,
+  onChanged,
+  api,
+}: {
+  version: number;
+  onChanged: () => void;
+  /** Injected only by test harnesses; the app uses the real server actions. */
+  api?: AdminStoresApi;
+}) {
+  const listFn = useServerFn(listAdminStores);
+  const revokeFn = useServerFn(revokeStoreProPlan);
+  const list = api?.list ?? listFn;
+  const revoke = api?.revoke ?? revokeFn;
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(0);
@@ -180,7 +206,7 @@ export function AdminStores({ version, onChanged }: { version: number; onChanged
           <Input
             aria-label="Search stores"
             className="h-11 pl-9"
-            placeholder="Store, owner, email or store ID"
+            placeholder="Store, owner name, owner email or store ID"
             value={q}
             onChange={(e) => {
               setQ(e.target.value);
@@ -219,8 +245,13 @@ export function AdminStores({ version, onChanged }: { version: number; onChanged
                   <p className="font-semibold break-words">{s.name}</p>
                   <p className="break-words text-xs text-muted-foreground">
                     {s.owner_name ?? "No owner name"}
-                    {s.owner_email ? ` · ${s.owner_email}` : ""}
+                    {` · ${s.owner_email ?? "no owner email"}`}
                   </p>
+                  {s.payment_contact && s.payment_contact !== s.owner_email ? (
+                    <p className="break-words text-xs text-muted-foreground">
+                      Payment contact: {s.payment_contact}
+                    </p>
+                  ) : null}
                   <p className="break-all text-[11px] text-muted-foreground">ID {s.id}</p>
                 </div>
                 <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium">

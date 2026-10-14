@@ -228,3 +228,49 @@ export async function revokeStorePro(
 export function canSubmitRevoke(reason: string, busy: boolean): boolean {
   return !busy && reason.trim().length >= MIN_REASON;
 }
+
+export interface AdminStoreListItem extends AdminStoreRow {
+  status: SubscriberStatus;
+  /** Email of the verified account that owns the store (stores.owner_id). */
+  owner_email: string | null;
+  /** Latest email that sent a GCash payment for this store; may differ from the owner. */
+  payment_contact: string | null;
+}
+
+/** Join verified owner identity, filter and order for the admin list. */
+export function buildStoreList(
+  stores: AdminStoreRow[],
+  payments: Pick<AdminPaymentRow, "store_id" | "requested_by_email" | "created_at">[],
+  users: { id: string; email?: string | null }[],
+  now: number,
+  opts: { q: string; status: SubscriberStatus | null },
+): AdminStoreListItem[] {
+  const ownerEmail = new Map(users.map((u) => [u.id, u.email ?? null]));
+  const contact = new Map<string, { email: string; at: string }>();
+  for (const p of payments) {
+    if (!p.requested_by_email) continue;
+    const prev = contact.get(p.store_id);
+    if (!prev || p.created_at >= prev.at)
+      contact.set(p.store_id, { email: p.requested_by_email, at: p.created_at });
+  }
+  const q = opts.q.trim().toLowerCase();
+  return stores
+    .map((s) => ({
+      ...s,
+      status: subscriberStatus(s, now),
+      owner_email: ownerEmail.get(s.owner_id) ?? null,
+      payment_contact: contact.get(s.id)?.email ?? null,
+    }))
+    .filter((s) => !opts.status || s.status === opts.status)
+    .filter(
+      (s) =>
+        !q ||
+        s.id.toLowerCase().includes(q) ||
+        s.name.toLowerCase().includes(q) ||
+        (s.owner_name ?? "").toLowerCase().includes(q) ||
+        (s.owner_email ?? "").toLowerCase().includes(q),
+    )
+    .sort((a, b) =>
+      a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : a.id < b.id ? -1 : 1,
+    );
+}
