@@ -61,7 +61,7 @@ export function manilaMonthKey(at: string | number | Date): string {
 }
 
 export function shiftMonth(key: string, delta: number): string {
-  const [y, m] = key.split("-").map(Number);
+  const [y = 0, m = 1] = key.split("-").map(Number);
   const idx = y * 12 + (m - 1) + delta;
   return `${Math.floor(idx / 12)}-${String((idx % 12) + 1).padStart(2, "0")}`;
 }

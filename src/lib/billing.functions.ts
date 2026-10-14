@@ -94,15 +94,16 @@ export const listPlanPayments = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     // Every pending request, not just the newest, so none is hidden.
     type PayRow = NonNullable<typeof data>[number];
-    const pendingRows = await fetchAllPages<PayRow>((from, to) =>
-      supabaseAdmin
-        .from("plan_payments")
-        .select(
-          "id, store_id, store_name, requested_by_email, plan_period, amount, reference_code, gcash_reference, status, review_note, proof_path, created_at, reviewed_at",
-        )
-        .eq("status", "pending")
-        .order("created_at", { ascending: true })
-        .range(from, to),
+    const pendingRows = await fetchAllPages<PayRow>(
+      async (from, to) =>
+        await supabaseAdmin
+          .from("plan_payments")
+          .select(
+            "id, store_id, store_name, requested_by_email, plan_period, amount, reference_code, gcash_reference, status, review_note, proof_path, created_at, reviewed_at",
+          )
+          .eq("status", "pending")
+          .order("created_at", { ascending: true })
+          .range(from, to),
     );
     const seen = new Set(pendingRows.map((r) => r.id));
     const rows = [...pendingRows, ...(data ?? []).filter((r) => !seen.has(r.id))];

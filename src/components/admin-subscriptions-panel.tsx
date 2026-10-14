@@ -27,7 +27,7 @@ import { formatDate, formatMoney } from "@/lib/format";
 
 const peso = (cents: number) => formatMoney(cents / 100, "PHP");
 const monthLabel = (key: string) => {
-  const [y, m] = key.split("-").map(Number);
+  const [y = 0, m = 1] = key.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, 15)).toLocaleDateString("en-PH", {
     month: "short",
     year: "numeric",
