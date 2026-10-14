@@ -4,7 +4,6 @@ import {
   ArrowRight,
   Box,
   Check,
-  Download,
   ChevronRight,
   Menu,
   ShoppingCart,
@@ -14,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { promptInstall, requestInstallCard, useInstallState } from "@/lib/platform/install-service";
+import { InstallButton } from "@/components/install-button";
 import shopPhoto from "@/assets/landing-shop.jpg";
 import ownerPhoto from "@/assets/landing-owner.jpg";
 
@@ -24,29 +23,6 @@ function StartButton({ light = false }: { light?: boolean }) {
       <Link to="/auth" search={{ mode: "signup" }}>
         Magsimula nang libre <ArrowRight aria-hidden="true" />
       </Link>
-    </Button>
-  );
-}
-
-function InstallButton() {
-  const { available, installed } = useInstallState();
-  const [busy, setBusy] = useState(false);
-  if (installed) return null;
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      className="landing-signin"
-      disabled={busy}
-      onClick={async () => {
-        if (!available) return requestInstallCard();
-        setBusy(true);
-        const outcome = await promptInstall();
-        setBusy(false);
-        if (outcome === "unavailable") requestInstallCard();
-      }}
-    >
-      <Download aria-hidden="true" /> I-install ang app
     </Button>
   );
 }
@@ -192,7 +168,7 @@ export function PublicLanding() {
           <a href="#paano-gumagana">Paano Gumagana</a>
         </nav>
         <div className="landing-header-actions">
-          <InstallButton />
+          <InstallButton className="landing-signin" />
           <Button asChild variant="outline" className="landing-signin">
             <Link to="/auth" search={{ mode: "signin" }}>
               Mag-sign in
@@ -201,7 +177,7 @@ export function PublicLanding() {
           <StartButton />
         </div>
         <div className="landing-mobile-install">
-          <InstallButton />
+          <InstallButton className="landing-signin" />
         </div>
         <Button
           variant="ghost"
@@ -226,7 +202,7 @@ export function PublicLanding() {
               Mag-sign in
             </Link>
             <StartButton />
-            <InstallButton />
+            <InstallButton className="landing-signin" />
           </nav>
         )}
       </header>
@@ -264,7 +240,7 @@ export function PublicLanding() {
                     Tingnan ang app <ChevronRight />
                   </a>
                 </Button>
-                <InstallButton />
+                <InstallButton className="landing-signin" />
               </div>
               <ul className="landing-reassurance">
                 {["May libreng plano", "Offline na pagtatala", "Simple at madaling gamitin"].map(

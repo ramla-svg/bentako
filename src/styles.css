@@ -501,7 +501,8 @@
 }
 .landing-mobile-install { display: none; }
 @media (max-width: 639px) {
- .landing-header { grid-template-columns: minmax(0,1fr) auto auto; gap: 8px; }
+ .landing-header { grid-template-columns: minmax(0,1fr) auto auto; gap: 6px; }
+ .landing-header .landing-brand { font-size: 20px; gap: 6px; }
  .landing-mobile-install { display: block; }
- .landing-mobile-install .landing-signin { height: 40px; padding-inline: 10px; font-size: 12px; }
+ .landing-mobile-install .landing-signin { height: 40px; padding-inline: 8px; font-size: 11px; }
 }

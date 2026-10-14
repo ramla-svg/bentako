@@ -88,6 +88,17 @@ describe("install prompt", () => {
     );
     expect(installGuideFor("Mozilla/5.0 (Android 14) Gecko Firefox/125")).toBe("firefox");
     expect(installGuideFor("Mozilla/5.0 (Android 14) FBAV/400 Chrome/120")).toBe("in-app");
-    expect(installGuideFor("Mozilla/5.0 (Windows) Chrome/120 Safari/537 Edg/120")).toBe("chromium");
+    expect(installGuideFor("Mozilla/5.0 (Windows) Chrome/120 Safari/537 Edg/120")).toBe(
+      "chromium-desktop",
+    );
+  });
+  it("distinguishes desktop installation from Android home-screen guidance", () => {
+    expect(installGuideFor("Mozilla/5.0 (Android 14) Chrome/120 Mobile Safari/537")).toBe(
+      "chromium",
+    );
+    expect(installGuideFor("Mozilla/5.0 (Macintosh) Chrome/120 Safari/537")).toBe(
+      "chromium-desktop",
+    );
+    expect(installGuideFor("Mozilla/5.0 (Linux x86_64) Chromium/120")).toBe("chromium-desktop");
   });
 });

@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Clarify desktop/phone install actions with a shared landing/sidebar button and platform guidance; verify without publishing.
+
 - [x] Build public Tagalog landing page and generated shop/owner photos.
 - [x] Preserve resolved-session dashboard/onboarding and installed-app shortcuts; direct signup links.
 - [x] Verify desktop/mobile, links, entry rules, tests and diagnostics; document results without publishing.

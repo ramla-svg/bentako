@@ -125,7 +125,14 @@ export function wasInstallPromptShown(): boolean {
 }
 
 export type InstallGuide =
-  "ios-safari" | "ios-other" | "mac-safari" | "firefox" | "in-app" | "chromium" | "other";
+  | "ios-safari"
+  | "ios-other"
+  | "mac-safari"
+  | "firefox"
+  | "in-app"
+  | "chromium"
+  | "chromium-desktop"
+  | "other";
 
 /** Which manual steps fit this browser when no prompt event is available. */
 export function installGuideFor(ua: string): InstallGuide {
@@ -133,7 +140,8 @@ export function installGuideFor(ua: string): InstallGuide {
   const ios = /iphone|ipad|ipod/i.test(ua);
   if (ios) return /CriOS|FxiOS|EdgiOS/i.test(ua) ? "ios-other" : "ios-safari";
   if (/Firefox\//i.test(ua)) return "firefox";
-  if (/Edg\/|Chrome\/|Chromium\//i.test(ua)) return "chromium";
+  if (/Edg\/|Chrome\/|Chromium\//i.test(ua))
+    return /android|mobile/i.test(ua) ? "chromium" : "chromium-desktop";
   if (/Macintosh/i.test(ua) && /Safari\//i.test(ua)) return "mac-safari";
   return "other";
 }
@@ -152,6 +160,10 @@ export const GUIDE_STEPS: Record<InstallGuide, string[]> = {
     "Buksan ang link sa Chrome (Android) o Safari (iPhone).",
   ],
   chromium: ["Buksan ang menu ng browser (⋮).", "Piliin ang “Install app” o “Add to Home screen”."],
+  "chromium-desktop": [
+    "Sa Chrome o Edge, hanapin ang install icon sa address bar o buksan ang menu (⋮ / …).",
+    "Piliin ang “Install BentaKo” o Apps → “Install this site as an app”, kung available.",
+  ],
   other: ["Buksan ang BentaKo sa Chrome, Edge, o Safari para ma-install."],
 };
 

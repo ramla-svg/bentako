@@ -23,6 +23,7 @@ import {
 import type { ReactNode } from "react";
 
 import { ConnectionChip, useConnection } from "@/components/connection-chip";
+import { InstallButton } from "@/components/install-button";
 import { useAppSession } from "@/hooks/use-app-session";
 import { cn } from "@/lib/utils";
 
@@ -122,6 +123,9 @@ export function AppShell({
               </Link>
             );
           })}
+          <div className="mt-auto pt-4">
+            <InstallButton className="h-auto w-full px-2 py-2.5 text-xs" />
+          </div>
         </aside>
 
         <div className="min-w-0 max-w-full flex-1 overflow-x-clip pb-28 lg:pb-8">
