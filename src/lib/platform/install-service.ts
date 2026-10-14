@@ -125,7 +125,14 @@ export function wasInstallPromptShown(): boolean {
 }
 
 export type InstallGuide =
-  "ios-safari" | "ios-other" | "mac-safari" | "firefox" | "in-app" | "chromium" | "chromium-desktop" | "other";
+  | "ios-safari"
+  | "ios-other"
+  | "mac-safari"
+  | "firefox"
+  | "in-app"
+  | "chromium"
+  | "chromium-desktop"
+  | "other";
 
 /** Which manual steps fit this browser when no prompt event is available. */
 export function installGuideFor(ua: string): InstallGuide {
