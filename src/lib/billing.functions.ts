@@ -15,8 +15,9 @@ import {
   computeAdminMetrics,
   fetchAllPages,
   revokeStorePro,
-  subscriberStatus,
+  buildStoreList,
   type AdminMetrics,
+  type AdminStoreListItem,
   type AdminPaymentRow,
   type AdminStoreRow,
   type RevokeInput,
@@ -246,14 +247,17 @@ type AdminClient = Awaited<typeof import("@/integrations/supabase/client.server"
 async function loadAll(admin: AdminClient) {
   const [stores, payments] = await Promise.all([
     fetchAllPages<AdminStoreRow>(async (from, to) => {
-      const r = await admin.from("stores").select(STORE_COLS).order("created_at").range(from, to);
+      const r = await admin.from("stores").select(STORE_COLS).order("created_at")
+        .order("id")
+        .range(from, to);
       return { data: r.data as AdminStoreRow[] | null, error: r.error };
     }),
     fetchAllPages<AdminPaymentRow>(async (from, to) => {
       const r = await admin
         .from("plan_payments")
-        .select(PAY_COLS)
+        .select("id, " + PAY_COLS)
         .order("created_at")
+        .order("id")
         .range(from, to);
       return { data: r.data as AdminPaymentRow[] | null, error: r.error };
     }),
@@ -271,10 +275,7 @@ export const getAdminMetrics = createServerFn({ method: "GET" })
     return computeAdminMetrics(stores, payments, Date.now());
   });
 
-export interface AdminStoreListItem extends AdminStoreRow {
-  status: SubscriberStatus;
-  owner_email: string | null;
-}
+export type { AdminStoreListItem };
 
 export const listAdminStores = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -296,25 +297,14 @@ export const listAdminStores = createServerFn({ method: "GET" })
       assertAdmin(context.claims);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { stores, payments } = await loadAll(supabaseAdmin);
-      const emails = new Map<string, string>();
-      for (const p of payments)
-        if (p.requested_by_email) emails.set(p.store_id, p.requested_by_email);
-      const now = Date.now();
-      const all = stores
-        .map((s) => ({
-          ...s,
-          status: subscriberStatus(s, now),
-          owner_email: emails.get(s.id) ?? null,
-        }))
-        .filter((s) => !data.status || s.status === data.status)
-        .filter(
-          (s) =>
-            !data.q ||
-            s.id.toLowerCase().includes(data.q) ||
-            s.name.toLowerCase().includes(data.q) ||
-            (s.owner_name ?? "").toLowerCase().includes(data.q) ||
-            (s.owner_email ?? "").toLowerCase().includes(data.q),
-        );
+      // Owner email comes from the verified sign-in account of stores.owner_id,
+      // never from whoever sent a payment.
+      const users = await fetchAllPages<{ id: string; email?: string | null }>(async (from) => {
+        const perPage = 1000;
+        const r = await supabaseAdmin.auth.admin.listUsers({ page: from / perPage + 1, perPage });
+        return { data: r.data?.users ?? null, error: r.error };
+      });
+      const all = buildStoreList(stores, payments, users, Date.now(), data);
       const pageSize = 25;
       return {
         items: all.slice(data.page * pageSize, data.page * pageSize + pageSize),
