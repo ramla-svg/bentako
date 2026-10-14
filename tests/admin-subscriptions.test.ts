@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   assertAdminEmail,
+  buildStoreList,
   canSubmitRevoke,
   computeAdminMetrics,
   fetchAllPages,
@@ -190,5 +191,34 @@ describe("metrics", () => {
     const rows = Array.from({ length: 2500 }, (_, i) => i);
     const all = await fetchAllPages(async (f, t) => ({ data: rows.slice(f, t + 1), error: null }));
     expect(all.length).toBe(2500);
+  });
+});
+
+describe("store list identity and order", () => {
+  const stores = [
+    store({ id: S2, owner_id: "owner-b", name: "B", created_at: "2026-05-01T00:00:00Z" }),
+    store({ id: S1, owner_id: "owner-a", name: "A", created_at: "2026-05-01T00:00:00Z" }),
+  ];
+  const users = [
+    { id: "owner-a", email: "real-a@example.com" },
+    { id: "owner-b", email: "real-b@example.com" },
+  ];
+  const payments = [pay({ store_id: S1, requested_by_email: "helper@example.com" })];
+
+  it("owner email comes from the owner account, not the payment sender", () => {
+    const rows = buildStoreList(stores, payments, users, NOW, { q: "", status: null });
+    const a = rows.find((r) => r.id === S1)!;
+    expect(a.owner_email).toBe("real-a@example.com");
+    expect(a.payment_contact).toBe("helper@example.com");
+    expect(buildStoreList(stores, payments, users, NOW, { q: "helper@", status: null })).toEqual(
+      [],
+    );
+    expect(buildStoreList(stores, payments, users, NOW, { q: "real-b", status: null })[0].id).toBe(
+      S2,
+    );
+  });
+  it("equal timestamps are ordered by id, so pages never skip or repeat", () => {
+    const ids = buildStoreList(stores, [], users, NOW, { q: "", status: null }).map((r) => r.id);
+    expect(ids).toEqual([S1, S2]);
   });
 });

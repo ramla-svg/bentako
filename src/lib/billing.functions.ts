@@ -247,7 +247,10 @@ type AdminClient = Awaited<typeof import("@/integrations/supabase/client.server"
 async function loadAll(admin: AdminClient) {
   const [stores, payments] = await Promise.all([
     fetchAllPages<AdminStoreRow>(async (from, to) => {
-      const r = await admin.from("stores").select(STORE_COLS).order("created_at")
+      const r = await admin
+        .from("stores")
+        .select(STORE_COLS)
+        .order("created_at")
         .order("id")
         .range(from, to);
       return { data: r.data as AdminStoreRow[] | null, error: r.error };

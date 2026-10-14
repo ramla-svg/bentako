@@ -21,11 +21,7 @@ import {
   type AdminMetrics,
   type AdminStoreListItem,
 } from "@/lib/admin-subscriptions";
-import {
-  getAdminMetrics,
-  listAdminStores,
-  revokeStoreProPlan,
-} from "@/lib/billing.functions";
+import { getAdminMetrics, listAdminStores, revokeStoreProPlan } from "@/lib/billing.functions";
 import { formatDate, formatMoney } from "@/lib/format";
 
 const peso = (cents: number) => formatMoney(cents / 100, "PHP");
@@ -256,8 +252,6 @@ export function AdminStores({
                       Payment contact: {s.payment_contact}
                     </p>
                   ) : null}
-                  <p className="hidden">
-                  </p>
                   <p className="break-all text-[11px] text-muted-foreground">ID {s.id}</p>
                 </div>
                 <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium">

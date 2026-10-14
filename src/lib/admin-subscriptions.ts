@@ -250,7 +250,8 @@ export function buildStoreList(
   for (const p of payments) {
     if (!p.requested_by_email) continue;
     const prev = contact.get(p.store_id);
-    if (!prev || p.created_at >= prev.at) contact.set(p.store_id, { email: p.requested_by_email, at: p.created_at });
+    if (!prev || p.created_at >= prev.at)
+      contact.set(p.store_id, { email: p.requested_by_email, at: p.created_at });
   }
   const q = opts.q.trim().toLowerCase();
   return stores
@@ -269,5 +270,7 @@ export function buildStoreList(
         (s.owner_name ?? "").toLowerCase().includes(q) ||
         (s.owner_email ?? "").toLowerCase().includes(q),
     )
-    .sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : a.id < b.id ? -1 : 1));
+    .sort((a, b) =>
+      a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : a.id < b.id ? -1 : 1,
+    );
 }
