@@ -806,6 +806,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_revoke_store_pro: {
+        Args: {
+          p_actor: string
+          p_actor_email: string
+          p_expected_expires_at: string
+          p_reason: string
+          p_store_id: string
+        }
+        Returns: Json
+      }
       current_store_id: { Args: never; Returns: string }
       has_role: {
         Args: {

@@ -64,6 +64,20 @@
       "when": 1788999696210,
       "tag": "0008_store_logos_storage_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791940649335,
+      "tag": "0009_admin_revoke_store_pro",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791940673135,
+      "tag": "0010_admin_revoke_store_pro_audit_id",
+      "breakpoints": true
     }
   ]
 }
