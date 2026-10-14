@@ -9,7 +9,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, ExternalLink, Loader2, Save, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { AdminOverview, AdminStores } from "@/components/admin-subscriptions-panel";
 import { AppShell } from "@/components/app-shell";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,11 +77,13 @@ function AdminPage() {
     gcashQrUrl: "",
   });
   const [busy, setBusy] = useState<string | null>(null);
+  const [version, setVersion] = useState(0);
 
   const refresh = useCallback(async () => {
     const result = await load();
     setPending(result.pending);
     setRecent(result.recent);
+    setVersion((v) => v + 1);
   }, [load]);
 
   useEffect(() => {
@@ -108,10 +112,6 @@ function AdminPage() {
     }
   };
 
-  const monthTotal = recent
-    .filter((row) => row.status === "approved" && new Date(row.created_at).getMonth() === new Date().getMonth())
-    .reduce((sum, row) => sum + row.amount, 0);
-
   if (allowed === null) {
     return (
       <AppShell title="Pro payments" subtitle="Checking…">
@@ -130,7 +130,20 @@ function AdminPage() {
 
   return (
     <AppShell title="Pro payments" subtitle={`${pending.length} waiting to confirm`}>
-      <div className="space-y-4">
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList className="flex h-auto w-full flex-wrap">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="stores">Stores &amp; subscribers</TabsTrigger>
+          <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="settings">Billing settings</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview">
+          <AdminOverview version={version} />
+        </TabsContent>
+        <TabsContent value="stores">
+          <AdminStores version={version} onChanged={() => void refresh()} />
+        </TabsContent>
+        <TabsContent value="settings">
         <section className="space-y-3 fin-card p-4">
           <h2 className="font-display text-sm font-bold">Where shops send the money</h2>
           <div className="space-y-2">
@@ -228,7 +241,9 @@ function AdminPage() {
             <Save className="size-4" /> Save GCash details
           </Button>
         </section>
+        </TabsContent>
 
+        <TabsContent value="payments" className="space-y-4">
         <section className="space-y-3">
           <h2 className="font-display text-sm font-bold">Waiting to confirm</h2>
           {pending.length === 0 ? (
@@ -285,7 +300,7 @@ function AdminPage() {
 
         <section className="space-y-2 fin-card p-4">
           <h2 className="font-display text-sm font-bold">
-            Approved this month · {formatMoney(monthTotal, "PHP")}
+            Recent reviewed payments (latest 40 — totals are on Overview)
           </h2>
           {recent.length === 0 ? (
             <p className="text-sm text-muted-foreground">No history yet.</p>
@@ -302,7 +317,8 @@ function AdminPage() {
             </ul>
           )}
         </section>
-      </div>
+        </TabsContent>
+      </Tabs>
     </AppShell>
   );
 }
