@@ -143,7 +143,10 @@ export function computeAdminMetrics(
 
 /** Read every row in pages so totals are never cut off by a row cap. */
 export async function fetchAllPages<T>(
-  page: (from: number, to: number) => Promise<{ data: T[] | null; error: { message: string } | null }>,
+  page: (
+    from: number,
+    to: number,
+  ) => Promise<{ data: T[] | null; error: { message: string } | null }>,
   size = 1000,
 ): Promise<T[]> {
   const out: T[] = [];
@@ -181,7 +184,9 @@ export interface RevokeInput {
 export function validateRevokeInput(input: Partial<RevokeInput> | null | undefined): RevokeInput {
   const storeId = String(input?.storeId ?? "");
   if (!UUID.test(storeId)) throw new Error("Invalid store id");
-  const reason = String(input?.reason ?? "").trim().slice(0, 300);
+  const reason = String(input?.reason ?? "")
+    .trim()
+    .slice(0, 300);
   if (reason.length < MIN_REASON) throw new Error("Please give a short reason");
   const exp = input?.expectedExpiresAt ?? null;
   if (exp !== null && Number.isNaN(new Date(exp).getTime())) throw new Error("Invalid expiry");
@@ -208,7 +213,12 @@ export async function revokeStorePro(
   const input = validateRevokeInput(raw);
   const result = await deps.revokeAtomic({ ...input, actorId, actorEmail });
   const status = result?.status;
-  if (status === "revoked" || status === "already_free" || status === "stale" || status === "not_found") {
+  if (
+    status === "revoked" ||
+    status === "already_free" ||
+    status === "stale" ||
+    status === "not_found"
+  ) {
     return { status };
   }
   throw new Error("Unexpected result");

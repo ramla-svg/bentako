@@ -46,7 +46,10 @@ export function AdminOverview({ version }: { version: number }) {
       .catch(() => setError(true));
   }, [load, version]);
 
-  if (error) return <p className="fin-card p-4 text-sm text-destructive">Could not load figures. Try again.</p>;
+  if (error)
+    return (
+      <p className="fin-card p-4 text-sm text-destructive">Could not load figures. Try again.</p>
+    );
   if (!m) return <Loader2 className="mx-auto mt-6 size-6 animate-spin text-primary" />;
   const max = Math.max(1, ...m.trend.map((t) => t.cents));
   const stat = (label: string, value: string | number) => (
@@ -70,9 +73,9 @@ export function AdminOverview({ version }: { version: number }) {
       <section className="space-y-3 fin-card p-4">
         <h2 className="font-display text-sm font-bold">Approved subscription revenue</h2>
         <p className="text-xs text-muted-foreground">
-          GCash Pro payments you approved, by approval date (Philippine time). Not profit and not shop
-          sales — costs and refunds are not tracked. Monthly and yearly payments are counted when paid,
-          not spread per month.
+          GCash Pro payments you approved, by approval date (Philippine time). Not profit and not
+          shop sales — costs and refunds are not tracked. Monthly and yearly payments are counted
+          when paid, not spread per month.
         </p>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           {stat("All time", peso(m.approvedTotalCents))}
@@ -84,7 +87,10 @@ export function AdminOverview({ version }: { version: number }) {
         ) : (
           <ul className="space-y-1.5" aria-label="Last 6 months">
             {m.trend.map((t) => (
-              <li key={t.month} className="grid grid-cols-[4.5rem_1fr_auto] items-center gap-2 text-xs">
+              <li
+                key={t.month}
+                className="grid grid-cols-[4.5rem_1fr_auto] items-center gap-2 text-xs"
+              >
                 <span>{monthLabel(t.month)}</span>
                 <span className="h-3 rounded bg-muted">
                   <span
@@ -99,8 +105,8 @@ export function AdminOverview({ version }: { version: number }) {
         )}
         {m.fallbackDatedCount > 0 ? (
           <p className="text-xs text-muted-foreground">
-            {m.fallbackDatedCount} older approved payment(s) have no approval time and are dated by when
-            they were sent (historical fallback).
+            {m.fallbackDatedCount} older approved payment(s) have no approval time and are dated by
+            when they were sent (historical fallback).
           </p>
         ) : null}
       </section>
@@ -108,7 +114,11 @@ export function AdminOverview({ version }: { version: number }) {
   );
 }
 
-const STATUS_LABEL = { free: "Free", pro_active: "Active Pro", pro_expired: "Expired Pro" } as const;
+const STATUS_LABEL = {
+  free: "Free",
+  pro_active: "Active Pro",
+  pro_expired: "Expired Pro",
+} as const;
 
 export function AdminStores({ version, onChanged }: { version: number; onChanged: () => void }) {
   const list = useServerFn(listAdminStores);
@@ -116,9 +126,11 @@ export function AdminStores({ version, onChanged }: { version: number; onChanged
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(0);
-  const [res, setRes] = useState<{ items: AdminStoreListItem[]; total: number; pageSize: number } | null>(
-    null,
-  );
+  const [res, setRes] = useState<{
+    items: AdminStoreListItem[];
+    total: number;
+    pageSize: number;
+  } | null>(null);
   const [error, setError] = useState(false);
   const [target, setTarget] = useState<AdminStoreListItem | null>(null);
   const [reason, setReason] = useState("");
@@ -145,7 +157,8 @@ export function AdminStores({ version, onChanged }: { version: number; onChanged
       });
       if (r.status === "revoked") toast.success(`${target.name} is now on Free.`);
       else if (r.status === "already_free") toast.message("That store was already on Free.");
-      else if (r.status === "stale") toast.error("This store's plan changed. The list was refreshed — check again.");
+      else if (r.status === "stale")
+        toast.error("This store's plan changed. The list was refreshed — check again.");
       else toast.error("Store not found.");
       setTarget(null);
       setReason("");
@@ -216,8 +229,12 @@ export function AdminStores({ version, onChanged }: { version: number; onChanged
               </div>
               {s.plan === "pro" ? (
                 <p className="text-xs">
-                  {s.plan_period === "yearly" ? "Yearly" : s.plan_period === "monthly" ? "Monthly" : "—"} ·{" "}
-                  {s.plan_expires_at ? `ends ${formatDate(s.plan_expires_at)}` : "no end date"}
+                  {s.plan_period === "yearly"
+                    ? "Yearly"
+                    : s.plan_period === "monthly"
+                      ? "Monthly"
+                      : "—"}{" "}
+                  · {s.plan_expires_at ? `ends ${formatDate(s.plan_expires_at)}` : "no end date"}
                 </p>
               ) : null}
               {s.plan === "pro" ? (
@@ -257,10 +274,11 @@ export function AdminStores({ version, onChanged }: { version: number; onChanged
           <DialogHeader>
             <DialogTitle>Remove Pro from this store?</DialogTitle>
             <DialogDescription>
-              Only <strong>{target?.name}</strong> ({target?.owner_email ?? target?.owner_name ?? "owner"}
-              , ID {target?.id}) changes. It goes to Free right away. Its sales, stock, utang and customer
-              records and its payment history stay. No refund is made automatically. Offline phones switch
-              to Free the next time they go online.
+              Only <strong>{target?.name}</strong> (
+              {target?.owner_email ?? target?.owner_name ?? "owner"}, ID {target?.id}) changes. It
+              goes to Free right away. Its sales, stock, utang and customer records and its payment
+              history stay. No refund is made automatically. Offline phones switch to Free the next
+              time they go online.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
@@ -276,7 +294,11 @@ export function AdminStores({ version, onChanged }: { version: number; onChanged
             <Button variant="outline" disabled={busy} onClick={() => setTarget(null)}>
               Cancel
             </Button>
-            <Button variant="destructive" disabled={!canSubmitRevoke(reason, busy)} onClick={() => void submit()}>
+            <Button
+              variant="destructive"
+              disabled={!canSubmitRevoke(reason, busy)}
+              onClick={() => void submit()}
+            >
               {busy ? <Loader2 className="size-4 animate-spin" /> : null} Remove Pro
             </Button>
           </DialogFooter>

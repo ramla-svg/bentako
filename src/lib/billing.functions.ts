@@ -236,7 +236,8 @@ export const saveBillingQr = createServerFn({ method: "POST" })
 
 const STORE_COLS =
   "id, name, owner_id, owner_name, plan, plan_period, plan_expires_at, plan_source, created_at";
-const PAY_COLS = "store_id, amount, status, plan_period, created_at, reviewed_at, requested_by_email";
+const PAY_COLS =
+  "store_id, amount, status, plan_period, created_at, reviewed_at, requested_by_email";
 
 type AdminClient = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
 
@@ -247,7 +248,11 @@ async function loadAll(admin: AdminClient) {
       return { data: r.data as AdminStoreRow[] | null, error: r.error };
     }),
     fetchAllPages<AdminPaymentRow>(async (from, to) => {
-      const r = await admin.from("plan_payments").select(PAY_COLS).order("created_at").range(from, to);
+      const r = await admin
+        .from("plan_payments")
+        .select(PAY_COLS)
+        .order("created_at")
+        .range(from, to);
       return { data: r.data as AdminPaymentRow[] | null, error: r.error };
     }),
   ]);
@@ -272,22 +277,33 @@ export interface AdminStoreListItem extends AdminStoreRow {
 export const listAdminStores = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { q?: string; status?: string; page?: number }) => ({
-    q: String(input?.q ?? "").trim().toLowerCase().slice(0, 80),
+    q: String(input?.q ?? "")
+      .trim()
+      .toLowerCase()
+      .slice(0, 80),
     status: ["free", "pro_active", "pro_expired"].includes(String(input?.status))
       ? (input.status as SubscriberStatus)
       : null,
     page: Math.max(0, Math.floor(Number(input?.page) || 0)),
   }))
   .handler(
-    async ({ data, context }): Promise<{ items: AdminStoreListItem[]; total: number; pageSize: number }> => {
+    async ({
+      data,
+      context,
+    }): Promise<{ items: AdminStoreListItem[]; total: number; pageSize: number }> => {
       assertAdmin(context.claims);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { stores, payments } = await loadAll(supabaseAdmin);
       const emails = new Map<string, string>();
-      for (const p of payments) if (p.requested_by_email) emails.set(p.store_id, p.requested_by_email);
+      for (const p of payments)
+        if (p.requested_by_email) emails.set(p.store_id, p.requested_by_email);
       const now = Date.now();
       const all = stores
-        .map((s) => ({ ...s, status: subscriberStatus(s, now), owner_email: emails.get(s.id) ?? null }))
+        .map((s) => ({
+          ...s,
+          status: subscriberStatus(s, now),
+          owner_email: emails.get(s.id) ?? null,
+        }))
         .filter((s) => !data.status || s.status === data.status)
         .filter(
           (s) =>
@@ -298,7 +314,11 @@ export const listAdminStores = createServerFn({ method: "GET" })
             (s.owner_email ?? "").toLowerCase().includes(data.q),
         );
       const pageSize = 25;
-      return { items: all.slice(data.page * pageSize, data.page * pageSize + pageSize), total: all.length, pageSize };
+      return {
+        items: all.slice(data.page * pageSize, data.page * pageSize + pageSize),
+        total: all.length,
+        pageSize,
+      };
     },
   );
 
