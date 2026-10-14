@@ -9,6 +9,19 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  adminEmailList,
+  assertAdminEmail,
+  computeAdminMetrics,
+  fetchAllPages,
+  revokeStorePro,
+  subscriberStatus,
+  type AdminMetrics,
+  type AdminPaymentRow,
+  type AdminStoreRow,
+  type RevokeInput,
+  type SubscriberStatus,
+} from "@/lib/admin-subscriptions";
 
 export interface BillingConfig {
   gcashName: string;
@@ -19,16 +32,11 @@ export interface BillingConfig {
 const CONFIG_KEYS = ["gcash_name", "gcash_number", "gcash_qr_url"] as const;
 
 function adminEmails(): string[] {
-  return (process.env["SUPER_ADMIN_EMAILS"] ?? "")
-    .split(",")
-    .map((value) => value.trim().toLowerCase())
-    .filter(Boolean);
+  return adminEmailList(process.env["SUPER_ADMIN_EMAILS"]);
 }
 
 function assertAdmin(claims: Record<string, unknown>): string {
-  const email = String(claims["email"] ?? "").toLowerCase();
-  if (!email || !adminEmails().includes(email)) throw new Error("Forbidden");
-  return email;
+  return assertAdminEmail(claims, adminEmails());
 }
 
 /** Where shop owners should send the money. Readable by any signed-in user. */
@@ -82,10 +90,21 @@ export const listPlanPayments = createServerFn({ method: "GET" })
         "id, store_id, store_name, requested_by_email, plan_period, amount, reference_code, gcash_reference, status, review_note, proof_path, created_at, reviewed_at",
       )
       .order("created_at", { ascending: false })
-      .limit(120);
+      .limit(40);
     if (error) throw new Error(error.message);
-
-    const rows = data ?? [];
+    // Every pending request, not just the newest, so none is hidden.
+    const pendingRows = await fetchAllPages((from, to) =>
+      supabaseAdmin
+        .from("plan_payments")
+        .select(
+          "id, store_id, store_name, requested_by_email, plan_period, amount, reference_code, gcash_reference, status, review_note, proof_path, created_at, reviewed_at",
+        )
+        .eq("status", "pending")
+        .order("created_at", { ascending: true })
+        .range(from, to),
+    );
+    const seen = new Set(pendingRows.map((r) => r.id));
+    const rows = [...pendingRows, ...(data ?? []).filter((r) => !seen.has(r.id))];
     const withUrls = await Promise.all(
       rows.map(async (row) => {
         let proof_url: string | null = null;
@@ -213,4 +232,100 @@ export const saveBillingQr = createServerFn({ method: "POST" })
       .upsert([{ key: "gcash_qr_url", value: data.dataUrl }], { onConflict: "key" });
     if (error) throw new Error(error.message);
     return { ok: true, url: data.dataUrl };
+  });
+
+const STORE_COLS =
+  "id, name, owner_id, owner_name, plan, plan_period, plan_expires_at, plan_source, created_at";
+const PAY_COLS = "store_id, amount, status, plan_period, created_at, reviewed_at, requested_by_email";
+
+type AdminClient = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
+
+async function loadAll(admin: AdminClient) {
+  const [stores, payments] = await Promise.all([
+    fetchAllPages<AdminStoreRow>(async (from, to) => {
+      const r = await admin.from("stores").select(STORE_COLS).order("created_at").range(from, to);
+      return { data: r.data as AdminStoreRow[] | null, error: r.error };
+    }),
+    fetchAllPages<AdminPaymentRow>(async (from, to) => {
+      const r = await admin.from("plan_payments").select(PAY_COLS).order("created_at").range(from, to);
+      return { data: r.data as AdminPaymentRow[] | null, error: r.error };
+    }),
+  ]);
+  return { stores, payments };
+}
+
+/** Subscriber counts and approved subscription revenue across every row. */
+export const getAdminMetrics = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<AdminMetrics> => {
+    assertAdmin(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { stores, payments } = await loadAll(supabaseAdmin);
+    return computeAdminMetrics(stores, payments, Date.now());
+  });
+
+export interface AdminStoreListItem extends AdminStoreRow {
+  status: SubscriberStatus;
+  owner_email: string | null;
+}
+
+export const listAdminStores = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { q?: string; status?: string; page?: number }) => ({
+    q: String(input?.q ?? "").trim().toLowerCase().slice(0, 80),
+    status: ["free", "pro_active", "pro_expired"].includes(String(input?.status))
+      ? (input.status as SubscriberStatus)
+      : null,
+    page: Math.max(0, Math.floor(Number(input?.page) || 0)),
+  }))
+  .handler(
+    async ({ data, context }): Promise<{ items: AdminStoreListItem[]; total: number; pageSize: number }> => {
+      assertAdmin(context.claims);
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { stores, payments } = await loadAll(supabaseAdmin);
+      const emails = new Map<string, string>();
+      for (const p of payments) if (p.requested_by_email) emails.set(p.store_id, p.requested_by_email);
+      const now = Date.now();
+      const all = stores
+        .map((s) => ({ ...s, status: subscriberStatus(s, now), owner_email: emails.get(s.id) ?? null }))
+        .filter((s) => !data.status || s.status === data.status)
+        .filter(
+          (s) =>
+            !data.q ||
+            s.id.toLowerCase().includes(data.q) ||
+            s.name.toLowerCase().includes(data.q) ||
+            (s.owner_name ?? "").toLowerCase().includes(data.q) ||
+            (s.owner_email ?? "").toLowerCase().includes(data.q),
+        );
+      const pageSize = 25;
+      return { items: all.slice(data.page * pageSize, data.page * pageSize + pageSize), total: all.length, pageSize };
+    },
+  );
+
+/** Remove Pro from exactly one store. Payment history is never touched. */
+export const revokeStoreProPlan = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: Partial<RevokeInput>) => input)
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    return revokeStorePro(
+      {
+        revokeAtomic: async (args) => {
+          const { data: res, error } = await supabaseAdmin.rpc("admin_revoke_store_pro", {
+            p_store_id: args.storeId,
+            p_actor: args.actorId,
+            p_actor_email: args.actorEmail,
+            p_reason: args.reason,
+            p_expected_expires_at: args.expectedExpiresAt as string,
+          });
+          if (error) throw new Error(error.message);
+          return res as { status: string };
+        },
+      },
+      context.claims,
+      adminEmails(),
+      context.userId,
+      data,
+    );
   });
