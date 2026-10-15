@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Step 1: Correct Free/Pro promises, audit photo/product entry-point limits, and verify with synthetic tests and mobile pricing; no publishing or real data changes.
+
 - [x] Clarify desktop/phone install actions with a shared landing/sidebar button and platform guidance; verify without publishing.
 
 - [x] Build public Tagalog landing page and generated shop/owner photos.
