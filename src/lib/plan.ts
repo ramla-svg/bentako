@@ -120,10 +120,18 @@ export const PLAN_SUMMARY: Record<PlanId, string> = {
   free: "Free: 60 active products, 1 device, 7-day reports and sales/GCash logs. Selling, basic offline receipts, cash and utang work on this device.",
   pro: "Pro: unlimited active products, 3 devices, up to 30-day reports and GCash logs, all-time sales history, and eligible record sync. 2 cashier seats; self-service cashier management is coming soon.",
 };
-export const LOCAL_DATA_NOTE = "Older records stay on this device; viewing limits do not delete them. Product and wallet photos and activity logs stay device-only, including on Pro. Existing photos remain viewable after downgrade. No manual backup or spreadsheet export is available yet.";
-export const SYNC_DATA_NOTE = "Pro sync covers eligible sales, products, stock, cash, utang and expense records after successful upload. Product and wallet photos and activity logs are not uploaded.";
-export const PRINT_NOTE = "Browser/Android print service; compatible printers only. Not direct Bluetooth printing. Printer-service and AppMint/wrapper support varies; test your setup first.";
-export interface PlanComparisonRow { label: string; free: string | boolean; pro: string | boolean; soon?: boolean }
+export const LOCAL_DATA_NOTE =
+  "Older records stay on this device; viewing limits do not delete them. Product and wallet photos and activity logs stay device-only, including on Pro. Existing photos remain viewable after downgrade. No manual backup or spreadsheet export is available yet.";
+export const SYNC_DATA_NOTE =
+  "Pro sync covers eligible sales, products, stock, cash, utang and expense records after successful upload. Product and wallet photos and activity logs are not uploaded.";
+export const PRINT_NOTE =
+  "Browser/Android print service; compatible printers only. Not direct Bluetooth printing. Printer-service and AppMint/wrapper support varies; test your setup first.";
+export interface PlanComparisonRow {
+  label: string;
+  free: string | boolean;
+  pro: string | boolean;
+  soon?: boolean;
+}
 export const PLAN_COMPARISON: PlanComparisonRow[] = [
   { label: "Active products", free: "60", pro: "Unlimited" },
   { label: "Devices", free: "1", pro: "3" },

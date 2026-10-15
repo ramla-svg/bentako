@@ -16,6 +16,7 @@ import {
   type ServiceProvider,
   type UnitType,
 } from "./local-db";
+import { canAddProduct, planLimits, type PlanFields } from "./plan";
 import { localDayKey } from "./format";
 import { makeTransactionNumber, nowIso, uuid } from "./ids";
 import { beginCriticalWork, endCriticalWork, enqueue } from "./sync-service";
@@ -24,6 +25,8 @@ export interface StoreContext {
   storeId: string;
   userId: string | null;
   userName: string | null;
+  /** Cached store plan; omitted context safely uses Free limits. */
+  plan?: PlanFields | null;
 }
 
 /* ------------------------------------------------------------- guards */
@@ -131,57 +134,70 @@ export interface ProductInput {
 }
 
 export async function saveProduct(ctx: StoreContext, input: ProductInput): Promise<LocalProduct> {
-  const existing = input.id ? await db().products.get(input.id) : undefined;
-  if (existing && existing.store_id !== ctx.storeId)
-    throw new Error("Product not found in this store");
-  const product: LocalProduct = {
-    id: existing?.id ?? input.id ?? uuid(),
-    store_id: ctx.storeId,
-    category_id: input.category_id ?? null,
-    name: input.name.trim(),
-    description: input.description ?? null,
-    sku: input.sku?.trim() || null,
-    barcode: input.barcode?.trim() || null,
-    cost_price: input.cost_price,
-    selling_price: input.selling_price,
-    stock_quantity: input.stock_quantity,
-    low_stock_threshold: input.low_stock_threshold,
-    unit_type: input.unit_type,
-    image_url: input.image_url ?? null,
-    is_active: existing?.is_active ?? true,
-    created_at: existing?.created_at ?? nowIso(),
-    updated_at: nowIso(),
-    sync_status: "pending",
-  };
-  await db().products.put(product);
-  await enqueue("products", product.id);
+  return atomic(["products", "inventory_movements"], async () => {
+    const existing = input.id ? await db().products.get(input.id) : undefined;
+    if (existing && existing.store_id !== ctx.storeId)
+      throw new Error("Product not found in this store");
+    if (!existing) await assertProductCapacity(ctx);
+    const product: LocalProduct = {
+      id: existing?.id ?? input.id ?? uuid(),
+      store_id: ctx.storeId,
+      category_id: input.category_id ?? null,
+      name: input.name.trim(),
+      description: input.description ?? null,
+      sku: input.sku?.trim() || null,
+      barcode: input.barcode?.trim() || null,
+      cost_price: input.cost_price,
+      selling_price: input.selling_price,
+      stock_quantity: input.stock_quantity,
+      low_stock_threshold: input.low_stock_threshold,
+      unit_type: input.unit_type,
+      image_url: input.image_url ?? null,
+      is_active: existing?.is_active ?? true,
+      created_at: existing?.created_at ?? nowIso(),
+      updated_at: nowIso(),
+      sync_status: "pending",
+    };
+    await db().products.put(product);
+    await enqueue("products", product.id);
 
-  if (!existing && product.stock_quantity > 0) {
-    await recordMovement(ctx, {
-      product_id: product.id,
-      movement_type: "stock_in",
-      quantity: product.stock_quantity,
-      previous_stock: 0,
-      new_stock: product.stock_quantity,
-      unit_cost: product.cost_price,
-      notes: "Initial stock",
-    });
-  } else if (existing && existing.stock_quantity !== product.stock_quantity) {
-    const diff = product.stock_quantity - existing.stock_quantity;
-    await recordMovement(ctx, {
-      product_id: product.id,
-      movement_type: diff > 0 ? "adjustment_add" : "adjustment_remove",
-      quantity: Math.abs(diff),
-      previous_stock: existing.stock_quantity,
-      new_stock: product.stock_quantity,
-      notes: "Edited from product form",
-    });
-  }
+    if (!existing && product.stock_quantity > 0) {
+      await recordMovement(ctx, {
+        product_id: product.id,
+        movement_type: "stock_in",
+        quantity: product.stock_quantity,
+        previous_stock: 0,
+        new_stock: product.stock_quantity,
+        unit_cost: product.cost_price,
+        notes: "Initial stock",
+      });
+    } else if (existing && existing.stock_quantity !== product.stock_quantity) {
+      const diff = product.stock_quantity - existing.stock_quantity;
+      await recordMovement(ctx, {
+        product_id: product.id,
+        movement_type: diff > 0 ? "adjustment_add" : "adjustment_remove",
+        quantity: Math.abs(diff),
+        previous_stock: existing.stock_quantity,
+        new_stock: product.stock_quantity,
+        notes: "Edited from product form",
+      });
+    }
 
-  await logAudit(ctx, existing ? "product.updated" : "product.created", "product", product.id, {
-    name: product.name,
+    await logAudit(ctx, existing ? "product.updated" : "product.created", "product", product.id, {
+      name: product.name,
+    });
+    return product;
   });
-  return product;
+}
+
+async function assertProductCapacity(ctx: StoreContext): Promise<void> {
+  const count = await db()
+    .products.where("store_id")
+    .equals(ctx.storeId)
+    .filter((p) => p.is_active)
+    .count();
+  if (!canAddProduct(ctx.plan, count))
+    throw new Error("Free allows 60 active products. Archive a product first or see Pro.");
 }
 
 export async function archiveProduct(ctx: StoreContext, id: string): Promise<void> {
@@ -204,6 +220,7 @@ export async function restoreProduct(ctx: StoreContext, id: string): Promise<voi
     const product = await db().products.get(id);
     if (!product || product.store_id !== ctx.storeId)
       throw new Error("Product not found in this store");
+    if (!product.is_active) await assertProductCapacity(ctx);
     await db().products.update(id, {
       is_active: true,
       updated_at: nowIso(),
@@ -220,6 +237,7 @@ export async function duplicateProduct(
 ): Promise<LocalProduct | null> {
   const source = await db().products.get(id);
   if (!source) return null;
+  if (source.store_id !== ctx.storeId) throw new Error("Product not found in this store");
   return saveProduct(ctx, {
     name: `${source.name} (copy)`,
     description: source.description,
@@ -720,6 +738,12 @@ export async function seedDemoProducts(ctx: StoreContext): Promise<number> {
   const categories = await db().categories.where("store_id").equals(ctx.storeId).toArray();
   let created = 0;
   for (const demo of DEMO_PRODUCTS) {
+    const activeCount = await db()
+      .products.where("store_id")
+      .equals(ctx.storeId)
+      .filter((p) => p.is_active)
+      .count();
+    if (!canAddProduct(ctx.plan, activeCount)) break;
     const category = categories.find((c) => c.name === demo.category);
     await saveProduct(ctx, {
       name: demo.name,
@@ -788,6 +812,8 @@ export async function saveCashTransaction(
   ctx: StoreContext,
   input: CashTransactionInput,
 ): Promise<LocalCashTransaction> {
+  if (input.photo && !planLimits(ctx.plan).walletPhotos)
+    throw new Error("Adding wallet photos requires Pro.");
   const amount = Number(input.amount);
   if (!Number.isFinite(amount) || amount <= 0) throw new Error("Enter an amount.");
   const fee = input.service_fee == null ? 0 : Number(input.service_fee);
@@ -816,7 +842,7 @@ export async function saveCashTransaction(
   };
   await atomic(["cash_transactions", "cash_photos"], async () => {
     await db().cash_transactions.put(row);
-    if (input.photo) await putCashPhoto(ctx.storeId, row.id, input.photo);
+    if (input.photo) await putCashPhoto(ctx, row.id, input.photo);
     await enqueue("cash_transactions", row.id);
     await logAudit(ctx, "cash.recorded", "cash_transaction", row.id, {
       transaction_type: row.transaction_type,
@@ -831,26 +857,32 @@ export async function saveCashTransaction(
 
 /** Stores (or replaces) the photo attached to a cash transaction. Local only. */
 export async function putCashPhoto(
-  storeId: string,
+  ctx: StoreContext,
   cashTransactionId: string,
   blob: Blob,
 ): Promise<LocalCashPhoto> {
-  const existing = await db()
-    .cash_photos.where("cash_transaction_id")
-    .equals(cashTransactionId)
-    .toArray();
-  if (existing.length) await db().cash_photos.bulkDelete(existing.map((p) => p.id));
-  const row: LocalCashPhoto = {
-    id: uuid(),
-    store_id: storeId,
-    cash_transaction_id: cashTransactionId,
-    blob,
-    content_type: blob.type || "image/jpeg",
-    size: blob.size,
-    created_at: nowIso(),
-  };
-  await db().cash_photos.put(row);
-  return row;
+  if (!planLimits(ctx.plan).walletPhotos) throw new Error("Adding wallet photos requires Pro.");
+  return db().transaction("rw", db().cash_transactions, db().cash_photos, async () => {
+    const transaction = await db().cash_transactions.get(cashTransactionId);
+    if (!transaction || transaction.store_id !== ctx.storeId)
+      throw new Error("Cash entry not found in this store.");
+    const existing = await db()
+      .cash_photos.where("cash_transaction_id")
+      .equals(cashTransactionId)
+      .toArray();
+    if (existing.length) await db().cash_photos.bulkDelete(existing.map((p) => p.id));
+    const row: LocalCashPhoto = {
+      id: uuid(),
+      store_id: ctx.storeId,
+      cash_transaction_id: cashTransactionId,
+      blob,
+      content_type: blob.type || "image/jpeg",
+      size: blob.size,
+      created_at: nowIso(),
+    };
+    await db().cash_photos.put(row);
+    return row;
+  });
 }
 
 export async function getCashPhoto(cashTransactionId: string): Promise<LocalCashPhoto | null> {

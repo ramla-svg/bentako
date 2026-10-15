@@ -75,7 +75,10 @@ function Onboarding() {
 
       const { error: roleError } = await supabase
         .from("user_roles")
-        .upsert({ user_id: uid, role: "owner", store_id: store.id }, { onConflict: "user_id,role" });
+        .upsert(
+          { user_id: uid, role: "owner", store_id: store.id },
+          { onConflict: "user_id,role" },
+        );
       if (roleError) throw roleError;
 
       const ctx = { storeId: store.id, userId: uid, userName: ownerName.trim() || null };
@@ -135,7 +138,10 @@ function Onboarding() {
                   className="h-12"
                 />
               </div>
-              <p className="text-xs text-muted-foreground">Free receipts show “Salamat po!” and “Powered by BentaKo”. A custom receipt message and logo are Pro options in Settings.</p>
+              <p className="text-xs text-muted-foreground">
+                Free receipts show “Salamat po!” and “Powered by BentaKo”. A custom receipt message
+                and logo are Pro options in Settings.
+              </p>
               <Button
                 className="h-12 w-full text-base"
                 onClick={() => setStep(2)}
@@ -167,7 +173,11 @@ function Onboarding() {
             </div>
 
             <div className="mt-6 space-y-2">
-              <Button className="h-12 w-full text-base" onClick={() => void finish()} disabled={busy}>
+              <Button
+                className="h-12 w-full text-base"
+                onClick={() => void finish()}
+                disabled={busy}
+              >
                 {busy ? <Loader2 className="size-4 animate-spin" /> : null}
                 Finish setup
               </Button>

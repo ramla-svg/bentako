@@ -207,7 +207,8 @@ function Dashboard() {
                 BentaKo Pro · ₱99 / buwan
               </p>
               <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground sm:text-xs">
-                Walang limit sa produkto, sync ng eligible records (hindi photos), 3 devices. Tingnan kung paano magbayad.
+                Walang limit sa produkto, sync ng eligible records (hindi photos), 3 devices.
+                Tingnan kung paano magbayad.
               </p>
             </div>
             <span className="flex shrink-0 items-center gap-0.5 text-xs font-bold text-primary">

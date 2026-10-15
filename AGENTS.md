@@ -16,3 +16,6 @@
 - Mount only one shared POS review tree: persistent at desktop width and inside the mobile sheet below it, with cart/payment state owned by the POS page so resizing cannot duplicate inputs or checkout handlers.
 - Keep desktop-only layout changes behind the 1024px breakpoint to preserve installed mobile workflows.
 - Reuse the shared InstallButton for landing and signed-in sidebar entry points; only install-service and the global InstallPrompt own prompting and guidance to avoid duplicate listeners or dialogs.
+
+- Keep available plan descriptions in the shared plan module, separate from retained-history entitlements, so copy cannot promise unimplemented screens.
+- Pass the cached store plan through StoreContext; local product creation/restoration and wallet photo writes enforce limits at the mutation boundary, with Free as the safe default.

@@ -8,9 +8,18 @@ import { Button } from "@/components/ui/button";
 import { useAppSession } from "@/hooks/use-app-session";
 import { useIsNativeApp } from "@/hooks/use-native-app";
 import { formatDateTime } from "@/lib/format";
-import { ANNUAL_SAVING, PLAN_COMPARISON, PLAN_SUMMARY, LOCAL_DATA_NOTE, SYNC_DATA_NOTE, PRINT_NOTE, PRO_PRICE_MONTHLY, PRO_PRICE_YEARLY, daysLeft } from "@/lib/plan";
+import {
+  ANNUAL_SAVING,
+  PLAN_COMPARISON,
+  PLAN_SUMMARY,
+  LOCAL_DATA_NOTE,
+  SYNC_DATA_NOTE,
+  PRINT_NOTE,
+  PRO_PRICE_MONTHLY,
+  PRO_PRICE_YEARLY,
+  daysLeft,
+} from "@/lib/plan";
 import { cn } from "@/lib/utils";
-
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
   ssr: false,
@@ -114,8 +123,14 @@ function UpgradePage() {
         <div className="space-y-2 text-sm text-muted-foreground">
           <p>{PLAN_SUMMARY[plan]}</p>
           <p>{LOCAL_DATA_NOTE}</p>
-          <p>Payments has its own up-to-30-day summary on both plans, separate from Reports and the GCash log.</p>
-          <p>Manual billing expires on the stated date, with the existing 14-day grace period. No automatic renewal.</p>
+          <p>
+            Payments has its own up-to-30-day summary on both plans, separate from Reports and the
+            GCash log.
+          </p>
+          <p>
+            Manual billing expires on the stated date, with the existing 14-day grace period. No
+            automatic renewal.
+          </p>
           <p>{PRINT_NOTE}</p>
         </div>
 
@@ -191,13 +206,13 @@ function UpgradePage() {
         <section className="space-y-2 fin-card p-4">
           <h2 className="font-display text-sm font-bold">Why Pro costs money</h2>
           <p className="text-sm text-muted-foreground">
-            {SYNC_DATA_NOTE} A replacement device can restore successfully synced eligible records, not device-only photos or activity logs.
+            {SYNC_DATA_NOTE} A replacement device can restore successfully synced eligible records,
+            not device-only photos or activity logs.
           </p>
         </section>
       </div>
 
       {nativeApp ? null : <GcashPaySheet open={open} onOpenChange={setOpen} period={period} />}
-
     </AppShell>
   );
 }

@@ -46,7 +46,6 @@ import { listStoreDevices, releaseDevice, type StoreDevice } from "@/lib/devices
 import { PLAN_SUMMARY, LOCAL_DATA_NOTE, SYNC_DATA_NOTE, PRINT_NOTE } from "@/lib/plan";
 import { deviceId } from "@/lib/device-id";
 
-
 export const Route = createFileRoute("/_authenticated/settings")({
   ssr: false,
   head: () => ({
@@ -120,12 +119,10 @@ function SettingsPage() {
   const install = useInstallState();
   const { connection, pending, failed, lastIssue } = useConnection();
   const online = connection !== "offline" && isOnline();
-  const lastSyncAt = useLiveQuery(async () => await getSetting<string | null>("last_sync_at", null), [
-    connection,
-    pending,
-  ]);
-
-
+  const lastSyncAt = useLiveQuery(
+    async () => await getSetting<string | null>("last_sync_at", null),
+    [connection, pending],
+  );
 
   async function saveStore() {
     if (!store) return;
@@ -140,7 +137,7 @@ function SettingsPage() {
         .update({
           name: name.trim(),
           owner_name: ownerName.trim() || null,
-          receipt_footer: pro ? footer.trim() || null : store.receipt_footer ?? null,
+          receipt_footer: pro ? footer.trim() || null : (store.receipt_footer ?? null),
           default_low_stock_threshold: Number(threshold) || 5,
           allow_negative_stock: negative,
           confirm_void: confirmVoid,
@@ -307,7 +304,9 @@ function SettingsPage() {
               Save changes
             </Button>
           ) : (
-            <p className="text-xs text-muted-foreground">Only the owner can change store settings.</p>
+            <p className="text-xs text-muted-foreground">
+              Only the owner can change store settings.
+            </p>
           )}
         </section>
 
@@ -318,15 +317,20 @@ function SettingsPage() {
           <p className="text-sm">
             <span className="font-semibold">{pro ? "BentaKo Pro" : "Free"}</span>
             {pro && store?.plan_expires_at ? (
-              <span className="text-muted-foreground"> · expires on {formatDateTime(store.plan_expires_at)}</span>
+              <span className="text-muted-foreground">
+                {" "}
+                · expires on {formatDateTime(store.plan_expires_at)}
+              </span>
             ) : null}
           </p>
-          <p className="text-sm text-muted-foreground">
-            {PLAN_SUMMARY[pro ? "pro" : "free"]}
-          </p>
+          <p className="text-sm text-muted-foreground">{PLAN_SUMMARY[pro ? "pro" : "free"]}</p>
           <Button asChild variant={pro ? "outline" : "default"} className="h-12 w-full">
             <Link to="/upgrade">
-              {pro ? "Manage plan" : nativeApp ? "What BentaKo Pro includes" : "See BentaKo Pro — ₱99/month"}
+              {pro
+                ? "Manage plan"
+                : nativeApp
+                  ? "What BentaKo Pro includes"
+                  : "See BentaKo Pro — ₱99/month"}
             </Link>
           </Button>
           {nativeApp && !pro ? (
@@ -414,9 +418,7 @@ function SettingsPage() {
             </div>
             <div className="flex items-center justify-between gap-3">
               <dt className="text-muted-foreground">Last recorded sync</dt>
-              <dd className="font-medium">
-                {lastSyncAt ? formatDateTime(lastSyncAt) : "Not yet"}
-              </dd>
+              <dd className="font-medium">{lastSyncAt ? formatDateTime(lastSyncAt) : "Not yet"}</dd>
             </div>
             <div className="flex items-center justify-between gap-3">
               <dt className="text-muted-foreground">Waiting to upload</dt>
@@ -431,13 +433,13 @@ function SettingsPage() {
             <>
               <p className="text-sm text-muted-foreground">
                 {pending === 0
-                  ? lastSyncAt ? "No changes currently waiting to upload. The recorded sync time does not confirm a complete backup." : "No changes currently waiting to upload; no sync has been recorded yet."
+                  ? lastSyncAt
+                    ? "No changes currently waiting to upload. The recorded sync time does not confirm a complete backup."
+                    : "No changes currently waiting to upload; no sync has been recorded yet."
                   : (lastIssue ??
                     `${pending} change${pending > 1 ? "s" : ""} waiting to upload. They are safe on this device.`)}
               </p>
-              <p className="text-xs text-muted-foreground">
-                {SYNC_DATA_NOTE}
-              </p>
+              <p className="text-xs text-muted-foreground">{SYNC_DATA_NOTE}</p>
               <Button variant="outline" className="h-12 w-full" onClick={() => void syncNow()}>
                 <RefreshCw className="size-4" /> Sync now
               </Button>
@@ -449,7 +451,8 @@ function SettingsPage() {
                 utang all keep working — nothing is uploaded.
               </p>
               <p className="text-xs text-muted-foreground">
-                Eligible records wait on this device. Pro uploads them when connected; only successfully synced records can be restored on another device.
+                Eligible records wait on this device. Pro uploads them when connected; only
+                successfully synced records can be restored on another device.
               </p>
               <Button asChild variant="outline" className="h-12 w-full">
                 <Link to="/upgrade">Turn on cloud backup with Pro</Link>
@@ -496,7 +499,6 @@ function SettingsPage() {
           <p className="text-xs text-muted-foreground">Running as: {platformLabel()}</p>
         </section>
 
-
         <section className="space-y-3 fin-card p-4">
           <h2 className="font-display text-sm font-bold">App version</h2>
           <p className="text-sm text-muted-foreground">
@@ -533,8 +535,6 @@ function SettingsPage() {
             mode&quot; or page caching so it can always reach the newest version.
           </p>
         </section>
-
-
 
         {isOwner ? (
           <section className="space-y-3 fin-card p-4">
@@ -573,7 +573,6 @@ function SettingsPage() {
             </Button>
           </section>
         ) : null}
-
 
         {isOwner ? (
           <section className="space-y-3 fin-card p-4">
@@ -636,7 +635,8 @@ function SettingsPage() {
               : "This removes your own sign-in and profile. The shop and its records stay with the owner."}
           </p>
           <p className="text-xs text-muted-foreground">
-            Spreadsheet export and manual backup are not available yet. Keep any figures and device-only photos you need before deleting; deletion cannot be undone.
+            Spreadsheet export and manual backup are not available yet. Keep any figures and
+            device-only photos you need before deleting; deletion cannot be undone.
           </p>
           <Label htmlFor="delete-confirm">
             Type <span className="font-bold">DELETE</span> to confirm
