@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { useAppSession } from "@/hooks/use-app-session";
 import { supabase } from "@/integrations/supabase/client";
 import { isOnline } from "@/lib/sync-service";
@@ -17,6 +16,8 @@ export const Route = createFileRoute("/onboarding")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Set up your store — BentaKo" },
       { name: "description", content: "Name your sari-sari store and start selling in minutes." },
       { property: "og:title", content: "Set up your store — BentaKo" },
@@ -32,7 +33,6 @@ function Onboarding() {
   const [step, setStep] = useState(1);
   const [storeName, setStoreName] = useState("");
   const [ownerName, setOwnerName] = useState(userName ?? "");
-  const [footer, setFooter] = useState("Salamat po! Come again.");
   const [withDemo, setWithDemo] = useState(true);
   const [busy, setBusy] = useState(false);
 
@@ -63,7 +63,7 @@ function Onboarding() {
           name: storeName.trim(),
           owner_id: uid,
           owner_name: ownerName.trim() || null,
-          receipt_footer: footer.trim() || null,
+          receipt_footer: "Salamat po!",
         })
         .select("id")
         .single();
@@ -77,7 +77,10 @@ function Onboarding() {
 
       const { error: roleError } = await supabase
         .from("user_roles")
-        .upsert({ user_id: uid, role: "owner", store_id: store.id }, { onConflict: "user_id,role" });
+        .upsert(
+          { user_id: uid, role: "owner", store_id: store.id },
+          { onConflict: "user_id,role" },
+        );
       if (roleError) throw roleError;
 
       const ctx = { storeId: store.id, userId: uid, userName: ownerName.trim() || null };
@@ -137,15 +140,10 @@ function Onboarding() {
                   className="h-12"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="footer">Receipt footer</Label>
-                <Textarea
-                  id="footer"
-                  value={footer}
-                  onChange={(e) => setFooter(e.target.value)}
-                  rows={2}
-                />
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Free receipts show “Salamat po!” and “Powered by BentaKo”. A custom receipt message
+                and logo are Pro options in Settings.
+              </p>
               <Button
                 className="h-12 w-full text-base"
                 onClick={() => setStep(2)}
@@ -177,7 +175,11 @@ function Onboarding() {
             </div>
 
             <div className="mt-6 space-y-2">
-              <Button className="h-12 w-full text-base" onClick={() => void finish()} disabled={busy}>
+              <Button
+                className="h-12 w-full text-base"
+                onClick={() => void finish()}
+                disabled={busy}
+              >
                 {busy ? <Loader2 className="size-4 animate-spin" /> : null}
                 Finish setup
               </Button>

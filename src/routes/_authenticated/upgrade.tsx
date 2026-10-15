@@ -8,9 +8,18 @@ import { Button } from "@/components/ui/button";
 import { useAppSession } from "@/hooks/use-app-session";
 import { useIsNativeApp } from "@/hooks/use-native-app";
 import { formatDateTime } from "@/lib/format";
-import { PRO_PRICE_MONTHLY, PRO_PRICE_YEARLY, daysLeft } from "@/lib/plan";
+import {
+  ANNUAL_SAVING,
+  PLAN_COMPARISON,
+  PLAN_SUMMARY,
+  LOCAL_DATA_NOTE,
+  SYNC_DATA_NOTE,
+  PRINT_NOTE,
+  PRO_PRICE_MONTHLY,
+  PRO_PRICE_YEARLY,
+  daysLeft,
+} from "@/lib/plan";
 import { cn } from "@/lib/utils";
-
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
   ssr: false,
@@ -20,12 +29,12 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
       {
         name: "description",
         content:
-          "Compare the free BentaKo plan with BentaKo Pro at ₱99 a month: cloud backup, unlimited products, extra phones and cashier accounts.",
+          "Compare the free BentaKo plan with BentaKo Pro at ₱99 a month: cloud backup, unlimited products, extra devices and up to 30-day reports.",
       },
       { property: "og:title", content: "BentaKo Pro — Plans and pricing" },
       {
         property: "og:description",
-        content: "Free forever on one phone, or ₱99 a month to back up your records and grow.",
+        content: "Free forever on one phone, or ₱99 a month to sync eligible records and grow.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -33,31 +42,6 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
   }),
   component: UpgradePage,
 });
-
-interface Row {
-  label: string;
-  free: string | boolean;
-  pro: string | boolean;
-  /** Highlighted "Coming soon" row — feature not available yet on any plan. */
-  soon?: boolean;
-}
-
-const ROWS: Row[] = [
-  { label: "Products", free: "60", pro: "Walang limit" },
-  { label: "Phones", free: "1", pro: "3" },
-  { label: "Cashier accounts", free: false, pro: "2" },
-  { label: "Cloud backup & restore", free: false, pro: true },
-  { label: "Report history", free: "7 days", pro: "Buong history" },
-  { label: "Product photos", free: false, pro: true },
-  { label: "Selling, receipts, cash & utang", free: true, pro: true },
-  { label: "GCash & e-wallet records", free: "7 days", pro: "Buong history" },
-  { label: "GCash screenshot proof per entry", free: false, pro: true },
-  { label: "Payments summary per wallet", free: true, pro: true },
-  { label: "Export to spreadsheet", free: "—", pro: "—", soon: true },
-  { label: "Your logo & message on receipts", free: "—", pro: "—", soon: true },
-  { label: "Receipt printing (thermal printer)", free: "—", pro: "—", soon: true },
-  { label: "Offline POS receipts", free: "—", pro: "—", soon: true },
-];
 
 function Cell({ value }: { value: string | boolean }) {
   if (value === true) return <Check className="mx-auto size-4 text-primary" />;
@@ -76,6 +60,7 @@ function UpgradePage() {
 
   return (
     <AppShell
+      back
       title="BentaKo Pro"
       subtitle={pro ? "Your plan is active" : "Protect your records. Grow the shop."}
     >
@@ -87,10 +72,10 @@ function UpgradePage() {
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               {store?.plan_expires_at
-                ? `Renews on ${formatDateTime(store.plan_expires_at)}${
+                ? `Expires on ${formatDateTime(store.plan_expires_at)}${
                     left !== null && left >= 0 ? ` · ${left} day${left === 1 ? "" : "s"} left` : ""
                   }`
-                : "Everything is unlocked on this store."}
+                : "Available Pro benefits are active on this store."}
             </p>
           </section>
         ) : nativeApp ? (
@@ -105,35 +90,55 @@ function UpgradePage() {
           </section>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            <button
+            <Button
+              variant="outline"
               type="button"
               onClick={() => setPeriod("monthly")}
               className={cn(
-                "rounded-2xl border p-4 text-left",
-                period === "monthly" ? "border-primary bg-primary/10" : "bg-card",
+                "h-auto flex-col items-start rounded-lg border p-4 text-left gap-0",
+                period === "monthly"
+                  ? "border-primary bg-primary/10 text-foreground"
+                  : "bg-card text-foreground",
               )}
             >
               <p className="text-xs font-semibold uppercase text-muted-foreground">Monthly</p>
               <p className="tnum font-display text-xl font-bold">₱{PRO_PRICE_MONTHLY}</p>
               <p className="text-xs text-muted-foreground">per month</p>
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
               type="button"
               onClick={() => setPeriod("yearly")}
               className={cn(
-                "relative rounded-2xl border p-4 text-left",
-                period === "yearly" ? "border-primary bg-primary/10" : "bg-card",
+                "h-auto flex-col items-start rounded-lg border p-4 text-left gap-0",
+                period === "yearly"
+                  ? "border-primary bg-primary/10 text-foreground"
+                  : "bg-card text-foreground",
               )}
             >
-              <span className="absolute right-3 top-3 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
-                SAVE 2 MOS
+              <span className="mb-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                Save ₱{ANNUAL_SAVING} · ~16%
               </span>
               <p className="text-xs font-semibold uppercase text-muted-foreground">Yearly</p>
               <p className="tnum font-display text-xl font-bold">₱{PRO_PRICE_YEARLY}</p>
               <p className="text-xs text-muted-foreground">per year</p>
-            </button>
+            </Button>
           </div>
         )}
+
+        <div className="space-y-2 text-sm text-muted-foreground">
+          <p>{PLAN_SUMMARY[plan]}</p>
+          <p>{LOCAL_DATA_NOTE}</p>
+          <p>
+            Payments has its own up-to-30-day summary on both plans, separate from Reports and the
+            GCash log.
+          </p>
+          <p>
+            Manual billing expires on the stated date, with the existing 14-day grace period. No
+            automatic renewal.
+          </p>
+          <p>{PRINT_NOTE}</p>
+        </div>
 
         <section className="overflow-hidden fin-card">
           <table className="w-full table-fixed">
@@ -159,7 +164,7 @@ function UpgradePage() {
               </tr>
             </thead>
             <tbody>
-              {ROWS.map((row) =>
+              {PLAN_COMPARISON.map((row) =>
                 row.soon ? (
                   <tr key={row.label} className="border-b bg-accent/20 last:border-0">
                     <td className="p-3 text-sm">
@@ -170,7 +175,7 @@ function UpgradePage() {
                     </td>
                     <td colSpan={2} className="p-3 text-center">
                       <span className="text-xs font-semibold text-accent-foreground">
-                        In the works — included on all plans once ready
+                        Not available yet
                       </span>
                     </td>
                   </tr>
@@ -199,8 +204,7 @@ function UpgradePage() {
                 : `Upgrade — ₱${PRO_PRICE_YEARLY} / year`}
             </Button>
             <p className="text-center text-xs text-muted-foreground">
-              Cancel anytime. Your sales, products and utang stay on your phone even if you stop
-              paying.
+              Manual payment; no automatic renewal. Your local records remain if Pro expires.
             </p>
           </>
         ) : null}
@@ -208,16 +212,13 @@ function UpgradePage() {
         <section className="space-y-2 fin-card p-4">
           <h2 className="font-display text-sm font-bold">Why Pro costs money</h2>
           <p className="text-sm text-muted-foreground">
-            Selling, receipts, cash and utang all run on your phone, so the free plan is free
-            forever. Pro pays for keeping a safe copy of your records outside the phone, so you can
-            change or lose a phone and get everything back — and for letting your helpers use their
-            own sign-in.
+            {SYNC_DATA_NOTE} A replacement device can restore successfully synced eligible records,
+            not device-only photos or activity logs.
           </p>
         </section>
       </div>
 
       {nativeApp ? null : <GcashPaySheet open={open} onOpenChange={setOpen} period={period} />}
-
     </AppShell>
   );
 }

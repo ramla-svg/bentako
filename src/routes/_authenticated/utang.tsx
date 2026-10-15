@@ -18,18 +18,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppSession } from "@/hooks/use-app-session";
 import { formatMoney } from "@/lib/format";
-import {
-  db,
-  type LocalCustomer,
-  type LocalCustomerPayment,
-  type LocalSale,
-} from "@/lib/local-db";
+import { db, type LocalCustomer, type LocalCustomerPayment, type LocalSale } from "@/lib/local-db";
 import { deriveBalance, saveCustomer } from "@/lib/repo";
 
 export const Route = createFileRoute("/_authenticated/utang")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Utang — BentaKo" },
       { name: "description", content: "Know exactly who owes you and how much, any time." },
       { property: "og:title", content: "Utang — BentaKo" },

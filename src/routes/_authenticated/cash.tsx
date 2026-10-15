@@ -40,24 +40,16 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppSession } from "@/hooks/use-app-session";
 import { formatDateTime, formatMoney, localDayKey } from "@/lib/format";
 import { downloadBlob, downscaleImage, sharePhoto } from "@/lib/image-file";
-import {
-  CASH_PROVIDERS,
-  db,
-  type CashTxnType,
-  type LocalCashTransaction,
-} from "@/lib/local-db";
-import {
-  deleteCashPhoto,
-  getCashPhoto,
-  putCashPhoto,
-  saveCashTransaction,
-} from "@/lib/repo";
+import { CASH_PROVIDERS, db, type CashTxnType, type LocalCashTransaction } from "@/lib/local-db";
+import { deleteCashPhoto, getCashPhoto, putCashPhoto, saveCashTransaction } from "@/lib/repo";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/cash")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "GCash & E-Wallet — BentaKo" },
       {
         name: "description",
@@ -161,7 +153,7 @@ function CashPage() {
   const currency = store?.currency ?? "PHP";
 
   const [range, setRange] = useState<RangeKey>("today");
-  // The free plan sees the last 7 days of wallet entries; Pro sees everything.
+  // The free plan sees the last 7 days of wallet entries; Pro offers up to 30 days. Older entries remain local.
   const effectiveRange: RangeKey = !pro && range === "30d" ? "7d" : range;
   const [filter, setFilter] = useState<FilterKey>("all");
   const [open, setOpen] = useState(false);
@@ -279,7 +271,7 @@ function CashPage() {
   }
 
   async function pickPhoto(file: File | undefined) {
-    if (!file) return;
+    if (!file || !pro) return;
     if (!file.type.startsWith("image/")) {
       toast.error("Pick an image file.");
       return;
@@ -333,10 +325,14 @@ function CashPage() {
   }
 
   async function attachToExisting(id: string, file: File | undefined) {
-    if (!file || !storeId) return;
-    const small = await downscaleImage(file);
-    await putCashPhoto(storeId, id, small);
-    toast.success("Photo attached on this phone.");
+    if (!file || !ctx || !pro) return;
+    try {
+      const small = await downscaleImage(file);
+      await putCashPhoto(ctx, id, small);
+      toast.success("Photo attached on this phone.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not attach photo.");
+    }
   }
 
   return (
@@ -374,10 +370,14 @@ function CashPage() {
                 onClick={() => openNew(p)}
                 className="flex min-h-20 flex-col items-center justify-center gap-1.5 fin-card px-1 text-center active:opacity-90"
               >
-                <span className={cn("grid size-10 shrink-0 place-items-center rounded-full", p.tint)}>
+                <span
+                  className={cn("grid size-10 shrink-0 place-items-center rounded-full", p.tint)}
+                >
                   <Icon className="size-5" />
                 </span>
-                <span className="font-display text-xs font-bold leading-tight text-foreground">{p.label}</span>
+                <span className="font-display text-xs font-bold leading-tight text-foreground">
+                  {p.label}
+                </span>
               </button>
             );
           })}
@@ -465,6 +465,7 @@ function CashPage() {
                     ) : null}
                     <PhotoRowAction
                       hasPhoto={hasPhoto}
+                      canAdd={pro}
                       onView={() => void openViewer(e.id)}
                       onPick={(file) => void attachToExisting(e.id, file)}
                     />
@@ -715,28 +716,34 @@ function CashPage() {
 
 function PhotoRowAction({
   hasPhoto,
+  canAdd,
   onView,
   onPick,
 }: {
   hasPhoto: boolean;
+  canAdd: boolean;
   onView: () => void;
   onPick: (file: File | undefined) => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
+  if (!hasPhoto && !canAdd) return null;
   return (
     <div className="mt-1">
-      <input
-        ref={ref}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(ev) => onPick(ev.target.files?.[0])}
-      />
-      <button
+      {canAdd ? (
+        <input
+          ref={ref}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(ev) => onPick(ev.target.files?.[0])}
+        />
+      ) : null}
+      <Button
+        variant="outline"
         type="button"
         onClick={hasPhoto ? onView : () => ref.current?.click()}
-        className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-medium text-muted-foreground"
+        className="h-auto gap-1 px-2 py-1 text-[11px] font-medium text-muted-foreground"
       >
         {hasPhoto ? (
           <>
@@ -747,7 +754,7 @@ function PhotoRowAction({
             <Camera className="size-3" /> Add photo
           </>
         )}
-      </button>
+      </Button>
     </div>
   );
 }

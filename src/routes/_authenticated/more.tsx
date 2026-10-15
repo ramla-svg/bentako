@@ -13,7 +13,6 @@ import {
   Wallet,
 } from "lucide-react";
 
-
 import { AppShell } from "@/components/app-shell";
 import { useAppSession } from "@/hooks/use-app-session";
 
@@ -21,8 +20,13 @@ export const Route = createFileRoute("/_authenticated/more")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "More — BentaKo" },
-      { name: "description", content: "Inventory, expenses, reports, and settings for your store." },
+      {
+        name: "description",
+        content: "Inventory, expenses, reports, and settings for your store.",
+      },
       { property: "og:title", content: "More — BentaKo" },
       { property: "og:description", content: "All the other BentaKo tools in one place." },
     ],
@@ -31,30 +35,40 @@ export const Route = createFileRoute("/_authenticated/more")({
 });
 
 const LINKS = [
-  { to: "/inventory", label: "Inventory", description: "Stock in, adjust, and history", icon: Boxes },
+  {
+    to: "/inventory",
+    label: "Inventory",
+    description: "Stock in, adjust, and history",
+    icon: Boxes,
+  },
   { to: "/cash", label: "Cash ledger", description: "Drawer, GCash, Maya, bank", icon: Coins },
   { to: "/utang", label: "Utang", description: "Who owes you and how much", icon: HandCoins },
   { to: "/payments", label: "Payments", description: "Everything you received", icon: Banknote },
   { to: "/expenses", label: "Expenses", description: "Daily store costs", icon: Wallet },
   { to: "/reports", label: "Reports", description: "Sales, profit, best sellers", icon: BarChart3 },
   { to: "/upgrade", label: "Plan & pricing", description: "Free vs BentaKo Pro", icon: Crown },
-  { to: "/settings", label: "Settings", description: "Store details, sync, account", icon: Settings },
+  {
+    to: "/settings",
+    label: "Settings",
+    description: "Store details, sync, account",
+    icon: Settings,
+  },
 ] as const;
-
 
 function MorePage() {
   const { store, role, signOut } = useAppSession();
   const queryClient = useQueryClient();
 
   return (
-    <AppShell back title="More" subtitle={`${store?.name ?? ""} · ${role === "owner" ? "Owner" : "Cashier"}`}>
+    <AppShell
+      back
+      title="More"
+      subtitle={`${store?.name ?? ""} · ${role === "owner" ? "Owner" : "Cashier"}`}
+    >
       <ul className="space-y-2">
         {LINKS.map((item) => (
           <li key={item.to}>
-            <Link
-              to={item.to}
-              className="flex items-center gap-3 fin-card p-4 active:bg-accent/10"
-            >
+            <Link to={item.to} className="flex items-center gap-3 fin-card p-4 active:bg-accent/10">
               <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
                 <item.icon className="size-5" />
               </span>

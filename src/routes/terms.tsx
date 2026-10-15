@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { LEGAL_CONTACT_EMAIL, LegalPage, Section } from "@/components/legal-page";
-import { PRO_PRICE_MONTHLY, PRO_PRICE_YEARLY } from "@/lib/plan";
+import { PRO_PRICE_MONTHLY, PRO_PRICE_YEARLY, SYNC_DATA_NOTE } from "@/lib/plan";
 
 export const Route = createFileRoute("/terms")({
   head: () => ({
@@ -35,8 +35,9 @@ function TermsPage() {
       <Section heading="1. What BentaKo is">
         <p>
           BentaKo is a point-of-sale app for small neighbourhood stores in the Philippines. It
-          records sales, products, stock, cash, utang (credit) and expenses. It works offline on your
-          phone; with BentaKo Pro your records are also kept as a backup copy outside the phone.
+          records sales, products, stock, cash, utang (credit) and expenses. It works offline on
+          your phone. With Pro, eligible records can be restored after successful sync; photos and
+          activity logs stay device-only.
         </p>
         <p>
           BentaKo is a record-keeping tool. It is not a bank, an e-wallet, a payment processor or an
@@ -47,42 +48,46 @@ function TermsPage() {
       <Section heading="2. Your account">
         <p>
           You need an email sign-in or a Google account to use BentaKo. You are responsible for
-          keeping your sign-in private and for anyone you let use your store, including cashiers. You
-          must be at least 18 years old, or use the app with the consent of the store owner.
+          keeping your sign-in private and for anyone you let use your store, including cashiers.
+          You must be at least 18 years old, or use the app with the consent of the store owner.
         </p>
       </Section>
 
       <Section heading="3. Free plan">
         <p>
           The free plan costs ₱0 and stays free. It covers selling, receipts, cash and utang on one
-          phone, up to 60 active products and 7 days of reports. There is no cloud backup on the free
-          plan and receipts show “Powered by BentaKo”.
+          phone, up to 60 active products and 7 days of reports. There is no cloud backup on the
+          free plan and receipts show “Powered by BentaKo”.
         </p>
       </Section>
 
       <Section heading="4. BentaKo Pro and billing">
         <p>
           BentaKo Pro costs ₱{PRO_PRICE_MONTHLY} per month or ₱{PRO_PRICE_YEARLY} per year. It adds
-          unlimited products, up to 3 phones, 2 cashier sign-ins, cloud backup and restore, full
-          report history, spreadsheet export and your own logo and message on receipts.
+          unlimited active products, up to 3 devices, up to 30-day reports and GCash logs, all-time
+          sales history and your own logo and message on receipts. The 2-cashier seat limit remains,
+          but self-service cashier management and spreadsheet export are coming soon.
         </p>
         <p>
           Pro is bought on the BentaKo website (bentako.lovable.app) by sending payment to the GCash
           account shown on the upgrade screen and submitting the reference number. We confirm it
-          manually, usually within the day. Nothing renews automatically and no card is stored — when
-          your paid days end, the store simply returns to the free plan.
+          manually, usually within the day. Nothing renews automatically and no card is stored —
+          when your paid days end, the existing 14-day grace applies before Free viewing limits
+          return. Older local records and existing photos are not deleted.
         </p>
         <p>
           The Android app does not sell anything. It only reads the plan your account already has.
         </p>
       </Section>
 
+      <p>{SYNC_DATA_NOTE} No manual backup is currently available.</p>
+
       <Section heading="5. Refunds">
         <p>
-          If a payment is confirmed by mistake, or Pro features do not work for a reason on our side,
-          write to {LEGAL_CONTACT_EMAIL} within 7 days and we will refund the affected period by
-          GCash or add the days to your plan, whichever you prefer. Paid days already used are not
-          refundable. Payments that cannot be matched to a GCash reference are returned to the
+          If a payment is confirmed by mistake, or Pro features do not work for a reason on our
+          side, write to {LEGAL_CONTACT_EMAIL} within 7 days and we will refund the affected period
+          by GCash or add the days to your plan, whichever you prefer. Paid days already used are
+          not refundable. Payments that cannot be matched to a GCash reference are returned to the
           sender.
         </p>
       </Section>
@@ -121,9 +126,9 @@ function TermsPage() {
 
       <Section heading="10. Changes and contact">
         <p>
-          If these terms change we will update this page and the date above, and show a notice in the
-          app for important changes. Questions: {LEGAL_CONTACT_EMAIL}. These terms follow the laws of
-          the Republic of the Philippines.
+          If these terms change we will update this page and the date above, and show a notice in
+          the app for important changes. Questions: {LEGAL_CONTACT_EMAIL}. These terms follow the
+          laws of the Republic of the Philippines.
         </p>
       </Section>
     </LegalPage>

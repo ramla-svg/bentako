@@ -3,7 +3,6 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo, useState } from "react";
 import { BarChart3, Crown, Download } from "lucide-react";
 
-
 import { AppShell, EmptyState } from "@/components/app-shell";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppSession } from "@/hooks/use-app-session";
@@ -14,8 +13,13 @@ export const Route = createFileRoute("/_authenticated/reports")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Reports — BentaKo" },
-      { name: "description", content: "Daily sales, profit, expenses, and your best-selling items." },
+      {
+        name: "description",
+        content: "Daily sales, profit, expenses, and your best-selling items.",
+      },
       { property: "og:title", content: "Reports — BentaKo" },
       { property: "og:description", content: "Simple numbers that show how your store is doing." },
     ],
@@ -31,7 +35,6 @@ function ReportsPage() {
   const currency = store?.currency ?? "PHP";
   const [range, setRange] = useState<RangeKey>("7");
   const effectiveRange: RangeKey = pro ? range : "7";
-
 
   const raw = useLiveQuery(
     async () => {
@@ -70,7 +73,10 @@ function ReportsPage() {
       return { key, total: daySales.reduce((s, x) => s + x.total, 0), count: daySales.length };
     });
 
-    const byProduct = new Map<string, { name: string; qty: number; revenue: number; profit: number }>();
+    const byProduct = new Map<
+      string,
+      { name: string; qty: number; revenue: number; profit: number }
+    >();
     for (const item of items) {
       const key = item.product_name_snapshot;
       const entry = byProduct.get(key) ?? { name: key, qty: 0, revenue: 0, profit: 0 };
@@ -124,7 +130,8 @@ function ReportsPage() {
           >
             <Crown className="size-4 shrink-0 text-primary" />
             <span className="min-w-0 flex-1">
-              The free plan shows the last 7 days. Pro shows your whole history.
+              The free plan shows the last 7 days. Pro offers up to 30-day reports. Older local
+              records are not deleted.
             </span>
             <span className="shrink-0 font-semibold text-primary">See Pro</span>
           </Link>
@@ -138,9 +145,6 @@ function ReportsPage() {
           </span>
         </div>
 
-
-
-
         {!report || report.transactions === 0 ? (
           <EmptyState
             icon={BarChart3}
@@ -153,7 +157,11 @@ function ReportsPage() {
               <Metric label="Revenue" value={formatMoney(report.revenue, currency)} />
               <Metric label="Gross profit" value={formatMoney(report.grossProfit, currency)} />
               <Metric label="Expenses" value={formatMoney(report.expenseTotal, currency)} />
-              <Metric label="Net profit" value={formatMoney(report.netProfit, currency)} highlight />
+              <Metric
+                label="Net profit"
+                value={formatMoney(report.netProfit, currency)}
+                highlight
+              />
               <Metric label="Sales count" value={String(report.transactions)} />
               <Metric label="Average sale" value={formatMoney(report.average, currency)} />
             </div>
@@ -231,9 +239,7 @@ function Metric({
   return (
     <div
       className={
-        highlight
-          ? "rounded-2xl border border-primary/40 bg-primary/10 p-4"
-          : "fin-card p-4"
+        highlight ? "rounded-2xl border border-primary/40 bg-primary/10 p-4" : "fin-card p-4"
       }
     >
       <p className="text-xs text-muted-foreground">{label}</p>

@@ -18,12 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppSession } from "@/hooks/use-app-session";
 import { formatDateTime, formatMoney } from "@/lib/format";
-import {
-  db,
-  type LocalCustomer,
-  type LocalCustomerPayment,
-  type LocalSale,
-} from "@/lib/local-db";
+import { db, type LocalCustomer, type LocalCustomerPayment, type LocalSale } from "@/lib/local-db";
 import { addManualCharge, deriveBalance, recordCustomerPayment } from "@/lib/repo";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +26,8 @@ export const Route = createFileRoute("/_authenticated/utang/$customerId")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Customer utang — BentaKo" },
       { name: "description", content: "Charges and payments for one utang customer." },
       { property: "og:title", content: "Customer utang — BentaKo" },
@@ -166,9 +163,7 @@ function CustomerUtangPage() {
         </div>
 
         {customer?.notes ? (
-          <p className="fin-card p-3 text-sm text-muted-foreground">
-            {customer.notes}
-          </p>
+          <p className="fin-card p-3 text-sm text-muted-foreground">{customer.notes}</p>
         ) : null}
 
         {entries.length === 0 ? (

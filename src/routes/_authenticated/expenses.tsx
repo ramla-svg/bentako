@@ -33,6 +33,8 @@ export const Route = createFileRoute("/_authenticated/expenses")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Expenses — BentaKo" },
       { name: "description", content: "Record store expenses so your profit numbers stay honest." },
       { property: "og:title", content: "Expenses — BentaKo" },
@@ -176,7 +178,12 @@ function ExpensesPage() {
                   <span className="tnum font-display text-base font-bold">
                     {formatMoney(e.amount, currency)}
                   </span>
-                  <Button size="icon" variant="ghost" className="size-9" onClick={() => openEdit(e)}>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="size-9"
+                    onClick={() => openEdit(e)}
+                  >
                     <Pencil className="size-4" />
                   </Button>
                   <Button

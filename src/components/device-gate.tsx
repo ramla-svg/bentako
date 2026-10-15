@@ -77,8 +77,8 @@ export function DeviceGate() {
           <DialogDescription className="pl-12 text-sm leading-relaxed sm:text-base">
             {blocked === "cashier_limit"
               ? pro
-                ? `BentaKo Pro allows ${limit} cashier sign-ins. Ask the owner to remove a cashier first.`
-                : "On the free plan only the owner can sign in. BentaKo Pro adds 2 cashier sign-ins."
+                ? `BentaKo Pro allows ${limit} cashier sign-ins. Self-service cashier management is coming soon; contact BentaKo support for account access.`
+                : "On the free plan only the owner can sign in. Pro defines 2 cashier seats; self-service cashier management is coming soon."
               : `Your plan covers ${limit} phone${limit > 1 ? "s" : ""}. Release one to use this phone instead, or go Pro for 3 phones.`}
           </DialogDescription>
         </DialogHeader>

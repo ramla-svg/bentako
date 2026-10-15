@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { db, getSetting, setSetting } from "@/lib/local-db";
@@ -47,7 +55,6 @@ interface AppSessionValue {
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
 }
-
 
 const AppSessionContext = createContext<AppSessionValue | null>(null);
 
@@ -134,7 +141,6 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       setStatus(cached.store ? "ready" : "no-store");
     }
 
-
     // 2. Refresh from the cloud when we can reach it.
     if (isOnline()) {
       type ProfileRow = { full_name: string | null; store_id: string | null };
@@ -163,7 +169,6 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       } catch {
         reachedCloud = false;
       }
-
 
       // Network said "online" but the request failed: never downgrade a working
       // offline session (that would bounce the cashier into onboarding).
@@ -212,7 +217,6 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     } else if (!cached) {
       setStatus("no-store");
     }
-
   }, []);
 
   useEffect(() => {
@@ -239,18 +243,23 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     };
   }, [load]);
 
-
   const signOut = useCallback(async () => {
     // Remove offline access before notifying Supabase, so an auth event racing
     // this call cannot reopen the cached store after an intentional logout.
     await withTimeout(
-      db().settings.delete(SNAPSHOT_KEY).then(() => undefined),
+      db()
+        .settings.delete(SNAPSHOT_KEY)
+        .then(() => undefined),
       4000,
       undefined,
     );
     setSnapshot(null);
     setStatus("signed-out");
-    await withTimeout(supabase.auth.signOut().then(() => undefined), 8000, undefined);
+    await withTimeout(
+      supabase.auth.signOut().then(() => undefined),
+      8000,
+      undefined,
+    );
     // Hard load the sign-in screen: a clean boot avoids any half-torn-down
     // state (stale caches, dead script chunks) that showed up as a white page.
     if (typeof window !== "undefined") {
@@ -275,7 +284,12 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       role: snapshot?.role ?? "cashier",
       store,
       ctx: snapshot?.store
-        ? { storeId: snapshot.store.id, userId: snapshot.userId, userName: snapshot.userName }
+        ? {
+            storeId: snapshot.store.id,
+            userId: snapshot.userId,
+            userName: snapshot.userName,
+            plan: snapshot.store,
+          }
         : null,
       plan,
       limits: planLimits(store),
@@ -285,7 +299,6 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     }),
     [status, snapshot, store, plan, email, load, signOut],
   );
-
 
   return <AppSessionContext.Provider value={value}>{children}</AppSessionContext.Provider>;
 }

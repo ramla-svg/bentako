@@ -470,7 +470,18 @@ function ProductsPage() {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
-                              if (ctx) void duplicateProduct(ctx, p.id);
+                              if (atLimit) {
+                                setLimitOpen(true);
+                                return;
+                              }
+                              if (ctx)
+                                void duplicateProduct(ctx, p.id).catch((err: unknown) =>
+                                  toast.error(
+                                    err instanceof Error
+                                      ? err.message
+                                      : "Could not duplicate product.",
+                                  ),
+                                );
                             }}
                           >
                             <Copy className="size-4" /> Duplicate
@@ -487,7 +498,18 @@ function ProductsPage() {
                           ) : (
                             <DropdownMenuItem
                               onClick={() => {
-                                if (ctx) void restoreProduct(ctx, p.id);
+                                if (atLimit) {
+                                  setLimitOpen(true);
+                                  return;
+                                }
+                                if (ctx)
+                                  void restoreProduct(ctx, p.id).catch((err: unknown) =>
+                                    toast.error(
+                                      err instanceof Error
+                                        ? err.message
+                                        : "Could not restore product.",
+                                    ),
+                                  );
                               }}
                             >
                               <Undo2 className="size-4" /> Restore

@@ -20,6 +20,8 @@ export const Route = createFileRoute("/_authenticated/payments")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Payments — BentaKo" },
       {
         name: "description",
@@ -145,6 +147,11 @@ function PaymentsPage() {
             <TabsTrigger value="30d">30 days</TabsTrigger>
           </TabsList>
         </Tabs>
+
+        <p className="text-xs text-muted-foreground">
+          Up to 30-day payment summaries are available on both plans, separate from Reports and the
+          GCash log. Older records stay on this device.
+        </p>
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {[...totals.entries()].map(([type, value]) => (

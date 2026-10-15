@@ -155,6 +155,7 @@ describe("voidSale", () => {
 });
 
 describe("cash ledger", () => {
+  const proCtx = { ...ctx, plan: { plan: "pro" } };
   const base = { transaction_type: "cash_in" as const, provider: "gcash" as const, amount: 100 };
 
   it.each([
@@ -172,7 +173,7 @@ describe("cash ledger", () => {
   });
 
   it("commits row, photo, queue and audit together", async () => {
-    const row = await saveCashTransaction(ctx, {
+    const row = await saveCashTransaction(proCtx, {
       ...base,
       service_fee: 5,
       photo: new Blob(["img"], { type: "image/jpeg" }),
@@ -188,7 +189,9 @@ describe("cash ledger", () => {
     const original = db().cash_photos.put.bind(db().cash_photos);
     db().cash_photos.put = (() => Promise.reject(new Error("disk full"))) as never;
     try {
-      await expect(saveCashTransaction(ctx, { ...base, photo: bad })).rejects.toThrow(/disk full/);
+      await expect(saveCashTransaction(proCtx, { ...base, photo: bad })).rejects.toThrow(
+        /disk full/,
+      );
     } finally {
       db().cash_photos.put = original;
     }
