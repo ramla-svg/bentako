@@ -21,13 +21,13 @@ export function PlanReminder() {
   const renew = nativeApp ? "on your BentaKo account" : "";
   let message: string | null = null;
   if (pro && left <= 0) {
-    message = `Your Pro ended. You have ${GRACE_DAYS} days to renew ${renew} before the free limits come back.`;
+    message = `Your Pro ended. You have ${GRACE_DAYS} days to renew ${renew} after expiry before the free limits come back; your local records remain.`;
   } else if (pro && left === 1) {
     message = `Last day of BentaKo Pro. Renew ${renew} today to keep cloud backup on.`;
   } else if (pro && left <= 7) {
-    message = `BentaKo Pro ends in ${left} days. Renew ${renew} anytime — the days are added on top.`;
+    message = `BentaKo Pro ends in ${left} days. Renew ${renew} through manual payment — nothing renews automatically.`;
   } else if (!pro && left > -GRACE_DAYS) {
-    message = `Your Pro has lapsed. Renew ${renew} to turn cloud backup and full history back on.`;
+    message = `Your Pro has lapsed. Renew ${renew} to turn eligible record sync, 30-day reports/logs and all-time sales history back on.`;
   }
 
   if (!message) return null;

@@ -106,10 +106,8 @@ export function buildReceiptText(
     lines.push(`PAID    ${result.sale.payment_method.toUpperCase()}`);
   }
 
-  if (store?.receipt_footer) {
-    lines.push("");
-    lines.push(store.receipt_footer);
-  }
+  lines.push("");
+  lines.push(isPro(store) ? (store?.receipt_footer ?? "Salamat po!") : "Salamat po!");
 
   // Free plan keeps a small credit line; Pro receipts are fully the store's own.
   if (!isPro(store)) {

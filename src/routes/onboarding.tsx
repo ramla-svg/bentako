@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { useAppSession } from "@/hooks/use-app-session";
 import { supabase } from "@/integrations/supabase/client";
 import { isOnline } from "@/lib/sync-service";
@@ -32,7 +31,6 @@ function Onboarding() {
   const [step, setStep] = useState(1);
   const [storeName, setStoreName] = useState("");
   const [ownerName, setOwnerName] = useState(userName ?? "");
-  const [footer, setFooter] = useState("Salamat po! Come again.");
   const [withDemo, setWithDemo] = useState(true);
   const [busy, setBusy] = useState(false);
 
@@ -63,7 +61,7 @@ function Onboarding() {
           name: storeName.trim(),
           owner_id: uid,
           owner_name: ownerName.trim() || null,
-          receipt_footer: footer.trim() || null,
+          receipt_footer: "Salamat po!",
         })
         .select("id")
         .single();
@@ -137,15 +135,7 @@ function Onboarding() {
                   className="h-12"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="footer">Receipt footer</Label>
-                <Textarea
-                  id="footer"
-                  value={footer}
-                  onChange={(e) => setFooter(e.target.value)}
-                  rows={2}
-                />
-              </div>
+              <p className="text-xs text-muted-foreground">Free receipts show “Salamat po!” and “Powered by BentaKo”. A custom receipt message and logo are Pro options in Settings.</p>
               <Button
                 className="h-12 w-full text-base"
                 onClick={() => setStep(2)}

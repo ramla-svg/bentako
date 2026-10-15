@@ -124,7 +124,7 @@ function ReportsPage() {
           >
             <Crown className="size-4 shrink-0 text-primary" />
             <span className="min-w-0 flex-1">
-              The free plan shows the last 7 days. Pro shows your whole history.
+              The free plan shows the last 7 days. Pro offers up to 30-day reports. Older local records are not deleted.
             </span>
             <span className="shrink-0 font-semibold text-primary">See Pro</span>
           </Link>

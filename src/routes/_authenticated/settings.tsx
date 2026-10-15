@@ -43,6 +43,7 @@ import { isOnline, syncNow } from "@/lib/sync-service";
 import { isBillingAdmin } from "@/lib/billing.functions";
 import { removeStoreLogo, uploadStoreLogo, useStoreLogo } from "@/lib/store-logo";
 import { listStoreDevices, releaseDevice, type StoreDevice } from "@/lib/devices.functions";
+import { PLAN_SUMMARY, LOCAL_DATA_NOTE, SYNC_DATA_NOTE, PRINT_NOTE } from "@/lib/plan";
 import { deviceId } from "@/lib/device-id";
 
 
@@ -247,7 +248,7 @@ function SettingsPage() {
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 e.target.value = "";
-                if (!file || !store) return;
+                if (!file || !store || !isOwner || !pro) return;
                 if (!isOnline()) {
                   toast.error("Connect to the internet to upload your logo.");
                   return;
@@ -269,6 +270,7 @@ function SettingsPage() {
                 ? "Your logo shows at the top of the receipt on screen and when you print. A square picture works best."
                 : "Your own logo on receipts comes with Pro."}
             </p>
+            <p className="text-xs text-muted-foreground">{PRINT_NOTE}</p>
             {!pro ? (
               <Button asChild variant="outline" className="h-11 w-full">
                 <Link to="/upgrade">See BentaKo Pro</Link>
@@ -316,13 +318,11 @@ function SettingsPage() {
           <p className="text-sm">
             <span className="font-semibold">{pro ? "BentaKo Pro" : "Free"}</span>
             {pro && store?.plan_expires_at ? (
-              <span className="text-muted-foreground"> · renews {formatDateTime(store.plan_expires_at)}</span>
+              <span className="text-muted-foreground"> · expires on {formatDateTime(store.plan_expires_at)}</span>
             ) : null}
           </p>
           <p className="text-sm text-muted-foreground">
-            {pro
-              ? "Unlimited products, cloud backup, extra phones and cashier accounts are unlocked."
-              : "Free covers selling, receipts, cash and utang on this phone — up to 60 products, 7 days of reports, no cloud backup."}
+            {PLAN_SUMMARY[pro ? "pro" : "free"]}
           </p>
           <Button asChild variant={pro ? "outline" : "default"} className="h-12 w-full">
             <Link to="/upgrade">
@@ -413,7 +413,7 @@ function SettingsPage() {
               </dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-muted-foreground">Last successful sync</dt>
+              <dt className="text-muted-foreground">Last recorded sync</dt>
               <dd className="font-medium">
                 {lastSyncAt ? formatDateTime(lastSyncAt) : "Not yet"}
               </dd>
@@ -431,13 +431,12 @@ function SettingsPage() {
             <>
               <p className="text-sm text-muted-foreground">
                 {pending === 0
-                  ? "Everything on this device is backed up."
+                  ? lastSyncAt ? "No changes currently waiting to upload. The recorded sync time does not confirm a complete backup." : "No changes currently waiting to upload; no sync has been recorded yet."
                   : (lastIssue ??
                     `${pending} change${pending > 1 ? "s" : ""} waiting to upload. They are safe on this device.`)}
               </p>
               <p className="text-xs text-muted-foreground">
-                Activity history and receipt photos are kept on this phone only — they are never
-                uploaded. Sales, products, cash entries and utang are backed up.
+                {SYNC_DATA_NOTE}
               </p>
               <Button variant="outline" className="h-12 w-full" onClick={() => void syncNow()}>
                 <RefreshCw className="size-4" /> Sync now
@@ -450,8 +449,7 @@ function SettingsPage() {
                 utang all keep working — nothing is uploaded.
               </p>
               <p className="text-xs text-muted-foreground">
-                Your records are held ready on this phone. The moment you go Pro, they are backed up
-                so a new phone can be restored.
+                Eligible records wait on this device. Pro uploads them when connected; only successfully synced records can be restored on another device.
               </p>
               <Button asChild variant="outline" className="h-12 w-full">
                 <Link to="/upgrade">Turn on cloud backup with Pro</Link>
@@ -459,6 +457,7 @@ function SettingsPage() {
             </>
           )}
 
+          <p className="text-xs text-muted-foreground">{LOCAL_DATA_NOTE}</p>
         </section>
 
         <section className="space-y-3 fin-card p-4">
@@ -637,7 +636,7 @@ function SettingsPage() {
               : "This removes your own sign-in and profile. The shop and its records stay with the owner."}
           </p>
           <p className="text-xs text-muted-foreground">
-            Want a copy of your figures first? Export them from Reports before you delete.
+            Spreadsheet export and manual backup are not available yet. Keep any figures and device-only photos you need before deleting; deletion cannot be undone.
           </p>
           <Label htmlFor="delete-confirm">
             Type <span className="font-bold">DELETE</span> to confirm

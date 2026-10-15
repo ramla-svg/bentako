@@ -146,6 +146,8 @@ function PaymentsPage() {
           </TabsList>
         </Tabs>
 
+        <p className="text-xs text-muted-foreground">Up to 30-day payment summaries are available on both plans, separate from Reports and the GCash log. Older records stay on this device.</p>
+
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {[...totals.entries()].map(([type, value]) => (
             <div key={type} className="fin-card p-3">
