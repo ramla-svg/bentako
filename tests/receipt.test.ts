@@ -55,6 +55,18 @@ const freeStore = {
 } as const;
 
 describe("structured grocery receipt", () => {
+  it("honors Pro-only custom footer and logo in both receipt builders", () => {
+    const result = receipt("cash");
+    const proStore = { ...freeStore, plan: "pro" };
+    expect(buildReceiptText(result, freeStore)).not.toContain("Custom footer");
+    expect(buildReceiptText(result, freeStore)).toContain("Powered by BentaKo");
+    expect(buildReceiptPrintDoc(result, freeStore, "cached-logo").logoUrl).toBeNull();
+    expect(buildReceiptPrintDoc(result, freeStore).footer).not.toContain("Custom footer");
+    expect(buildReceiptText(result, proStore)).toContain("Custom footer");
+    expect(buildReceiptText(result, proStore)).not.toContain("Powered by BentaKo");
+    expect(buildReceiptPrintDoc(result, proStore, "cached-logo").logoUrl).toBe("cached-logo");
+    expect(buildReceiptPrintDoc(result, proStore).footer).toBe("Custom footer");
+  });
   it.each([
     ["cash", "Cash", "Change"],
     ["utang", "UNPAID", null],
