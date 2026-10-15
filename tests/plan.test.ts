@@ -1,7 +1,23 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-import { activePlan, ANNUAL_SAVING, GRACE_DAYS, PLAN_AVAILABILITY, PLAN_LIMITS, PRO_PRICE_MONTHLY, PRO_PRICE_YEARLY } from "@/lib/plan";
+import {
+  activePlan,
+  ANNUAL_SAVING,
+  GRACE_DAYS,
+  PLAN_AVAILABILITY,
+  PLAN_LIMITS,
+  PRO_PRICE_MONTHLY,
+  PRO_PRICE_YEARLY,
+} from "@/lib/plan";
 import { db } from "@/lib/local-db";
-import { duplicateProduct, getCashPhoto, putCashPhoto, restoreProduct, saveCashTransaction, saveProduct, seedDemoProducts } from "@/lib/repo";
+import {
+  duplicateProduct,
+  getCashPhoto,
+  putCashPhoto,
+  restoreProduct,
+  saveCashTransaction,
+  saveProduct,
+  seedDemoProducts,
+} from "@/lib/repo";
 import { addProduct, ctx, OTHER, resetDb } from "./helpers";
 
 beforeEach(resetDb);
@@ -50,7 +66,14 @@ describe("active product capacity at every local write entry point", () => {
   async function fill(count: number) {
     for (let i = 0; i < count; i += 1) await addProduct({ id: `capacity-${i}` });
   }
-  const input = { name: "New", cost_price: 1, selling_price: 2, stock_quantity: 0, low_stock_threshold: 5, unit_type: "piece" as const };
+  const input = {
+    name: "New",
+    cost_price: 1,
+    selling_price: 2,
+    stock_quantity: 0,
+    low_stock_threshold: 5,
+    unit_type: "piece" as const,
+  };
   it("rejects create, duplicate and restore at 60 without deleting rows", async () => {
     await fill(60);
     const archived = await addProduct({ is_active: false });
@@ -106,7 +129,9 @@ describe("wallet photo entitlement and downgrade preservation", () => {
   it("allows Pro attachment only to its own existing entry", async () => {
     const entry = await saveCashTransaction(ctx, input);
     await putCashPhoto(proCtx, entry.id, photo());
-    await expect(putCashPhoto({ ...proCtx, storeId: OTHER }, entry.id, photo())).rejects.toThrow(/this store/);
+    await expect(putCashPhoto({ ...proCtx, storeId: OTHER }, entry.id, photo())).rejects.toThrow(
+      /this store/,
+    );
     await expect(putCashPhoto(proCtx, "missing", photo())).rejects.toThrow(/this store/);
     expect(await db().cash_photos.count()).toBe(1);
   });

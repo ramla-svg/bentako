@@ -134,8 +134,9 @@ export interface ProductInput {
 }
 
 export async function saveProduct(ctx: StoreContext, input: ProductInput): Promise<LocalProduct> {
-  return atomic(["products", "inventory_movements"], async () => {
-    const existing = input.id ? await db().products.get(input.id) : undefined;
+  let existing: LocalProduct | undefined;
+  const product = await db().transaction("rw", db().products, async () => {
+    existing = input.id ? await db().products.get(input.id) : undefined;
     if (existing && existing.store_id !== ctx.storeId)
       throw new Error("Product not found in this store");
     if (!existing) await assertProductCapacity(ctx);
@@ -159,35 +160,36 @@ export async function saveProduct(ctx: StoreContext, input: ProductInput): Promi
       sync_status: "pending",
     };
     await db().products.put(product);
-    await enqueue("products", product.id);
-
-    if (!existing && product.stock_quantity > 0) {
-      await recordMovement(ctx, {
-        product_id: product.id,
-        movement_type: "stock_in",
-        quantity: product.stock_quantity,
-        previous_stock: 0,
-        new_stock: product.stock_quantity,
-        unit_cost: product.cost_price,
-        notes: "Initial stock",
-      });
-    } else if (existing && existing.stock_quantity !== product.stock_quantity) {
-      const diff = product.stock_quantity - existing.stock_quantity;
-      await recordMovement(ctx, {
-        product_id: product.id,
-        movement_type: diff > 0 ? "adjustment_add" : "adjustment_remove",
-        quantity: Math.abs(diff),
-        previous_stock: existing.stock_quantity,
-        new_stock: product.stock_quantity,
-        notes: "Edited from product form",
-      });
-    }
-
-    await logAudit(ctx, existing ? "product.updated" : "product.created", "product", product.id, {
-      name: product.name,
-    });
     return product;
   });
+  await enqueue("products", product.id);
+
+  if (!existing && product.stock_quantity > 0) {
+    await recordMovement(ctx, {
+      product_id: product.id,
+      movement_type: "stock_in",
+      quantity: product.stock_quantity,
+      previous_stock: 0,
+      new_stock: product.stock_quantity,
+      unit_cost: product.cost_price,
+      notes: "Initial stock",
+    });
+  } else if (existing && existing.stock_quantity !== product.stock_quantity) {
+    const diff = product.stock_quantity - existing.stock_quantity;
+    await recordMovement(ctx, {
+      product_id: product.id,
+      movement_type: diff > 0 ? "adjustment_add" : "adjustment_remove",
+      quantity: Math.abs(diff),
+      previous_stock: existing.stock_quantity,
+      new_stock: product.stock_quantity,
+      notes: "Edited from product form",
+    });
+  }
+
+  await logAudit(ctx, existing ? "product.updated" : "product.created", "product", product.id, {
+    name: product.name,
+  });
+  return product;
 }
 
 async function assertProductCapacity(ctx: StoreContext): Promise<void> {
