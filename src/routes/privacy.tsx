@@ -65,23 +65,19 @@ function PrivacyPage() {
 
       <Section heading="What stays on your phone only">
         <p>
-          Activity history (the log of actions inside the app) and receipt or transaction photos are
-          kept on your phone and are never uploaded. On the free plan <em>everything</em> stays on the
-          phone — no store records leave the device at all.
+          Activity logs, product photos and GCash/e-wallet transaction photos stay on this device and are not uploaded, even on Pro. Free keeps eligible sales, stock, cash, utang and expense records local. Sign-in, store setup, device registration and subscription payment submissions still require online services.
         </p>
       </Section>
 
       <Section heading="What we upload, and why">
         <p>
-          With BentaKo Pro, your store records are copied to our secure cloud backup so you can
-          restore them on a new phone and use more than one phone. Payment records are uploaded so we
-          can confirm your Pro payment. That is all.
+          With Pro, eligible sales, products, stock, cash, utang and expenses are uploaded when connected. Successfully synced records can be restored on another device; device-only photos and activity logs cannot. Subscription payment submissions, including optional payment proof, are uploaded for approval and are separate from device-only wallet photos.
         </p>
       </Section>
 
       <Section heading="Who can see it">
         <p>
-          Only you and the people you invite to your store can see your store records. Our database
+          Only you and authorized users assigned to your store can see your store records. Our database
           rules limit every request to your own store. BentaKo staff can see payment records (amount,
           reference number, screenshot) to confirm upgrades. Our hosting and database provider stores
           the data on our behalf. We do not sell or share your data with advertisers or data brokers.

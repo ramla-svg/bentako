@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { LEGAL_CONTACT_EMAIL, LegalPage, Section } from "@/components/legal-page";
-import { PRO_PRICE_MONTHLY, PRO_PRICE_YEARLY } from "@/lib/plan";
+import { PRO_PRICE_MONTHLY, PRO_PRICE_YEARLY, SYNC_DATA_NOTE } from "@/lib/plan";
 
 export const Route = createFileRoute("/terms")({
   head: () => ({
@@ -36,7 +36,7 @@ function TermsPage() {
         <p>
           BentaKo is a point-of-sale app for small neighbourhood stores in the Philippines. It
           records sales, products, stock, cash, utang (credit) and expenses. It works offline on your
-          phone; with BentaKo Pro your records are also kept as a backup copy outside the phone.
+          phone. With Pro, eligible records can be restored after successful sync; photos and activity logs stay device-only.
         </p>
         <p>
           BentaKo is a record-keeping tool. It is not a bank, an e-wallet, a payment processor or an
@@ -63,19 +63,20 @@ function TermsPage() {
       <Section heading="4. BentaKo Pro and billing">
         <p>
           BentaKo Pro costs ₱{PRO_PRICE_MONTHLY} per month or ₱{PRO_PRICE_YEARLY} per year. It adds
-          unlimited products, up to 3 phones, 2 cashier sign-ins, cloud backup and restore, full
-          report history, spreadsheet export and your own logo and message on receipts.
+          unlimited active products, up to 3 devices, up to 30-day reports and GCash logs, all-time sales history and your own logo and message on receipts. The 2-cashier seat limit remains, but self-service cashier management and spreadsheet export are coming soon.
         </p>
         <p>
           Pro is bought on the BentaKo website (bentako.lovable.app) by sending payment to the GCash
           account shown on the upgrade screen and submitting the reference number. We confirm it
           manually, usually within the day. Nothing renews automatically and no card is stored — when
-          your paid days end, the store simply returns to the free plan.
+          your paid days end, the existing 14-day grace applies before Free viewing limits return. Older local records and existing photos are not deleted.
         </p>
         <p>
           The Android app does not sell anything. It only reads the plan your account already has.
         </p>
       </Section>
+
+      <p>{SYNC_DATA_NOTE} No manual backup is currently available.</p>
 
       <Section heading="5. Refunds">
         <p>

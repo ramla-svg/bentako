@@ -31,6 +31,8 @@ export const Route = createFileRoute("/_authenticated/utang/$customerId")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Customer utang — BentaKo" },
       { name: "description", content: "Charges and payments for one utang customer." },
       { property: "og:title", content: "Customer utang — BentaKo" },

@@ -50,6 +50,8 @@ export const Route = createFileRoute("/_authenticated/settings")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Settings — BentaKo" },
       { name: "description", content: "Store details, receipt footer, sync, and account options." },
       { property: "og:title", content: "Settings — BentaKo" },

@@ -16,6 +16,8 @@ export const Route = createFileRoute("/onboarding")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Set up your store — BentaKo" },
       { name: "description", content: "Name your sari-sari store and start selling in minutes." },
       { property: "og:title", content: "Set up your store — BentaKo" },

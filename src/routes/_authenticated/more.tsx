@@ -21,6 +21,8 @@ export const Route = createFileRoute("/_authenticated/more")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "More — BentaKo" },
       { name: "description", content: "Inventory, expenses, reports, and settings for your store." },
       { property: "og:title", content: "More — BentaKo" },

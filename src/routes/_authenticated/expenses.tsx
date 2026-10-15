@@ -33,6 +33,8 @@ export const Route = createFileRoute("/_authenticated/expenses")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Expenses — BentaKo" },
       { name: "description", content: "Record store expenses so your profit numbers stay honest." },
       { property: "og:title", content: "Expenses — BentaKo" },

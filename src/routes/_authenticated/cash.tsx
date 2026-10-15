@@ -48,6 +48,8 @@ export const Route = createFileRoute("/_authenticated/cash")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "GCash & E-Wallet — BentaKo" },
       {
         name: "description",

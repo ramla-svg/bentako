@@ -20,6 +20,8 @@ export const Route = createFileRoute("/_authenticated/payments")({
   ssr: false,
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Payments — BentaKo" },
       {
         name: "description",

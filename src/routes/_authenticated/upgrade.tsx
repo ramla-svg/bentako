@@ -91,11 +91,12 @@ function UpgradePage() {
         ) : (
           <div className="grid grid-cols-2 gap-3">
             <Button
+              variant="outline"
               type="button"
               onClick={() => setPeriod("monthly")}
               className={cn(
                 "h-auto flex-col items-start rounded-lg border p-4 text-left gap-0",
-                period === "monthly" ? "border-primary bg-primary/10" : "bg-card",
+                period === "monthly" ? "border-primary bg-primary/10 text-foreground" : "bg-card text-foreground",
               )}
             >
               <p className="text-xs font-semibold uppercase text-muted-foreground">Monthly</p>
@@ -103,11 +104,12 @@ function UpgradePage() {
               <p className="text-xs text-muted-foreground">per month</p>
             </Button>
             <Button
+              variant="outline"
               type="button"
               onClick={() => setPeriod("yearly")}
               className={cn(
                 "h-auto flex-col items-start rounded-lg border p-4 text-left gap-0",
-                period === "yearly" ? "border-primary bg-primary/10" : "bg-card",
+                period === "yearly" ? "border-primary bg-primary/10 text-foreground" : "bg-card text-foreground",
               )}
             >
               <span className="mb-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
@@ -169,7 +171,7 @@ function UpgradePage() {
                     </td>
                     <td colSpan={2} className="p-3 text-center">
                       <span className="text-xs font-semibold text-accent-foreground">
-                        Not available yet; no included-plan promise
+                        Not available yet
                       </span>
                     </td>
                   </tr>
