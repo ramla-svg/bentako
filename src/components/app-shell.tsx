@@ -219,7 +219,9 @@ export function AppShell({
             </div>
             {connection === "offline" ? (
               <p className="bg-warning/15 px-4 py-1.5 text-center text-xs font-medium text-accent-foreground">
-                Offline mode — sales are saved here and sync automatically later.
+                {pro
+                  ? "Offline — records stay here; eligible records sync when connected."
+                  : "Offline — records stay on this device. Cloud sync requires Pro."}
               </p>
             ) : null}
           </header>
