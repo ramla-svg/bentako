@@ -96,7 +96,9 @@ function UpgradePage() {
               onClick={() => setPeriod("monthly")}
               className={cn(
                 "h-auto flex-col items-start rounded-lg border p-4 text-left gap-0",
-                period === "monthly" ? "border-primary bg-primary/10 text-foreground" : "bg-card text-foreground",
+                period === "monthly"
+                  ? "border-primary bg-primary/10 text-foreground"
+                  : "bg-card text-foreground",
               )}
             >
               <p className="text-xs font-semibold uppercase text-muted-foreground">Monthly</p>
@@ -109,7 +111,9 @@ function UpgradePage() {
               onClick={() => setPeriod("yearly")}
               className={cn(
                 "h-auto flex-col items-start rounded-lg border p-4 text-left gap-0",
-                period === "yearly" ? "border-primary bg-primary/10 text-foreground" : "bg-card text-foreground",
+                period === "yearly"
+                  ? "border-primary bg-primary/10 text-foreground"
+                  : "bg-card text-foreground",
               )}
             >
               <span className="mb-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">

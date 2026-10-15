@@ -18,12 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppSession } from "@/hooks/use-app-session";
 import { formatDateTime, formatMoney } from "@/lib/format";
-import {
-  db,
-  type LocalCustomer,
-  type LocalCustomerPayment,
-  type LocalSale,
-} from "@/lib/local-db";
+import { db, type LocalCustomer, type LocalCustomerPayment, type LocalSale } from "@/lib/local-db";
 import { addManualCharge, deriveBalance, recordCustomerPayment } from "@/lib/repo";
 import { cn } from "@/lib/utils";
 
@@ -168,9 +163,7 @@ function CustomerUtangPage() {
         </div>
 
         {customer?.notes ? (
-          <p className="fin-card p-3 text-sm text-muted-foreground">
-            {customer.notes}
-          </p>
+          <p className="fin-card p-3 text-sm text-muted-foreground">{customer.notes}</p>
         ) : null}
 
         {entries.length === 0 ? (

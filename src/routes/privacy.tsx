@@ -48,39 +48,46 @@ function PrivacyPage() {
           </li>
           <li>
             <strong>Store records</strong> — store name, owner name, products, prices, stock, sales,
-            receipts, cash entries, utang (credit) customers with the name and mobile number you type
-            in, and expenses.
+            receipts, cash entries, utang (credit) customers with the name and mobile number you
+            type in, and expenses.
           </li>
           <li>
-            <strong>Device record</strong> — a random device code, a device label and the last time it
-            was used, so we can apply the phone limits of your plan.
+            <strong>Device record</strong> — a random device code, a device label and the last time
+            it was used, so we can apply the phone limits of your plan.
           </li>
           <li>
-            <strong>Payment records</strong> — if you upgrade to Pro: the amount, the plan period, the
-            GCash reference number you type, and the payment screenshot if you attach one. We do not
-            see or store your GCash login, card or bank details.
+            <strong>Payment records</strong> — if you upgrade to Pro: the amount, the plan period,
+            the GCash reference number you type, and the payment screenshot if you attach one. We do
+            not see or store your GCash login, card or bank details.
           </li>
         </ul>
       </Section>
 
       <Section heading="What stays on your phone only">
         <p>
-          Activity logs, product photos and GCash/e-wallet transaction photos stay on this device and are not uploaded, even on Pro. Free keeps eligible sales, stock, cash, utang and expense records local. Sign-in, store setup, device registration and subscription payment submissions still require online services.
+          Activity logs, product photos and GCash/e-wallet transaction photos stay on this device
+          and are not uploaded, even on Pro. Free keeps eligible sales, stock, cash, utang and
+          expense records local. Sign-in, store setup, device registration and subscription payment
+          submissions still require online services.
         </p>
       </Section>
 
       <Section heading="What we upload, and why">
         <p>
-          With Pro, eligible sales, products, stock, cash, utang and expenses are uploaded when connected. Successfully synced records can be restored on another device; device-only photos and activity logs cannot. Subscription payment submissions, including optional payment proof, are uploaded for approval and are separate from device-only wallet photos.
+          With Pro, eligible sales, products, stock, cash, utang and expenses are uploaded when
+          connected. Successfully synced records can be restored on another device; device-only
+          photos and activity logs cannot. Subscription payment submissions, including optional
+          payment proof, are uploaded for approval and are separate from device-only wallet photos.
         </p>
       </Section>
 
       <Section heading="Who can see it">
         <p>
-          Only you and authorized users assigned to your store can see your store records. Our database
-          rules limit every request to your own store. BentaKo staff can see payment records (amount,
-          reference number, screenshot) to confirm upgrades. Our hosting and database provider stores
-          the data on our behalf. We do not sell or share your data with advertisers or data brokers.
+          Only you and authorized users assigned to your store can see your store records. Our
+          database rules limit every request to your own store. BentaKo staff can see payment
+          records (amount, reference number, screenshot) to confirm upgrades. Our hosting and
+          database provider stores the data on our behalf. We do not sell or share your data with
+          advertisers or data brokers.
         </p>
       </Section>
 
@@ -94,8 +101,8 @@ function PrivacyPage() {
 
       <Section heading="Your choices">
         <p>
-          You can view and correct your details in the app, ask us for a copy of your data, or delete
-          your account and all its records at any time — see{" "}
+          You can view and correct your details in the app, ask us for a copy of your data, or
+          delete your account and all its records at any time — see{" "}
           <Link to="/delete-account" className="text-primary underline">
             Delete my account
           </Link>
@@ -113,7 +120,9 @@ function PrivacyPage() {
       </Section>
 
       <Section heading="Children">
-        <p>BentaKo is for store owners and their staff and is not intended for children under 13.</p>
+        <p>
+          BentaKo is for store owners and their staff and is not intended for children under 13.
+        </p>
       </Section>
 
       <Section heading="Changes">

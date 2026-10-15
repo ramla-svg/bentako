@@ -178,7 +178,12 @@ function ExpensesPage() {
                   <span className="tnum font-display text-base font-bold">
                     {formatMoney(e.amount, currency)}
                   </span>
-                  <Button size="icon" variant="ghost" className="size-9" onClick={() => openEdit(e)}>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="size-9"
+                    onClick={() => openEdit(e)}
+                  >
                     <Pencil className="size-4" />
                   </Button>
                   <Button
