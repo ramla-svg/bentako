@@ -24,7 +24,11 @@ describe("install icons", () => {
 
   it("declares 192 and 512 any-purpose icons plus a maskable 512", () => {
     const byPurpose = (p: string) => manifest.icons.filter((i) => i.purpose === p);
-    expect(byPurpose("any").map((i) => i.sizes).sort()).toEqual(["192x192", "512x512"]);
+    expect(
+      byPurpose("any")
+        .map((i) => i.sizes)
+        .sort(),
+    ).toEqual(["192x192", "512x512"]);
     expect(byPurpose("maskable").map((i) => i.sizes)).toEqual(["512x512"]);
     for (const icon of manifest.icons) expect(icon.type).toBe("image/png");
   });
