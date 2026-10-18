@@ -7,8 +7,13 @@ import { OTHER, resetDb, STORE } from "./helpers";
 function photo(productId: string, storeId = STORE): LocalProductPhoto {
   const blob = new Blob([productId], { type: "image/png" });
   return {
-    id: crypto.randomUUID(), store_id: storeId, product_id: productId,
-    blob, content_type: blob.type, size: blob.size, created_at: new Date().toISOString(),
+    id: crypto.randomUUID(),
+    store_id: storeId,
+    product_id: productId,
+    blob,
+    content_type: blob.type,
+    size: blob.size,
+    created_at: new Date().toISOString(),
   };
 }
 
@@ -25,7 +30,10 @@ describe("POS product thumbnails", () => {
 
   it("maps each product to its saved blob and releases all display URLs", () => {
     const rows = [photo("soda"), photo("rice")];
-    const create = vi.spyOn(URL, "createObjectURL").mockReturnValueOnce("blob:soda").mockReturnValueOnce("blob:rice");
+    const create = vi
+      .spyOn(URL, "createObjectURL")
+      .mockReturnValueOnce("blob:soda")
+      .mockReturnValueOnce("blob:rice");
     const revoke = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
     try {
       const handles = createProductThumbnails(rows);
@@ -42,10 +50,16 @@ describe("POS product thumbnails", () => {
   });
 
   it("releases earlier URLs when a later blob cannot be opened", () => {
-    vi.spyOn(URL, "createObjectURL").mockReturnValueOnce("blob:first").mockImplementationOnce(() => { throw new Error("unreadable"); });
+    vi.spyOn(URL, "createObjectURL")
+      .mockReturnValueOnce("blob:first")
+      .mockImplementationOnce(() => {
+        throw new Error("unreadable");
+      });
     const revoke = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
     try {
-      expect(() => createProductThumbnails([photo("first"), photo("second")])).toThrow("unreadable");
+      expect(() => createProductThumbnails([photo("first"), photo("second")])).toThrow(
+        "unreadable",
+      );
       expect(revoke).toHaveBeenCalledExactlyOnceWith("blob:first");
     } finally {
       vi.restoreAllMocks();
