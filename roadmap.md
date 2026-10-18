@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Apply chosen storefront branding and versioned install icons; verify assets, headers and regressions without publishing.
+- [x] Apply chosen storefront branding and versioned install icons; verify assets, headers and regressions without publishing.
 
 - [x] Step 1: Correct Free/Pro promises, audit photo/product entry-point limits, and verify with synthetic tests and mobile pricing; no publishing or real data changes.
 

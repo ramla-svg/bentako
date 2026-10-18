@@ -31,4 +31,32 @@ AppMint/SmartrixLabs embeds its launcher icon in the APK: supply
 assets cannot replace that embedded icon. No Gradle build, wrapper build or
 physical installation has been tested.
 
-Validation details are recorded below after the final checks.
+## Validation
+
+- `bunx vitest run`: 98 tests passed across 10 files, including eight install-icon tests (sizes, opacity, stable identity, enlarged foreground bounds, safe-circle containment, favicons).
+- `bunx eslint src/components/brand-mark.tsx src/components/app-shell.tsx src/components/public-landing.tsx src/components/install-prompt.tsx src/components/legal-page.tsx src/routes/auth.tsx src/routes/index.tsx src/routes/onboarding.tsx src/routes/__root.tsx tests/install-icons.test.ts`: passed without warnings/errors.
+- `git diff --check`: passed.
+- Automatic preview validation: latest build signal `build OK`; no manual build/typecheck command was run (the environment runs them automatically).
+- `python /tmp/browser/brand/check_brand.py`: passed at 360×800 and 1366×900; landing header, install guidance, login and disposable cached-session dashboard branding rendered, no horizontal overflow or page errors. External requests were blocked; no production account/data was used.
+- All seven PNG compatibility/current icon URLs returned HTTP 200 with `image/png`; canonical SVG returned 200 with `image/svg+xml`.
+- Icon montage reviewed at 32px, 48px and larger sizes. Auth mark 72px, mobile/sidebar/landing mark 44px, install mark 48px. Essential maskable pixels fit the central safe circle.
+- Every content route inspected for title/description/Open Graph/Twitter metadata; no missing fields found.
+
+Screenshots are under `/tmp/browser/brand/`: montage, 360/1366 landing headers,
+login, dashboard and install dialog. Real OS installation and native launcher
+appearance remain unverified. Onboarding/startup/error marks were checked in
+source, not driven through their error/setup flows. Installer button symbols
+remain functional monitor/phone symbols, with no duplicate install logic.
+
+Changed source/config paths: `AGENTS.md`, `roadmap.md`,
+`src/assets/bentako-storefront.svg`, `src/assets/bentako-mark.png`,
+`src/components/brand-mark.tsx`, `src/components/app-shell.tsx`,
+`src/components/public-landing.tsx`, `src/components/install-prompt.tsx`,
+`src/components/legal-page.tsx`, `src/routes/auth.tsx`, `src/routes/index.tsx`,
+`src/routes/onboarding.tsx`, `src/routes/__root.tsx`, `src/styles.css`,
+`public/manifest.webmanifest`, `public/favicon.png`, the seven v3 icon PNGs
+listed above, `tests/install-icons.test.ts`, and this report.
+
+Preview: https://id-preview--f37219cf-d7e0-4375-8643-93641ac4f07f.lovable.app
+No publishing, business-data writes, plan/workflow changes or receipt logo
+changes were performed. Commits are managed automatically by the environment.
