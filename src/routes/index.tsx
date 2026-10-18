@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { Loader2, Store } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 import { PublicLanding } from "@/components/public-landing";
 import { landingDestination } from "@/lib/landing-entry";
 import { platformKind } from "@/lib/platform/platform-service";
@@ -47,9 +48,7 @@ function Landing() {
   return (
     <div className="grid min-h-screen place-items-center bg-background px-6">
       <div className="text-center">
-        <div className="mx-auto grid size-16 place-items-center rounded-3xl bg-primary text-primary-foreground">
-          <Store className="size-8" />
-        </div>
+        <BrandMark className="mx-auto size-16" />
         <h1 className="mt-5 font-display text-3xl font-extrabold">BentaKo</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Bilis ng tindahan, kahit walang internet.

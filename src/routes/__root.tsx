@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { UpdateBanner } from "@/components/update-banner";
 import { InstallPrompt } from "@/components/install-prompt";
+import { BrandMark } from "@/components/brand-mark";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -24,6 +25,7 @@ function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
+        <BrandMark className="mx-auto mb-5 size-16" />
         <h1 className="text-7xl font-bold text-foreground">404</h1>
         <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -53,6 +55,7 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          <BrandMark className="mx-auto mb-5 size-16" />
           This page didn't load
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -103,9 +106,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.png", type: "image/png" },
+      { rel: "icon", href: "/icons/favicon-32-v3.png", sizes: "32x32", type: "image/png" },
+      { rel: "icon", href: "/icons/favicon-48-v3.png", sizes: "48x48", type: "image/png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
-      { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png" },
+      { rel: "apple-touch-icon", href: "/icons/apple-touch-icon-v3.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -173,6 +177,7 @@ function RootShell({ children }: { children: ReactNode }) {
             padding: "24px",
           }}
         >
+          <BrandMark className="size-16" />
           <div style={{ fontSize: "20px", fontWeight: 800 }}>BentaKo</div>
           <div>Starting BentaKo…</div>
           <a

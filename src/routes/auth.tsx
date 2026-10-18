@@ -1,6 +1,7 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Eye, EyeOff, Loader2, Store } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -111,9 +112,7 @@ function AuthPage() {
     <div className="flex min-h-screen flex-col justify-center bg-background px-5 py-10">
       <div className="mx-auto w-full max-w-sm">
         <div className="text-center">
-          <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-primary text-primary-foreground">
-            <Store className="size-7" />
-          </div>
+          <BrandMark className="mx-auto size-18" />
           <h1 className="mt-4 font-display text-2xl font-extrabold">BentaKo</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Point of sale for your sari-sari store.

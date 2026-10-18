@@ -16,7 +16,6 @@ import {
   ShoppingBasket,
   Smartphone,
   HandCoins,
-  Store,
   Wallet,
 } from "lucide-react";
 
@@ -24,6 +23,7 @@ import type { ReactNode } from "react";
 
 import { ConnectionChip, useConnection } from "@/components/connection-chip";
 import { InstallButton } from "@/components/install-button";
+import { BrandMark } from "@/components/brand-mark";
 import { useAppSession } from "@/hooks/use-app-session";
 import { cn } from "@/lib/utils";
 
@@ -97,9 +97,7 @@ export function AppShell({
         {/* Desktop sidebar */}
         <aside className="sticky top-0 hidden h-screen w-52 overflow-y-auto shrink-0 flex-col gap-1 border-r bg-sidebar p-4 lg:flex">
           <div className="mb-4 flex items-center gap-2">
-            <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
-              <Store className="size-5" />
-            </div>
+            <BrandMark className="size-11" />
             <div className="min-w-0">
               <p className="truncate font-display text-sm font-bold">{store?.name ?? "BentaKo"}</p>
               <p className="text-xs text-muted-foreground">BentaKo</p>
@@ -132,9 +130,7 @@ export function AppShell({
           <header className="safe-top sticky top-0 z-30 w-full border-b bg-card">
             {brand ? (
               <div className="app-gutter flex items-center gap-2.5 pt-3 sm:gap-3 sm:pt-3.5">
-                <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground sm:size-10 sm:rounded-2xl">
-                  <Store className="size-5 sm:size-6" />
-                </div>
+                <BrandMark className="size-11" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-display text-lg font-extrabold leading-none sm:text-xl">
                     BentaKo

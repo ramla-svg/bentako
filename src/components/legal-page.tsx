@@ -4,7 +4,8 @@
  * them directly.
  */
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Store } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 import type { ReactNode } from "react";
 
 export const LEGAL_CONTACT_EMAIL = "ayisha.janna.almar@gmail.com";
@@ -23,9 +24,7 @@ export function LegalPage({
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="mx-auto flex w-full max-w-2xl items-center gap-3 px-5 py-4">
-          <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
-            <Store className="size-5" />
-          </div>
+          <BrandMark />
           <div className="min-w-0">
             <p className="font-display text-base font-extrabold leading-tight">BentaKo</p>
             <p className="truncate text-xs text-muted-foreground">Sari-sari store point of sale</p>

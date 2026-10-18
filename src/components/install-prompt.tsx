@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { Check, Download } from "lucide-react";
 
-import brandMark from "@/assets/bentako-mark.png";
+import { BrandMark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -97,13 +97,7 @@ export function InstallPrompt() {
   const body = (
     <>
       <div className="flex items-center gap-3">
-        <img
-          src={brandMark}
-          alt=""
-          width={816}
-          height={816}
-          className="size-12 shrink-0 rounded-xl"
-        />
+        <BrandMark className="size-12" />
         <div className="min-w-0 text-left">
           <TitleTag isMobile={isMobile}>I-install ang BentaKo</TitleTag>
           <p className="text-sm text-muted-foreground">

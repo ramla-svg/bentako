@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InstallButton } from "@/components/install-button";
+import { BrandMark } from "@/components/brand-mark";
 import shopPhoto from "@/assets/landing-shop.jpg";
 import ownerPhoto from "@/assets/landing-owner.jpg";
 
@@ -30,9 +31,7 @@ function StartButton({ light = false }: { light?: boolean }) {
 function Brand() {
   return (
     <span className="landing-brand">
-      <span className="landing-brand-icon">
-        <Store aria-hidden="true" />
-      </span>
+      <BrandMark className="landing-brand-icon" />
       BentaKo
     </span>
   );

@@ -52,6 +52,6 @@ describe("install icons", () => {
   });
 
   it("a dedicated 180x180 apple-touch-icon exists", () => {
-    expect(pngSize("public/icons/apple-touch-icon.png")).toEqual({ width: 180, height: 180 });
+    expect(pngSize("public/icons/apple-touch-icon-v3.png")).toEqual({ width: 180, height: 180 });
   });
 });

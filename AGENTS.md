@@ -20,3 +20,4 @@
 - Keep available plan descriptions in the shared plan module, separate from retained-history entitlements, so copy cannot promise unimplemented screens.
 - Pass the cached store plan through StoreContext; local product creation/restoration and wallet photo writes enforce limits at the mutation boundary, with Free as the safe default.
 - POS thumbnails read the store-scoped device-only product photo table and release temporary object URLs on replacement/unmount; product rows and checkout remain independent of display handles.
+- Use BrandMark and the canonical storefront SVG for app branding; derive install rasters from that source so app-owned marks stay consistent without affecting merchant receipt logos.

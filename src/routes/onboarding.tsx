@@ -4,6 +4,7 @@ import { ArrowRight, Loader2, PackagePlus, Store } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { BrandMark } from "@/components/brand-mark";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -100,6 +101,10 @@ function Onboarding() {
   return (
     <div className="flex min-h-screen flex-col bg-background px-5 py-8">
       <div className="mx-auto w-full max-w-sm">
+        <div className="mb-5 flex items-center gap-3">
+          <BrandMark />
+          <span className="font-display text-lg font-extrabold">BentaKo</span>
+        </div>
         <div className="flex items-center gap-2">
           {[1, 2].map((n) => (
             <span
