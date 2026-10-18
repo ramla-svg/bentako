@@ -751,7 +751,7 @@ const ProductTile = memo(function ProductTile({
   onAdd,
 }: {
   product: LocalProduct;
-  thumbnail?: string;
+  thumbnail: string | undefined;
   inCart: number;
   currency: string;
   onAdd: (product: LocalProduct) => void;
