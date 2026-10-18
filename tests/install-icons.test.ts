@@ -54,4 +54,39 @@ describe("install icons", () => {
   it("a dedicated 180x180 apple-touch-icon exists", () => {
     expect(pngSize("public/icons/apple-touch-icon-v3.png")).toEqual({ width: 180, height: 180 });
   });
+
+  it("keeps the enlarged glyph within 72–80% of any-purpose tiles", () => {
+    const bounds = foregroundStats("public/icons/icon-512-v3.png");
+    expect(bounds.width / 512).toBeGreaterThanOrEqual(0.72);
+    expect(bounds.width / 512).toBeLessThanOrEqual(0.8);
+    expect(bounds.height / 512).toBeGreaterThanOrEqual(0.72);
+    expect(bounds.height / 512).toBeLessThanOrEqual(0.8);
+  });
+
+  it("keeps every essential maskable foreground pixel inside the central 80%-diameter circle", () => {
+    const bounds = foregroundStats("public/icons/icon-maskable-512-v3.png");
+    expect(bounds.maxRadius).toBeLessThanOrEqual(512 * 0.4);
+    expect(bounds.width).toBeGreaterThan(280);
+  });
+
+  it("provides exact 32px and 48px favicons", () => {
+    for (const size of [32, 48]) {
+      expect(pngSize(`public/icons/favicon-${size}-v3.png`)).toEqual({ width: size, height: size });
+    }
+  });
 });
+
+function foregroundStats(path: string): { width: number; height: number; maxRadius: number } {
+  return JSON.parse(
+    execFileSync("python", [
+      "-c",
+      `import json,sys,math
+from PIL import Image
+im=Image.open(sys.argv[1]).convert('RGB')
+points=[(x,y) for y in range(im.height) for x in range(im.width) if min(im.getpixel((x,y)))>200]
+xs,ys=zip(*points)
+print(json.dumps({'width':max(xs)-min(xs)+1,'height':max(ys)-min(ys)+1,'maxRadius':max(math.hypot(x+0.5-im.width/2,y+0.5-im.height/2) for x,y in points)}))`,
+      path,
+    ]).toString(),
+  );
+}
