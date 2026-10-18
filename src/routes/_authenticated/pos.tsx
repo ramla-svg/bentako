@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Minus, Plus, Printer, Search, ShoppingBasket, Trash2, X } from "lucide-react";
+import { Check, Minus, Package, Plus, Printer, Search, ShoppingBasket, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell, EmptyState } from "@/components/app-shell";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAppSession } from "@/hooks/use-app-session";
 import { useIsDesktop } from "@/hooks/use-desktop";
+import { useProductThumbnails } from "@/hooks/use-product-thumbnails";
 import { shouldFocusPosSearch } from "@/lib/pos-keyboard";
 import { useBackHandler } from "@/hooks/use-back-handler";
 import { formatMoney, formatQty } from "@/lib/format";
@@ -53,6 +54,7 @@ function PosPage() {
   const storeId = store?.id ?? "";
   const currency = store?.currency ?? "PHP";
   const logoUrl = useStoreLogo(store?.logo_url);
+  const thumbnails = useProductThumbnails(storeId);
 
   const desktop = useIsDesktop();
   const searchRef = useRef<HTMLInputElement>(null);
@@ -379,6 +381,7 @@ function PosPage() {
                 <ProductTile
                   key={p.id}
                   product={p}
+                  thumbnail={thumbnails?.get(p.id)}
                   inCart={cart[p.id] ?? 0}
                   currency={currency}
                   onAdd={add}
@@ -742,16 +745,19 @@ function ReviewSale({
 /** Memoized so tapping one product does not re-render the whole grid. */
 const ProductTile = memo(function ProductTile({
   product,
+  thumbnail,
   inCart,
   currency,
   onAdd,
 }: {
   product: LocalProduct;
+  thumbnail?: string;
   inCart: number;
   currency: string;
   onAdd: (product: LocalProduct) => void;
 }) {
   const low = product.stock_quantity <= product.low_stock_threshold;
+  const [failedThumbnail, setFailedThumbnail] = useState<string | null>(null);
   return (
     <Button
       variant="outline"
@@ -766,7 +772,22 @@ const ProductTile = memo(function ProductTile({
           {inCart}
         </span>
       ) : null}
-      <p className="line-clamp-2 text-sm font-semibold leading-snug">{product.name}</p>
+      <div className="flex w-full min-w-0 items-center gap-2">
+        <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary text-muted-foreground">
+          {thumbnail && failedThumbnail !== thumbnail ? (
+            <img
+              src={thumbnail}
+              alt=""
+              className="size-full object-cover"
+              loading="lazy"
+              onError={() => setFailedThumbnail(thumbnail)}
+            />
+          ) : (
+            <Package className="size-5" />
+          )}
+        </span>
+        <p className="line-clamp-2 min-w-0 text-sm font-semibold leading-snug">{product.name}</p>
+      </div>
       <div className="mt-2">
         <p className="tnum break-all font-display text-xl font-extrabold leading-tight text-primary">
           {formatMoney(product.selling_price, currency)}
