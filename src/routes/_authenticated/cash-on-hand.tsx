@@ -192,8 +192,8 @@ function CashOnHandPage() {
           </div>
 
           {excludedTotal > 0 || (drawer?.unclassifiedExpenseIds.length ?? 0) > 0 ? (
-            <div className="fin-card flex gap-2 border-amber-500/40 p-3 text-xs">
-              <AlertTriangle className="size-4 shrink-0 text-amber-600" />
+            <div className="fin-card flex gap-2 border-accent/50 p-3 text-xs">
+              <AlertTriangle className="size-4 shrink-0 text-accent" />
               <div className="space-y-1">
                 <p className="font-semibold">Some records are not in this total</p>
                 {ex?.unclassifiedExpenses ? (

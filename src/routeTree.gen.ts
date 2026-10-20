@@ -18,6 +18,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedBkAdminRouteImport } from './routes/_authenticated/bk-admin'
 import { Route as AuthenticatedCashRouteImport } from './routes/_authenticated/cash'
+import { Route as AuthenticatedCashOnHandRouteImport } from './routes/_authenticated/cash-on-hand'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
@@ -74,6 +75,11 @@ const AuthenticatedBkAdminRoute = AuthenticatedBkAdminRouteImport.update({
 const AuthenticatedCashRoute = AuthenticatedCashRouteImport.update({
   id: '/cash',
   path: '/cash',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCashOnHandRoute = AuthenticatedCashOnHandRouteImport.update({
+  id: '/cash-on-hand',
+  path: '/cash-on-hand',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/bk-admin': typeof AuthenticatedBkAdminRoute
   '/cash': typeof AuthenticatedCashRoute
+  '/cash-on-hand': typeof AuthenticatedCashOnHandRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/expenses': typeof AuthenticatedExpensesRoute
   '/inventory': typeof AuthenticatedInventoryRoute
@@ -175,6 +182,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/bk-admin': typeof AuthenticatedBkAdminRoute
   '/cash': typeof AuthenticatedCashRoute
+  '/cash-on-hand': typeof AuthenticatedCashOnHandRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/expenses': typeof AuthenticatedExpensesRoute
   '/inventory': typeof AuthenticatedInventoryRoute
@@ -200,6 +208,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/_authenticated/bk-admin': typeof AuthenticatedBkAdminRoute
   '/_authenticated/cash': typeof AuthenticatedCashRoute
+  '/_authenticated/cash-on-hand': typeof AuthenticatedCashOnHandRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
@@ -225,6 +234,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/bk-admin'
     | '/cash'
+    | '/cash-on-hand'
     | '/dashboard'
     | '/expenses'
     | '/inventory'
@@ -248,6 +258,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/bk-admin'
     | '/cash'
+    | '/cash-on-hand'
     | '/dashboard'
     | '/expenses'
     | '/inventory'
@@ -272,6 +283,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/_authenticated/bk-admin'
     | '/_authenticated/cash'
+    | '/_authenticated/cash-on-hand'
     | '/_authenticated/dashboard'
     | '/_authenticated/expenses'
     | '/_authenticated/inventory'
@@ -360,6 +372,13 @@ declare module '@tanstack/react-router' {
       path: '/cash'
       fullPath: '/cash'
       preLoaderRoute: typeof AuthenticatedCashRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cash-on-hand': {
+      id: '/_authenticated/cash-on-hand'
+      path: '/cash-on-hand'
+      fullPath: '/cash-on-hand'
+      preLoaderRoute: typeof AuthenticatedCashOnHandRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
@@ -470,6 +489,7 @@ const AuthenticatedUtangRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedBkAdminRoute: typeof AuthenticatedBkAdminRoute
   AuthenticatedCashRoute: typeof AuthenticatedCashRoute
+  AuthenticatedCashOnHandRoute: typeof AuthenticatedCashOnHandRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
@@ -487,6 +507,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBkAdminRoute: AuthenticatedBkAdminRoute,
   AuthenticatedCashRoute: AuthenticatedCashRoute,
+  AuthenticatedCashOnHandRoute: AuthenticatedCashOnHandRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
