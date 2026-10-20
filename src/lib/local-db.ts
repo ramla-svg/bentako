@@ -141,7 +141,53 @@ export interface LocalExpense {
   amount: number;
   notes: string | null;
   expense_date: string; // YYYY-MM-DD
+  /** Where the money came from. `cash` = drawer. Null/absent = legacy, unclassified. */
+  paid_from?: ExpensePaidFrom | null;
   is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  sync_status: SyncStatus;
+}
+
+export type ExpensePaidFrom = "cash" | "gcash" | "maya" | "bank" | "other";
+
+export const EXPENSE_PAID_FROM: { value: ExpensePaidFrom; label: string; drawer: boolean }[] = [
+  { value: "cash", label: "Cash drawer", drawer: true },
+  { value: "gcash", label: "GCash", drawer: false },
+  { value: "maya", label: "Maya", drawer: false },
+  { value: "bank", label: "Bank / other outside drawer", drawer: false },
+];
+
+export type RepaymentMethod = "cash" | "gcash" | "maya" | "bank" | "other";
+
+export const REPAYMENT_METHODS: { value: RepaymentMethod; label: string }[] = [
+  { value: "cash", label: "Cash" },
+  { value: "gcash", label: "GCash" },
+  { value: "maya", label: "Maya" },
+  { value: "bank", label: "Bank" },
+  { value: "other", label: "Other" },
+];
+
+export type DrawerMovementKind =
+  | "count"
+  | "cash_add"
+  | "cash_withdraw"
+  | "expense"
+  | "expense_correction";
+
+/**
+ * Physical drawer ledger row. Immutable. `count` stores the counted cash and
+ * resets the expected balance; every other kind stores a signed cash effect.
+ */
+export interface LocalDrawerMovement {
+  id: string;
+  store_id: string;
+  kind: DrawerMovementKind;
+  amount: number;
+  reference_type: string | null;
+  reference_id: string | null;
+  notes: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -191,6 +237,8 @@ export interface LocalCashTransaction {
   wallet_after: number | null;
   cash_before: number | null;
   cash_after: number | null;
+  /** Signed physical drawer effect confirmed in the form. Null = legacy, not counted. */
+  drawer_effect?: number | null;
   status: string;
   created_by: string | null;
   created_at: string;
@@ -252,6 +300,8 @@ export interface LocalCustomerPayment {
   customer_id: string;
   sale_id: string | null;
   amount: number;
+  /** How a repayment was received. Null = unknown (legacy) or a manual charge. */
+  payment_method?: RepaymentMethod | null;
   notes: string | null;
   created_by: string | null;
   created_at: string;
@@ -268,6 +318,7 @@ export type SyncEntity =
   | "expenses"
   | "cash_transactions"
   | "customer_payments"
+  | "cash_drawer_movements"
   | "audit_logs";
 
 export type SyncQueueStatus = "pending" | "syncing" | "synced" | "failed";
@@ -314,6 +365,7 @@ class BentakoDatabase extends Dexie {
   customer_payments!: Table<LocalCustomerPayment, string>;
   cash_photos!: Table<LocalCashPhoto, string>;
   product_photos!: Table<LocalProductPhoto, string>;
+  cash_drawer_movements!: Table<LocalDrawerMovement, string>;
   sync_queue!: Table<SyncQueueItem, string>;
   settings!: Table<SettingRow, string>;
 
@@ -375,6 +427,11 @@ class BentakoDatabase extends Dexie {
     // v6 adds device-only product photos (Pro). Additive and never synced.
     this.version(6).stores({
       product_photos: "id, store_id, product_id, created_at",
+    });
+    // v7 adds the physical cash drawer ledger. Additive; new optional fields on
+    // expenses/payments/cash rows need no upgrade (absent = legacy/unknown).
+    this.version(7).stores({
+      cash_drawer_movements: "id, store_id, created_at, kind, reference_id, sync_status",
     });
   }
 }

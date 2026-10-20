@@ -66,6 +66,7 @@ type Row = {
   label: string;
   amount: number;
   saleId: string | null;
+  method?: string;
 };
 
 function PaymentsPage() {
@@ -123,6 +124,9 @@ function PaymentsPage() {
         label: names.get(l.customer_id) ?? "Utang payment",
         amount: l.amount,
         saleId: null,
+        method: l.payment_method
+          ? (TYPE_LABELS[l.payment_method] ?? l.payment_method)
+          : "method not recorded",
       });
     }
     return out.sort((a, b) => b.created_at.localeCompare(a.created_at));
@@ -150,7 +154,11 @@ function PaymentsPage() {
 
         <p className="text-xs text-muted-foreground">
           Up to 30-day payment summaries are available on both plans, separate from Reports and the
-          GCash log. Older records stay on this device.
+          GCash log. Older records stay on this device. Receipts are not the drawer total —{" "}
+          <Link to="/cash-on-hand" className="font-semibold text-primary underline">
+            see Cash on hand
+          </Link>
+          .
         </p>
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -196,7 +204,8 @@ function PaymentsPage() {
                   <span className="min-w-0">
                     <span className="block truncate font-semibold">{r.label}</span>
                     <span className="block truncate text-xs text-muted-foreground">
-                      {TYPE_LABELS[r.type] ?? r.type} · {formatDateTime(r.created_at)}
+                      {TYPE_LABELS[r.type] ?? r.type}
+                      {r.method ? ` · ${r.method}` : ""} · {formatDateTime(r.created_at)}
                     </span>
                   </span>
                   <span className="tnum shrink-0 font-display text-base font-bold">

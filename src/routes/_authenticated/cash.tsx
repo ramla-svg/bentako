@@ -105,6 +105,21 @@ function kindLabel(e: LocalCashTransaction): string {
   return (e.notes ?? "").startsWith("Add balance") ? "Add Balance" : "Cash In";
 }
 
+type DrawerMove = "in" | "out" | "none";
+
+const DRAWER_MOVES: { value: DrawerMove; label: string }[] = [
+  { value: "in", label: "Cash came into drawer" },
+  { value: "out", label: "Cash left drawer" },
+  { value: "none", label: "No drawer cash" },
+];
+
+/** Suggested drawer effect; the user confirms or changes it in the form. */
+function defaultDrawerMove(kind: EntryKind, source: NoteSource): DrawerMove | "" {
+  if (kind === "add_balance") return "";
+  if (source === "Load / Bills") return "in";
+  return kind === "cash_out" ? "out" : "in";
+}
+
 type Preset = {
   key: string;
   label: string;
@@ -166,6 +181,9 @@ function CashPage() {
   const [mobile, setMobile] = useState("");
   const [reference, setReference] = useState("");
   const [busy, setBusy] = useState(false);
+  // Explicit physical drawer effect for Cash on hand (never inferred from notes).
+  const [drawerMove, setDrawerMove] = useState<DrawerMove | "">("");
+  const [feeInCash, setFeeInCash] = useState(false);
 
   // Screenshot attached to the entry being created (kept on this device only).
   const [photo, setPhoto] = useState<Blob | null>(null);
@@ -256,6 +274,8 @@ function CashPage() {
     setMobile("");
     setReference("");
     setPhoto(null);
+    setDrawerMove(defaultDrawerMove(preset?.kind ?? "cash_in", preset?.source ?? ""));
+    setFeeInCash(false);
     setOpen(true);
   }
 
@@ -287,9 +307,18 @@ function CashPage() {
       toast.error("Enter an amount.");
       return;
     }
+    if (!drawerMove) {
+      toast.error("Choose what happened to the drawer cash.");
+      return;
+    }
+    if (busy) return;
+    const feeValue = Number(fee) || 0;
+    const sign = drawerMove === "in" ? 1 : drawerMove === "out" ? -1 : 0;
+    const drawerEffect = sign * value + (feeInCash ? feeValue : 0);
     setBusy(true);
     try {
       await saveCashTransaction(ctx, {
+        drawer_effect: drawerEffect,
         transaction_type: directionOf(kind),
         notes: composeNote(),
         provider: "gcash",
@@ -456,6 +485,13 @@ function CashPage() {
                     {e.notes ? (
                       <p className="truncate text-xs text-muted-foreground">{e.notes}</p>
                     ) : null}
+                    <p className="truncate text-xs text-muted-foreground">
+                      {e.drawer_effect == null
+                        ? "Drawer cash: not recorded"
+                        : e.drawer_effect === 0
+                          ? "Drawer cash: no change"
+                          : `Drawer cash: ${e.drawer_effect > 0 ? "+" : "−"}${formatMoney(Math.abs(e.drawer_effect), currency)}`}
+                    </p>
                     {e.reference_number || e.service_fee > 0 ? (
                       <p className="truncate text-xs text-muted-foreground">
                         {e.reference_number ? `Ref: ${e.reference_number}` : ""}
@@ -500,7 +536,13 @@ function CashPage() {
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label>Type of entry</Label>
-              <Select value={kind} onValueChange={(v) => setKind(v as EntryKind)}>
+              <Select
+                value={kind}
+                onValueChange={(v) => {
+                  setKind(v as EntryKind);
+                  setDrawerMove(defaultDrawerMove(v as EntryKind, source));
+                }}
+              >
                 <SelectTrigger className="h-12 w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -563,6 +605,42 @@ function CashPage() {
                 className="tnum h-12"
                 placeholder="0.00"
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Physical cash drawer</Label>
+              <div className="grid gap-2" role="radiogroup" aria-label="Physical cash drawer">
+                {DRAWER_MOVES.map((m) => (
+                  <button
+                    key={m.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={drawerMove === m.value}
+                    onClick={() => setDrawerMove(m.value)}
+                    className={cn(
+                      "h-12 rounded-xl border px-3 text-left text-sm font-semibold",
+                      drawerMove === m.value
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "bg-card",
+                    )}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+              <label className="flex min-h-11 items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="size-5 accent-primary"
+                  checked={feeInCash}
+                  onChange={(e) => setFeeInCash(e.target.checked)}
+                />
+                Service fee was paid in cash
+              </label>
+              <p className="text-[11px] text-muted-foreground">
+                Customer cash-in: customer hands you cash. Cash-out: you hand out cash. Topping up
+                your wallet from the bank: no drawer cash. Only this choice changes Cash on hand —
+                the GCash balance above is not affected.
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label>Customer name (optional)</Label>

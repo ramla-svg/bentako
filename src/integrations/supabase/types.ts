@@ -73,6 +73,53 @@ export type Database = {
           },
         ]
       }
+      cash_drawer_movements: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          notes: string | null
+          reference_id: string | null
+          reference_type: string | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id: string
+          kind: string
+          notes?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          notes?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_drawer_movements_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_transactions: {
         Row: {
           amount: number
@@ -82,6 +129,7 @@ export type Database = {
           created_by: string | null
           customer_mobile_number: string | null
           customer_name: string | null
+          drawer_effect: number | null
           id: string
           notes: string | null
           provider: Database["public"]["Enums"]["service_provider"]
@@ -102,6 +150,7 @@ export type Database = {
           created_by?: string | null
           customer_mobile_number?: string | null
           customer_name?: string | null
+          drawer_effect?: number | null
           id: string
           notes?: string | null
           provider?: Database["public"]["Enums"]["service_provider"]
@@ -122,6 +171,7 @@ export type Database = {
           created_by?: string | null
           customer_mobile_number?: string | null
           customer_name?: string | null
+          drawer_effect?: number | null
           id?: string
           notes?: string | null
           provider?: Database["public"]["Enums"]["service_provider"]
@@ -190,6 +240,7 @@ export type Database = {
           customer_id: string
           id: string
           notes: string | null
+          payment_method: string | null
           sale_id: string | null
           store_id: string
         }
@@ -200,6 +251,7 @@ export type Database = {
           customer_id: string
           id: string
           notes?: string | null
+          payment_method?: string | null
           sale_id?: string | null
           store_id: string
         }
@@ -210,6 +262,7 @@ export type Database = {
           customer_id?: string
           id?: string
           notes?: string | null
+          payment_method?: string | null
           sale_id?: string | null
           store_id?: string
         }
@@ -284,6 +337,7 @@ export type Database = {
           id: string
           is_active: boolean
           notes: string | null
+          paid_from: string | null
           store_id: string
           title: string
           updated_at: string
@@ -297,6 +351,7 @@ export type Database = {
           id: string
           is_active?: boolean
           notes?: string | null
+          paid_from?: string | null
           store_id: string
           title: string
           updated_at?: string
@@ -310,6 +365,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           notes?: string | null
+          paid_from?: string | null
           store_id?: string
           title?: string
           updated_at?: string

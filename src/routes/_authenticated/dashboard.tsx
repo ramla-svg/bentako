@@ -2,6 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   AlertTriangle,
+  Banknote,
   BarChart3,
   Boxes,
   ChevronRight,
@@ -22,6 +23,8 @@ import { PlanReminder } from "@/components/plan-reminder";
 import { useAppSession } from "@/hooks/use-app-session";
 import { formatDate, formatMoney, formatQty, formatTime, localDayKey } from "@/lib/format";
 import { db } from "@/lib/local-db";
+import { fromCents } from "@/lib/cash-drawer";
+import { loadDrawer } from "@/lib/repo";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -121,6 +124,8 @@ function Dashboard() {
     null,
   );
 
+  const drawer = useLiveQuery(() => (storeId ? loadDrawer(storeId) : undefined), [storeId]);
+
   const alerts = (data?.lowStock.length ?? 0) + (data?.outOfStock.length ?? 0);
   const revenue = data?.revenue ?? 0;
   const yesterday = data?.yesterday ?? 0;
@@ -193,6 +198,38 @@ function Dashboard() {
             <ShoppingCart className="size-4.5 sm:size-5" /> New Sale
           </Link>
         </div>
+
+        {/* Cash on hand */}
+        <Link
+          to="/cash-on-hand"
+          className="fin-card flex min-w-0 items-center gap-3 p-3.5 active:opacity-90 sm:p-4"
+        >
+          <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-tile-mint text-tile-mint-ink">
+            <Banknote className="size-5.5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-muted-foreground">Cash on hand (expected)</p>
+            {drawer?.hasBaseline ? (
+              <>
+                <p className="tnum truncate font-display text-2xl font-extrabold sm:text-3xl">
+                  {formatMoney(fromCents(drawer.expectedCents), currency)}
+                </p>
+                <p className="truncate text-[11px] text-muted-foreground">
+                  From your count {formatDate(drawer.lastCount!.at)}
+                  {drawer.excluded.unclassifiedExpenses +
+                    drawer.excluded.unknownRepayments +
+                    drawer.excluded.legacyService >
+                  0
+                    ? " · some records not included"
+                    : ""}
+                </p>
+              </>
+            ) : (
+              <p className="font-display text-base font-bold">Not set — tap to count your drawer</p>
+            )}
+          </div>
+          <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
+        </Link>
 
         {pro ? null : (
           <Link

@@ -18,7 +18,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppSession } from "@/hooks/use-app-session";
 import { formatDateTime, formatMoney } from "@/lib/format";
-import { db, type LocalCustomer, type LocalCustomerPayment, type LocalSale } from "@/lib/local-db";
+import {
+  REPAYMENT_METHODS,
+  db,
+  type LocalCustomer,
+  type LocalCustomerPayment,
+  type LocalSale,
+  type RepaymentMethod,
+} from "@/lib/local-db";
 import { addManualCharge, deriveBalance, recordCustomerPayment } from "@/lib/repo";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +50,7 @@ type Entry = {
   label: string;
   amount: number;
   kind: "charge" | "payment";
+  method?: string | null;
 };
 
 function CustomerUtangPage() {
@@ -54,6 +62,7 @@ function CustomerUtangPage() {
   const [mode, setMode] = useState<"payment" | "charge" | null>(null);
   const [amount, setAmount] = useState("");
   const [notes, setNotes] = useState("");
+  const [method, setMethod] = useState<RepaymentMethod | "">("");
   const [busy, setBusy] = useState(false);
 
   const customer = useLiveQuery(
@@ -105,6 +114,11 @@ function CustomerUtangPage() {
         label: l.amount >= 0 ? (l.notes ?? "Payment received") : (l.notes ?? "Manual charge"),
         amount: Math.abs(l.amount),
         kind: l.amount >= 0 ? "payment" : "charge",
+        method:
+          l.amount >= 0
+            ? (REPAYMENT_METHODS.find((m) => m.value === l.payment_method)?.label ??
+              "method not recorded")
+            : null,
       });
     }
     return rows.sort((a, b) => b.created_at.localeCompare(a.created_at));
@@ -117,12 +131,18 @@ function CustomerUtangPage() {
       toast.error("Enter an amount.");
       return;
     }
+    if (mode === "payment" && !method) {
+      toast.error("Choose how the payment was received.");
+      return;
+    }
+    if (busy) return;
     setBusy(true);
     try {
-      if (mode === "payment") {
+      if (mode === "payment" && method) {
         await recordCustomerPayment(ctx, {
           customer_id: customerId,
           amount: value,
+          payment_method: method,
           notes: notes || null,
         });
         toast.success("Payment recorded.");
@@ -136,6 +156,7 @@ function CustomerUtangPage() {
       }
       setAmount("");
       setNotes("");
+      setMethod("");
       setMode(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save.");
@@ -182,7 +203,7 @@ function CustomerUtangPage() {
                 <div className="min-w-0">
                   <p className="truncate font-semibold">{e.label}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {e.kind === "charge" ? "Charge" : "Payment received"} ·{" "}
+                    {e.kind === "charge" ? "Charge" : `Payment received · ${e.method}`} ·{" "}
                     {formatDateTime(e.created_at)}
                   </p>
                 </div>
@@ -219,6 +240,37 @@ function CustomerUtangPage() {
                 placeholder="0.00"
               />
             </div>
+            {mode === "payment" ? (
+              <div className="space-y-1.5">
+                <Label>Received as</Label>
+                <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Received as">
+                  {REPAYMENT_METHODS.map((m) => (
+                    <button
+                      key={m.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={method === m.value}
+                      onClick={() => setMethod(m.value)}
+                      className={cn(
+                        "h-12 rounded-xl border text-sm font-semibold",
+                        method === m.value
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "bg-card",
+                      )}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {method === "cash"
+                    ? "Adds to cash on hand."
+                    : method
+                      ? "Does not change cash on hand."
+                      : "Required — only cash payments go into the drawer."}
+                </p>
+              </div>
+            ) : null}
             <div className="space-y-1.5">
               <Label>Notes (optional)</Label>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />

@@ -26,6 +26,7 @@ const STORE_TABLES = [
   "sales",
   "inventory_movements",
   "customer_payments",
+  "cash_drawer_movements",
   "customers",
   "cash_transactions",
   "expenses",

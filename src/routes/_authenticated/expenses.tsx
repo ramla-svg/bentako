@@ -26,8 +26,16 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppSession } from "@/hooks/use-app-session";
 import { formatDate, formatMoney, localDayKey } from "@/lib/format";
-import { EXPENSE_CATEGORIES, db, type LocalExpense } from "@/lib/local-db";
-import { archiveExpense, saveExpense } from "@/lib/repo";
+import {
+  EXPENSE_CATEGORIES,
+  EXPENSE_PAID_FROM,
+  db,
+  type ExpensePaidFrom,
+  type LocalExpense,
+} from "@/lib/local-db";
+import { fromCents, toCents } from "@/lib/cash-drawer";
+import { archiveExpense, loadDrawer, saveExpense } from "@/lib/repo";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/expenses")({
   ssr: false,
@@ -59,7 +67,9 @@ function ExpensesPage() {
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(localDayKey());
   const [notes, setNotes] = useState("");
+  const [paidFrom, setPaidFrom] = useState<ExpensePaidFrom | "">("");
   const [busy, setBusy] = useState(false);
+  const drawer = useLiveQuery(() => (storeId ? loadDrawer(storeId) : undefined), [storeId]);
 
   const expenses = useLiveQuery(
     async () =>
@@ -91,6 +101,7 @@ function ExpensesPage() {
     setAmount("");
     setDate(localDayKey());
     setNotes("");
+    setPaidFrom("");
     setOpen(true);
   }
 
@@ -101,6 +112,7 @@ function ExpensesPage() {
     setAmount(String(e.amount));
     setDate(e.expense_date);
     setNotes(e.notes ?? "");
+    setPaidFrom(e.paid_from ?? "");
     setOpen(true);
   }
 
@@ -115,6 +127,11 @@ function ExpensesPage() {
       toast.error("Enter an amount.");
       return;
     }
+    if (!paidFrom) {
+      toast.error("Choose where the money came from.");
+      return;
+    }
+    if (busy) return;
     setBusy(true);
     try {
       await saveExpense(ctx, {
@@ -124,6 +141,7 @@ function ExpensesPage() {
         amount: value,
         notes: notes || null,
         expense_date: date,
+        paid_from: paidFrom,
       });
       toast.success(editing ? "Expense updated." : "Expense recorded.");
       setOpen(false);
@@ -132,6 +150,39 @@ function ExpensesPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function CashImpact() {
+    if (!paidFrom) return <p className="text-xs text-muted-foreground">Required.</p>;
+    if (paidFrom !== "cash")
+      return (
+        <p className="text-xs text-muted-foreground">
+          Cash on hand: no change (paid outside the drawer).
+        </p>
+      );
+    if (!drawer?.hasBaseline)
+      return (
+        <p className="text-xs text-muted-foreground">
+          Will be deducted from cash on hand once you count your drawer on the Cash on hand screen.
+        </p>
+      );
+    const was =
+      editing && editing.is_active && editing.paid_from === "cash" ? toCents(editing.amount) : 0;
+    const now = Number(amount) > 0 ? toCents(Number(amount)) : 0;
+    const before = editing && editing.created_at <= (drawer.lastCount?.at ?? "") ? null : was;
+    if (before === null)
+      return (
+        <p className="text-xs text-muted-foreground">
+          Recorded before your last cash count, so cash on hand is not changed. Recount if needed.
+        </p>
+      );
+    const after = drawer.expectedCents + before - now;
+    return (
+      <p className="rounded-lg bg-muted p-2 text-xs">
+        Cash on hand {formatMoney(fromCents(drawer.expectedCents), currency)} →{" "}
+        <b className="tnum">{formatMoney(fromCents(after), currency)}</b>
+      </p>
+    );
   }
 
   return (
@@ -171,7 +222,19 @@ function ExpensesPage() {
                 <div className="min-w-0">
                   <p className="truncate font-semibold">{e.title}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {e.category} · {formatDate(e.expense_date)}
+                    {e.category} · {formatDate(e.expense_date)} ·{" "}
+                    {e.paid_from ? (
+                      (EXPENSE_PAID_FROM.find((p) => p.value === e.paid_from)?.label ??
+                      "Outside drawer")
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => openEdit(e)}
+                        className="font-semibold text-destructive underline"
+                      >
+                        Paid from: unclassified — tap to set
+                      </button>
+                    )}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
@@ -229,6 +292,29 @@ function ExpensesPage() {
                 className="tnum h-14 text-xl font-bold"
                 placeholder="0.00"
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Paid from</Label>
+              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Paid from">
+                {EXPENSE_PAID_FROM.map((p) => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={paidFrom === p.value}
+                    onClick={() => setPaidFrom(p.value)}
+                    className={cn(
+                      "min-h-12 rounded-xl border px-3 py-2 text-left text-sm font-semibold",
+                      paidFrom === p.value
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "bg-card",
+                    )}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              <CashImpact />
             </div>
             <div className="space-y-1.5">
               <Label>Category</Label>

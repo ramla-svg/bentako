@@ -6,7 +6,10 @@ import {
   type LocalCashTransaction,
   type LocalCustomer,
   type LocalCustomerPayment,
+  type LocalDrawerMovement,
   type LocalExpense,
+  type ExpensePaidFrom,
+  type RepaymentMethod,
   type LocalMovement,
   type LocalProduct,
   type LocalSale,
@@ -18,6 +21,13 @@ import {
 } from "./local-db";
 import { canAddProduct, planLimits, type PlanFields } from "./plan";
 import { localDayKey } from "./format";
+import {
+  computeDrawer,
+  expenseDrawerTarget,
+  fromCents,
+  toCents,
+  type DrawerSummary,
+} from "./cash-drawer";
 import { makeTransactionNumber, nowIso, uuid } from "./ids";
 import { beginCriticalWork, endCriticalWork, enqueue } from "./sync-service";
 
@@ -664,41 +674,182 @@ export interface ExpenseInput {
   amount: number;
   notes?: string | null;
   expense_date: string;
+  /** Required for new expenses; omitted on edit keeps the saved source. */
+  paid_from?: ExpensePaidFrom | null;
+}
+
+const PAID_FROM = new Set<ExpensePaidFrom>(["cash", "gcash", "maya", "bank", "other"]);
+
+/**
+ * Brings the drawer ledger in line with an expense's current state by writing
+ * only the difference, so edits and archives never double-deduct. Expenses
+ * dated before the latest physical count are already reflected in that count
+ * and are left alone.
+ */
+async function reconcileExpenseDrawer(ctx: StoreContext, e: LocalExpense): Promise<void> {
+  const local = db();
+  const all = await local.cash_drawer_movements.where("store_id").equals(ctx.storeId).toArray();
+  const linked = all.filter((m) => m.reference_type === "expense" && m.reference_id === e.id);
+  const current = linked.reduce((sum, m) => sum + toCents(m.amount), 0);
+  const delta = expenseDrawerTarget(e) - current;
+  if (delta === 0) return;
+  const lastCount = all
+    .filter((m) => m.kind === "count")
+    .reduce<string | null>((max, m) => (max && max > m.created_at ? max : m.created_at), null);
+  if (lastCount && e.created_at <= lastCount) return;
+  const now = nowIso();
+  const row: LocalDrawerMovement = {
+    id: uuid(),
+    store_id: ctx.storeId,
+    kind: linked.length ? "expense_correction" : "expense",
+    amount: fromCents(delta),
+    reference_type: "expense",
+    reference_id: e.id,
+    notes: e.title,
+    created_by: ctx.userId,
+    created_at: now,
+    updated_at: now,
+    sync_status: "pending",
+  };
+  await local.cash_drawer_movements.put(row);
+  await enqueue("cash_drawer_movements", row.id, { groupId: `expense:${e.id}` });
 }
 
 export async function saveExpense(ctx: StoreContext, input: ExpenseInput): Promise<LocalExpense> {
-  const existing = input.id ? await db().expenses.get(input.id) : undefined;
-  const row: LocalExpense = {
-    id: existing?.id ?? uuid(),
-    store_id: ctx.storeId,
-    title: input.title.trim(),
-    category: input.category,
-    amount: input.amount,
-    notes: input.notes ?? null,
-    expense_date: input.expense_date,
-    is_active: existing?.is_active ?? true,
-    created_by: existing?.created_by ?? ctx.userId,
-    created_at: existing?.created_at ?? nowIso(),
-    updated_at: nowIso(),
-    sync_status: "pending",
-  };
-  await db().expenses.put(row);
-  await enqueue("expenses", row.id);
-  await logAudit(ctx, existing ? "expense.updated" : "expense.created", "expense", row.id, {
-    title: row.title,
-    amount: row.amount,
+  const amount = Number(input.amount);
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Enter an amount.");
+  if (!input.title.trim()) throw new Error("What is this expense for?");
+  if (input.paid_from != null && !PAID_FROM.has(input.paid_from))
+    throw new Error("Choose where the money came from.");
+  return atomic(["expenses", "cash_drawer_movements"], async () => {
+    const existing = input.id ? await db().expenses.get(input.id) : undefined;
+    if (existing && existing.store_id !== ctx.storeId)
+      throw new Error("Expense not found in this store.");
+    const paidFrom =
+      input.paid_from === undefined ? (existing?.paid_from ?? null) : input.paid_from;
+    if (!existing && !paidFrom) throw new Error("Choose where the money came from.");
+    const row: LocalExpense = {
+      id: existing?.id ?? input.id ?? uuid(),
+      store_id: ctx.storeId,
+      title: input.title.trim(),
+      category: input.category,
+      amount,
+      notes: input.notes ?? null,
+      expense_date: input.expense_date,
+      paid_from: paidFrom,
+      is_active: existing?.is_active ?? true,
+      created_by: existing?.created_by ?? ctx.userId,
+      created_at: existing?.created_at ?? nowIso(),
+      updated_at: nowIso(),
+      sync_status: "pending",
+    };
+    await db().expenses.put(row);
+    // Drawer reads happen before enqueue: a query after enqueue in the same
+    // transaction commits it early under IndexedDB auto-commit rules.
+    await reconcileExpenseDrawer(ctx, row);
+    await enqueue("expenses", row.id, { groupId: `expense:${row.id}` });
+    await logAudit(ctx, existing ? "expense.updated" : "expense.created", "expense", row.id, {
+      title: row.title,
+      amount: row.amount,
+      paid_from: row.paid_from,
+    });
+    return row;
   });
-  return row;
 }
 
 export async function archiveExpense(ctx: StoreContext, id: string): Promise<void> {
-  await db().expenses.update(id, {
-    is_active: false,
-    updated_at: nowIso(),
-    sync_status: "pending",
+  await atomic(["expenses", "cash_drawer_movements"], async () => {
+    const existing = await db().expenses.get(id);
+    if (!existing || existing.store_id !== ctx.storeId)
+      throw new Error("Expense not found in this store.");
+    if (!existing.is_active) return;
+    const row = {
+      ...existing,
+      is_active: false,
+      updated_at: nowIso(),
+      sync_status: "pending" as const,
+    };
+    await db().expenses.put(row);
+    // Drawer reads happen before enqueue: a query after enqueue in the same
+    // transaction commits it early under IndexedDB auto-commit rules.
+    await reconcileExpenseDrawer(ctx, row);
+    await enqueue("expenses", id, { groupId: `expense:${id}` });
+    await logAudit(ctx, "expense.archived", "expense", id);
   });
-  await enqueue("expenses", id);
-  await logAudit(ctx, "expense.archived", "expense", id);
+}
+
+/* ---------------------------------------------------------- cash drawer */
+
+async function putDrawerMovement(
+  ctx: StoreContext,
+  input: {
+    id?: string | undefined;
+    kind: LocalDrawerMovement["kind"];
+    amount: number;
+    notes?: string | null | undefined;
+  },
+): Promise<LocalDrawerMovement> {
+  return atomic(["cash_drawer_movements"], async () => {
+    const local = db();
+    if (input.id) {
+      const prior = await local.cash_drawer_movements.get(input.id);
+      if (prior) {
+        if (prior.store_id !== ctx.storeId) throw new Error("Entry belongs to another store.");
+        return prior; // repeated tap / retry: already saved once
+      }
+    }
+    const now = nowIso();
+    const row: LocalDrawerMovement = {
+      id: input.id ?? uuid(),
+      store_id: ctx.storeId,
+      kind: input.kind,
+      amount: input.amount,
+      reference_type: null,
+      reference_id: null,
+      notes: input.notes?.trim() || null,
+      created_by: ctx.userId,
+      created_at: now,
+      updated_at: now,
+      sync_status: "pending",
+    };
+    await local.cash_drawer_movements.put(row);
+    await enqueue("cash_drawer_movements", row.id);
+    await logAudit(ctx, `drawer.${input.kind}`, "cash_drawer_movement", row.id, {
+      amount: row.amount,
+    });
+    return row;
+  });
+}
+
+/** Records the physical cash counted right now; becomes the new baseline. */
+export function recordCashCount(
+  ctx: StoreContext,
+  input: { id?: string; counted: number; notes?: string | null },
+): Promise<LocalDrawerMovement> {
+  const counted = Number(input.counted);
+  if (!Number.isFinite(counted) || counted < 0) throw new Error("Enter the cash you counted.");
+  return putDrawerMovement(ctx, {
+    id: input.id,
+    kind: "count",
+    amount: fromCents(toCents(counted)),
+    notes: input.notes,
+  });
+}
+
+/** Owner top-up or withdrawal. Not revenue, not an expense. */
+export function recordDrawerMovement(
+  ctx: StoreContext,
+  input: { id?: string; direction: "add" | "withdraw"; amount: number; notes?: string | null },
+): Promise<LocalDrawerMovement> {
+  const amount = Number(input.amount);
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Enter an amount.");
+  const cents = toCents(amount);
+  return putDrawerMovement(ctx, {
+    id: input.id,
+    kind: input.direction === "add" ? "cash_add" : "cash_withdraw",
+    amount: fromCents(input.direction === "add" ? cents : -cents),
+    notes: input.notes,
+  });
 }
 
 /* ------------------------------------------------------------ demo data */
@@ -804,6 +955,8 @@ export interface CashTransactionInput {
   notes?: string | null;
   /** Optional receipt/screenshot kept on this device only. */
   photo?: Blob | null;
+  /** Signed physical drawer cash effect the user confirmed (fee included if collected in cash). */
+  drawer_effect?: number | null;
 }
 
 /**
@@ -820,6 +973,8 @@ export async function saveCashTransaction(
   if (!Number.isFinite(amount) || amount <= 0) throw new Error("Enter an amount.");
   const fee = input.service_fee == null ? 0 : Number(input.service_fee);
   if (!Number.isFinite(fee) || fee < 0) throw new Error("Enter a valid service fee.");
+  const drawer = input.drawer_effect == null ? null : Number(input.drawer_effect);
+  if (drawer != null && !Number.isFinite(drawer)) throw new Error("Invalid drawer cash effect.");
   const now = nowIso();
   const row: LocalCashTransaction = {
     id: uuid(),
@@ -836,6 +991,7 @@ export async function saveCashTransaction(
     wallet_after: null,
     cash_before: null,
     cash_after: null,
+    drawer_effect: drawer == null ? null : fromCents(toCents(drawer)),
     status: "completed",
     created_by: ctx.userId,
     created_at: now,
@@ -993,6 +1149,7 @@ async function writeCustomerLedger(
   amount: number,
   notes: string | null,
   action: string,
+  method: RepaymentMethod | null = null,
 ): Promise<LocalCustomerPayment> {
   const row: LocalCustomerPayment = {
     id: uuid(),
@@ -1000,6 +1157,7 @@ async function writeCustomerLedger(
     customer_id: customerId,
     sale_id: null,
     amount,
+    payment_method: method,
     notes,
     created_by: ctx.userId,
     created_at: nowIso(),
@@ -1025,19 +1183,28 @@ async function writeCustomerLedger(
   return row;
 }
 
+const REPAYMENT = new Set<RepaymentMethod>(["cash", "gcash", "maya", "bank", "other"]);
+
 /** Money received from a customer against their utang. */
 export async function recordCustomerPayment(
   ctx: StoreContext,
-  input: { customer_id: string; amount: number; notes?: string | null },
+  input: {
+    customer_id: string;
+    amount: number;
+    payment_method: RepaymentMethod;
+    notes?: string | null;
+  },
 ): Promise<LocalCustomerPayment> {
   const amount = Number(input.amount);
   if (!Number.isFinite(amount) || amount <= 0) throw new Error("Enter an amount.");
+  if (!REPAYMENT.has(input.payment_method)) throw new Error("Choose how the payment was received.");
   return writeCustomerLedger(
     ctx,
     input.customer_id,
     amount,
     input.notes?.trim() || null,
     "customer.payment",
+    input.payment_method,
   );
 }
 
@@ -1062,4 +1229,19 @@ export function deriveBalance(charges: { total: number }[], ledger: { amount: nu
   const charged = charges.reduce((s, c) => s + c.total, 0);
   const net = ledger.reduce((s, l) => s + l.amount, 0);
   return charged - net;
+}
+
+/** Store-scoped drawer summary from everything on this device. */
+export async function loadDrawer(storeId: string): Promise<DrawerSummary> {
+  const local = db();
+  const by = <T>(t: { where(k: string): { equals(v: string): { toArray(): Promise<T[]> } } }) =>
+    t.where("store_id").equals(storeId).toArray();
+  const [movements, sales, payments, cashTransactions, expenses] = await Promise.all([
+    by<LocalDrawerMovement>(local.cash_drawer_movements),
+    by<LocalSale>(local.sales),
+    by<LocalCustomerPayment>(local.customer_payments),
+    by<LocalCashTransaction>(local.cash_transactions),
+    by<LocalExpense>(local.expenses),
+  ]);
+  return computeDrawer({ storeId, movements, sales, payments, cashTransactions, expenses });
 }
