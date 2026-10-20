@@ -25,6 +25,7 @@ import {
   computeDrawer,
   expenseDrawerTarget,
   fromCents,
+  saleCashCents,
   toCents,
   type DrawerSummary,
 } from "./cash-drawer";
@@ -604,21 +605,61 @@ export async function checkout(
  * or concurrent taps restore stock and utang exactly once; every change and its
  * upload intent commit together.
  */
-export async function voidSale(ctx: StoreContext, saleId: string): Promise<boolean> {
+export async function voidSale(
+  ctx: StoreContext,
+  saleId: string,
+  /** Cash sales only: whether the cash was actually handed back now. */
+  options: { cashReturned?: boolean } = {},
+): Promise<boolean> {
   return atomic(
-    ["sales", "sale_items", "products", "customers", "inventory_movements"],
+    [
+      "sales",
+      "sale_items",
+      "products",
+      "customers",
+      "inventory_movements",
+      "cash_drawer_movements",
+    ],
     async () => {
       const local = db();
       const sale = await local.sales.get(saleId);
       if (!sale || sale.store_id !== ctx.storeId || sale.status === "voided") return false;
       const now = nowIso();
+      const group = `void:${saleId}`;
+      // Drawer decision first (reads before any enqueue). One per sale.
+      let drawerRow: LocalDrawerMovement | null = null;
+      const refundCents = saleCashCents(sale);
+      if (refundCents > 0) {
+        const prior = await local.cash_drawer_movements
+          .where("reference_id")
+          .equals(saleId)
+          .filter((m) => m.kind === "sale_refund" || m.kind === "sale_void_no_refund")
+          .count();
+        if (!prior) {
+          const returned = options.cashReturned === true;
+          drawerRow = {
+            id: uuid(),
+            store_id: ctx.storeId,
+            kind: returned ? "sale_refund" : "sale_void_no_refund",
+            amount: returned ? fromCents(-refundCents) : 0,
+            reference_type: "sale",
+            reference_id: saleId,
+            notes: sale.transaction_number,
+            created_by: ctx.userId,
+            created_at: now,
+            updated_at: now,
+            sync_status: "pending",
+          };
+          await local.cash_drawer_movements.put(drawerRow);
+        }
+      }
       await local.sales.update(saleId, {
         status: "voided",
         updated_at: now,
         sync_status: "pending",
       });
-      const group = `void:${saleId}`;
       await enqueue("sales", saleId, { groupId: group });
+      if (drawerRow) await enqueue("cash_drawer_movements", drawerRow.id, { groupId: group });
 
       if (sale.payment_method === "utang" && sale.customer_id) {
         const customer = await local.customers.get(sale.customer_id);
@@ -659,6 +700,7 @@ export async function voidSale(ctx: StoreContext, saleId: string): Promise<boole
       await logAudit(ctx, "sale.voided", "sale", saleId, {
         transaction_number: sale.transaction_number,
         total: sale.total,
+        cash_returned: drawerRow ? drawerRow.kind === "sale_refund" : null,
       });
       return true;
     },

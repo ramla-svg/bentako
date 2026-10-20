@@ -63,6 +63,7 @@ function SalesPage() {
   const [search, setSearch] = useState("");
   const [detail, setDetail] = useState<LocalSale | null>(null);
   const [toVoid, setToVoid] = useState<LocalSale | null>(null);
+  const [voiding, setVoiding] = useState(false);
 
   const sales = useLiveQuery(
     async () =>
@@ -102,14 +103,22 @@ function SalesPage() {
     };
   }, [filtered]);
 
-  async function confirmVoid() {
-    if (!ctx || !toVoid) return;
+  async function confirmVoid(cashReturned: boolean) {
+    if (!ctx || !toVoid || voiding) return;
+    setVoiding(true);
     try {
-      await voidSale(ctx, toVoid.id);
-      toast.success("Sale voided and stock returned.");
+      await voidSale(ctx, toVoid.id, { cashReturned });
+      toast.success(
+        toVoid.payment_method !== "cash"
+          ? "Sale voided and stock returned."
+          : cashReturned
+            ? "Sale voided. Refund deducted from cash on hand."
+            : "Sale voided. Cash on hand unchanged — record a withdrawal if you refund later.",
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not void this sale.");
     } finally {
+      setVoiding(false);
       setToVoid(null);
       setDetail(null);
     }
@@ -273,11 +282,35 @@ function SalesPage() {
             <AlertDialogDescription>
               The items go back to your stock and the sale is marked voided. This is recorded in
               your activity log.
+              {toVoid?.payment_method === "cash"
+                ? " Did you hand the cash back to the customer now? Only a refund you confirm is deducted from cash on hand."
+                : ""}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void confirmVoid()}>Void sale</AlertDialogAction>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel disabled={voiding}>Cancel</AlertDialogCancel>
+            {toVoid?.payment_method === "cash" ? (
+              <>
+                <AlertDialogAction
+                  disabled={voiding}
+                  className="h-12"
+                  onClick={() => void confirmVoid(false)}
+                >
+                  Void, no cash returned
+                </AlertDialogAction>
+                <AlertDialogAction
+                  disabled={voiding}
+                  className="h-12"
+                  onClick={() => void confirmVoid(true)}
+                >
+                  Void and refund cash
+                </AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction disabled={voiding} onClick={() => void confirmVoid(false)}>
+                Void sale
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

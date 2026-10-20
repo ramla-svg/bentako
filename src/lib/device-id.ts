@@ -21,18 +21,25 @@ export function deviceId(): string {
 export function deviceLabel(): string {
   if (typeof navigator === "undefined") return "Phone";
   const ua = navigator.userAgent;
-  const platform =
-    /iPhone/.test(ua) ? "iPhone"
-    : /iPad/.test(ua) ? "iPad"
-    : /Android/.test(ua) ? "Android phone"
-    : /Windows/.test(ua) ? "Windows PC"
-    : /Mac OS X/.test(ua) ? "Mac"
-    : "Device";
-  const browser =
-    /Edg\//.test(ua) ? "Edge"
-    : /Chrome\//.test(ua) ? "Chrome"
-    : /Safari\//.test(ua) ? "Safari"
-    : /Firefox\//.test(ua) ? "Firefox"
-    : "Browser";
+  const platform = /iPhone/.test(ua)
+    ? "iPhone"
+    : /iPad/.test(ua)
+      ? "iPad"
+      : /Android/.test(ua)
+        ? "Android phone"
+        : /Windows/.test(ua)
+          ? "Windows PC"
+          : /Mac OS X/.test(ua)
+            ? "Mac"
+            : "Device";
+  const browser = /Edg\//.test(ua)
+    ? "Edge"
+    : /Chrome\//.test(ua)
+      ? "Chrome"
+      : /Safari\//.test(ua)
+        ? "Safari"
+        : /Firefox\//.test(ua)
+          ? "Firefox"
+          : "Browser";
   return `${platform} · ${browser}`;
 }

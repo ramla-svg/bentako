@@ -26,15 +26,21 @@ export interface DeviceCheck {
   devices: StoreDevice[];
 }
 
-async function storeOf(supabase: {
-  from: (t: string) => any;
-}, userId: string): Promise<{ storeId: string | null; role: string }> {
+async function storeOf(
+  supabase: {
+    from: (t: string) => any;
+  },
+  userId: string,
+): Promise<{ storeId: string | null; role: string }> {
   const [{ data: profile }, { data: roles }] = await Promise.all([
     supabase.from("profiles").select("store_id").eq("id", userId).maybeSingle(),
     supabase.from("user_roles").select("role").eq("user_id", userId),
   ]);
   const isOwner = ((roles ?? []) as { role: string }[]).some((r) => r.role === "owner");
-  return { storeId: (profile as { store_id: string | null } | null)?.store_id ?? null, role: isOwner ? "owner" : "cashier" };
+  return {
+    storeId: (profile as { store_id: string | null } | null)?.store_id ?? null,
+    role: isOwner ? "owner" : "cashier",
+  };
 }
 
 /** Record this phone against the shop, or report that the plan is full. */
@@ -133,7 +139,10 @@ export const listStoreDevices = createServerFn({ method: "GET" })
       .select("id, device_id, label, last_seen_at, created_at")
       .eq("store_id", storeId)
       .order("created_at", { ascending: true });
-    return ((data ?? []) as Omit<StoreDevice, "current">[]).map((row) => ({ ...row, current: false }));
+    return ((data ?? []) as Omit<StoreDevice, "current">[]).map((row) => ({
+      ...row,
+      current: false,
+    }));
   });
 
 /** Free a slot. Only rows of the caller's own shop are visible to RLS. */

@@ -206,4 +206,3 @@ export function registerServiceWorker(): void {
 
   startUpdateWatcher();
 }
-

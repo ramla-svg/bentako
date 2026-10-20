@@ -218,7 +218,8 @@ function Dashboard() {
                   From your count {formatDate(drawer.lastCount!.at)}
                   {drawer.excluded.unclassifiedExpenses +
                     drawer.excluded.unknownRepayments +
-                    drawer.excluded.legacyService >
+                    drawer.excluded.legacyService +
+                    drawer.excluded.unknownRefunds >
                   0
                     ? " · some records not included"
                     : ""}

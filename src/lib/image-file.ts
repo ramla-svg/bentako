@@ -2,7 +2,11 @@
  * Shrinks a picked/captured photo before it is stored on the device, so a year
  * of GCash screenshots stays small. Runs entirely in the browser.
  */
-export async function downscaleImage(file: File | Blob, maxEdge = 1200, quality = 0.72): Promise<Blob> {
+export async function downscaleImage(
+  file: File | Blob,
+  maxEdge = 1200,
+  quality = 0.72,
+): Promise<Blob> {
   if (typeof window === "undefined") return file;
   const url = URL.createObjectURL(file);
   try {

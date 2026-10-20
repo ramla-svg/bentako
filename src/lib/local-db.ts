@@ -174,7 +174,11 @@ export type DrawerMovementKind =
   | "cash_add"
   | "cash_withdraw"
   | "expense"
-  | "expense_correction";
+  | "expense_correction"
+  /** Cash handed back when a cash sale was voided (signed, negative). */
+  | "sale_refund"
+  /** Void confirmed with no cash returned (amount 0, kept for traceability). */
+  | "sale_void_no_refund";
 
 /**
  * Physical drawer ledger row. Immutable. `count` stores the counted cash and
@@ -436,7 +440,6 @@ class BentakoDatabase extends Dexie {
   }
 }
 
-
 let instance: BentakoDatabase | null = null;
 
 /**
@@ -484,11 +487,14 @@ export const EXPENSE_CATEGORIES = [
   "Other",
 ];
 
-export const ADJUSTMENT_REASONS: { value: MovementType; label: string; direction: "add" | "remove" }[] =
-  [
-    { value: "adjustment_add", label: "Correction (add)", direction: "add" },
-    { value: "returned", label: "Returned", direction: "add" },
-    { value: "adjustment_remove", label: "Correction (remove)", direction: "remove" },
-    { value: "damaged", label: "Damaged", direction: "remove" },
-    { value: "expired", label: "Expired", direction: "remove" },
-  ];
+export const ADJUSTMENT_REASONS: {
+  value: MovementType;
+  label: string;
+  direction: "add" | "remove";
+}[] = [
+  { value: "adjustment_add", label: "Correction (add)", direction: "add" },
+  { value: "returned", label: "Returned", direction: "add" },
+  { value: "adjustment_remove", label: "Correction (remove)", direction: "remove" },
+  { value: "damaged", label: "Damaged", direction: "remove" },
+  { value: "expired", label: "Expired", direction: "remove" },
+];

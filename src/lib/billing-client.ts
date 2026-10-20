@@ -21,7 +21,10 @@ export interface PlanPaymentRow {
 /** Short code the owner writes in the GCash notes, e.g. BK-4F21. */
 export function referenceCodeFor(storeId: string | null | undefined): string {
   if (!storeId) return "BK-0000";
-  return `BK-${storeId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 4).toUpperCase()}`;
+  return `BK-${storeId
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(0, 4)
+    .toUpperCase()}`;
 }
 
 export function priceFor(period: PlanPeriod): number {
@@ -31,7 +34,9 @@ export function priceFor(period: PlanPeriod): number {
 export async function fetchLatestPayment(storeId: string): Promise<PlanPaymentRow | null> {
   const { data } = await supabase
     .from("plan_payments")
-    .select("id, plan_period, amount, reference_code, gcash_reference, status, review_note, created_at")
+    .select(
+      "id, plan_period, amount, reference_code, gcash_reference, status, review_note, created_at",
+    )
     .eq("store_id", storeId)
     .order("created_at", { ascending: false })
     .limit(1)
