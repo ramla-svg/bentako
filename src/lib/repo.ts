@@ -696,7 +696,7 @@ async function reconcileExpenseDrawer(ctx: StoreContext, e: LocalExpense): Promi
   const lastCount = all
     .filter((m) => m.kind === "count")
     .reduce<string | null>((max, m) => (max && max > m.created_at ? max : m.created_at), null);
-  if (!linked.length && lastCount && e.created_at <= lastCount) return;
+  if (lastCount && e.created_at <= lastCount) return;
   const now = nowIso();
   const row: LocalDrawerMovement = {
     id: uuid(),
