@@ -21,7 +21,13 @@ import {
 } from "./local-db";
 import { canAddProduct, planLimits, type PlanFields } from "./plan";
 import { localDayKey } from "./format";
-import { expenseDrawerTarget, fromCents, toCents } from "./cash-drawer";
+import {
+  computeDrawer,
+  expenseDrawerTarget,
+  fromCents,
+  toCents,
+  type DrawerSummary,
+} from "./cash-drawer";
 import { makeTransactionNumber, nowIso, uuid } from "./ids";
 import { beginCriticalWork, endCriticalWork, enqueue } from "./sync-service";
 
@@ -1208,4 +1214,19 @@ export function deriveBalance(charges: { total: number }[], ledger: { amount: nu
   const charged = charges.reduce((s, c) => s + c.total, 0);
   const net = ledger.reduce((s, l) => s + l.amount, 0);
   return charged - net;
+}
+
+/** Store-scoped drawer summary from everything on this device. */
+export async function loadDrawer(storeId: string): Promise<DrawerSummary> {
+  const local = db();
+  const by = <T>(t: { where(k: string): { equals(v: string): { toArray(): Promise<T[]> } } }) =>
+    t.where("store_id").equals(storeId).toArray();
+  const [movements, sales, payments, cashTransactions, expenses] = await Promise.all([
+    by<LocalDrawerMovement>(local.cash_drawer_movements),
+    by<LocalSale>(local.sales),
+    by<LocalCustomerPayment>(local.customer_payments),
+    by<LocalCashTransaction>(local.cash_transactions),
+    by<LocalExpense>(local.expenses),
+  ]);
+  return computeDrawer({ storeId, movements, sales, payments, cashTransactions, expenses });
 }
