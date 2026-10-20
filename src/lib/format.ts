@@ -12,6 +12,18 @@ export function formatQty(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
+/** Cash shortcut index; Exact wins over a matching denomination. */
+export function selectedQuickCashIndex(cash: string, total: number, hasItems: boolean): number {
+  const received = Number(cash);
+  if (!cash.trim() || !Number.isFinite(received) || received < 0) return -1;
+  const cents = Math.round(received * 100);
+  if (hasItems && Number.isFinite(total) && total > 0 && cents === Math.round(total * 100)) {
+    return 0;
+  }
+  const preset = [20, 50, 100, 200, 500, 1000].findIndex((amount) => cents === amount * 100);
+  return preset < 0 ? -1 : preset + 1;
+}
+
 const dateTimeFmt = new Intl.DateTimeFormat("en-PH", {
   month: "short",
   day: "numeric",

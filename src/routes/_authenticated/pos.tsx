@@ -24,7 +24,7 @@ import { useIsDesktop } from "@/hooks/use-desktop";
 import { useProductThumbnails } from "@/hooks/use-product-thumbnails";
 import { shouldFocusPosSearch } from "@/lib/pos-keyboard";
 import { useBackHandler } from "@/hooks/use-back-handler";
-import { formatMoney, formatQty } from "@/lib/format";
+import { formatMoney, formatQty, selectedQuickCashIndex } from "@/lib/format";
 import { buildReceiptPrintDoc } from "@/lib/receipt";
 import { printReceipt } from "@/lib/platform/print-service";
 import {
@@ -574,6 +574,7 @@ function ReviewSale({
   onAddCustomer: () => Promise<void>;
   onClear: () => void;
 }) {
+  const selectedCashIndex = selectedQuickCashIndex(cash, total, lines.length > 0);
   return (
     <div className="lg:flex lg:max-h-[calc(100dvh-210px)] lg:flex-col">
       <div className="lg:min-h-0 lg:overflow-y-auto">
@@ -708,8 +709,13 @@ function ReviewSale({
                 <Button
                   key={`${amount}-${i}`}
                   type="button"
-                  variant="outline"
-                  className="h-10 flex-1 min-w-16"
+                  aria-pressed={selectedCashIndex === i}
+                  variant={selectedCashIndex === i ? "default" : "outline"}
+                  className={cn(
+                    "h-10 flex-1 min-w-16",
+                    selectedCashIndex === i &&
+                      "hover:bg-primary hover:text-primary-foreground focus-visible:bg-primary focus-visible:text-primary-foreground",
+                  )}
                   onClick={() => setCash(String(amount))}
                 >
                   {i === 0 ? "Exact" : `₱${amount}`}
