@@ -262,3 +262,105 @@ describe("store isolation", () => {
     expect(d.hasBaseline).toBe(false);
   });
 });
+
+describe("voids and refunds", () => {
+  async function cashSale(qty = 2) {
+    const p = await addProduct({ selling_price: 15, stock_quantity: 50 });
+    return (await checkout(ctx, { lines: [line(p, qty)], cash_received: 100 })).sale; // 15*qty net
+  }
+
+  it("void after count keeps the receipt and deducts a confirmed refund", async () => {
+    await recordCashCount(ctx, { counted: 100 });
+    await tick();
+    const sale = await cashSale();
+    await tick();
+    const { voidSale } = await import("@/lib/repo");
+    await voidSale(ctx, sale.id, { cashReturned: true });
+    const d = await loadDrawer(STORE);
+    expect(d.expectedCents).toBe(10000);
+    expect(d.events.map((e) => [e.source, e.cents])).toEqual([
+      ["count", 10000],
+      ["cash_sale", 3000],
+      ["sale_refund", -3000],
+    ]);
+    expect(d.excluded.unknownRefunds).toBe(0);
+  });
+
+  it("void with no cash returned keeps the receipt and deducts nothing", async () => {
+    await recordCashCount(ctx, { counted: 100 });
+    await tick();
+    const sale = await cashSale();
+    await tick();
+    const { voidSale } = await import("@/lib/repo");
+    await voidSale(ctx, sale.id, { cashReturned: false });
+    const d = await loadDrawer(STORE);
+    expect(d.expectedCents).toBe(13000);
+    expect(d.events.at(-1)!.source).toBe("sale_void_no_refund");
+  });
+
+  it("pre-count sale refunded after count: receipt excluded, refund deducted", async () => {
+    const sale = await cashSale();
+    await tick();
+    await recordCashCount(ctx, { counted: 100 });
+    await tick();
+    const { voidSale } = await import("@/lib/repo");
+    await voidSale(ctx, sale.id, { cashReturned: true });
+    expect((await loadDrawer(STORE)).expectedCents).toBe(7000);
+  });
+
+  it("recount between sale and refund", async () => {
+    await recordCashCount(ctx, { counted: 100 });
+    await tick();
+    const sale = await cashSale();
+    await tick();
+    await recordCashCount(ctx, { counted: 130 });
+    await tick();
+    const { voidSale } = await import("@/lib/repo");
+    await voidSale(ctx, sale.id, { cashReturned: true });
+    const d = await loadDrawer(STORE);
+    expect(d.expectedCents).toBe(10000);
+    expect([d.inCents, d.outCents]).toEqual([0, 3000]);
+  });
+
+  it("duplicate and concurrent voids refund once", async () => {
+    await recordCashCount(ctx, { counted: 100 });
+    await tick();
+    const sale = await cashSale();
+    await tick();
+    const { voidSale } = await import("@/lib/repo");
+    await Promise.all([
+      voidSale(ctx, sale.id, { cashReturned: true }),
+      voidSale(ctx, sale.id, { cashReturned: true }),
+    ]);
+    await voidSale(ctx, sale.id, { cashReturned: true });
+    expect(await db().cash_drawer_movements.where("reference_id").equals(sale.id).count()).toBe(1);
+    expect((await loadDrawer(STORE)).expectedCents).toBe(10000);
+    const q = await db().sync_queue.where("entity").equals("cash_drawer_movements").toArray();
+    expect(q.some((i) => i.group_id === `void:${sale.id}`)).toBe(true);
+  });
+
+  it("legacy void with no refund record is warned, never deducted", async () => {
+    await recordCashCount(ctx, { counted: 100 });
+    await tick();
+    const sale = await cashSale();
+    await db().sales.update(sale.id, { status: "voided", updated_at: new Date().toISOString() });
+    const d = await loadDrawer(STORE);
+    expect(d.expectedCents).toBe(13000);
+    expect(d.excluded.unknownRefunds).toBe(1);
+  });
+
+  it("since-count totals reset at each count", async () => {
+    await recordCashCount(ctx, { counted: 0 });
+    await tick();
+    await recordDrawerMovement(ctx, { direction: "add", amount: 50 });
+    await tick();
+    await recordDrawerMovement(ctx, { direction: "withdraw", amount: 20 });
+    await tick();
+    await recordCashCount(ctx, { counted: 30 });
+    await tick();
+    await recordDrawerMovement(ctx, { direction: "add", amount: 5 });
+    const d = await loadDrawer(STORE);
+    expect([d.inCents, d.outCents, d.expectedCents]).toEqual([500, 0, 3500]);
+    expect(d.events.filter((e) => e.source === "count")).toHaveLength(2);
+  });
+});

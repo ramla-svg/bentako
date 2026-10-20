@@ -612,7 +612,14 @@ export async function voidSale(
   options: { cashReturned?: boolean } = {},
 ): Promise<boolean> {
   return atomic(
-    ["sales", "sale_items", "products", "customers", "inventory_movements", "cash_drawer_movements"],
+    [
+      "sales",
+      "sale_items",
+      "products",
+      "customers",
+      "inventory_movements",
+      "cash_drawer_movements",
+    ],
     async () => {
       const local = db();
       const sale = await local.sales.get(saleId);

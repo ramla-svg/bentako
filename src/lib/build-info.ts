@@ -33,9 +33,9 @@ export async function fetchServerBuildId(): Promise<string | null> {
     });
     if (!res.ok) return null;
     const html = await res.text();
-    const match = html.match(
-      /<meta[^>]+name=["']bentako-build["'][^>]+content=["']([^"']+)["']/i,
-    ) ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']bentako-build["']/i);
+    const match =
+      html.match(/<meta[^>]+name=["']bentako-build["'][^>]+content=["']([^"']+)["']/i) ??
+      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']bentako-build["']/i);
     return match?.[1] ?? null;
   } catch {
     return null;

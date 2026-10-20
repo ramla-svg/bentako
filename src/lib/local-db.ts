@@ -440,7 +440,6 @@ class BentakoDatabase extends Dexie {
   }
 }
 
-
 let instance: BentakoDatabase | null = null;
 
 /**
@@ -488,11 +487,14 @@ export const EXPENSE_CATEGORIES = [
   "Other",
 ];
 
-export const ADJUSTMENT_REASONS: { value: MovementType; label: string; direction: "add" | "remove" }[] =
-  [
-    { value: "adjustment_add", label: "Correction (add)", direction: "add" },
-    { value: "returned", label: "Returned", direction: "add" },
-    { value: "adjustment_remove", label: "Correction (remove)", direction: "remove" },
-    { value: "damaged", label: "Damaged", direction: "remove" },
-    { value: "expired", label: "Expired", direction: "remove" },
-  ];
+export const ADJUSTMENT_REASONS: {
+  value: MovementType;
+  label: string;
+  direction: "add" | "remove";
+}[] = [
+  { value: "adjustment_add", label: "Correction (add)", direction: "add" },
+  { value: "returned", label: "Returned", direction: "add" },
+  { value: "adjustment_remove", label: "Correction (remove)", direction: "remove" },
+  { value: "damaged", label: "Damaged", direction: "remove" },
+  { value: "expired", label: "Expired", direction: "remove" },
+];

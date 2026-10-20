@@ -187,9 +187,9 @@ function CashOnHandPage() {
             </p>
             <p>
               Subtracted: expenses paid from the cash drawer, cash you take out, and refunds you
-              confirmed when voiding a cash sale (a void with no cash returned changes nothing). Not included:
-              utang sales, GCash/Maya/bank sales and repayments, and expenses paid outside the
-              drawer.
+              confirmed when voiding a cash sale (a void with no cash returned changes nothing). Not
+              included: utang sales, GCash/Maya/bank sales and repayments, and expenses paid outside
+              the drawer.
             </p>
             <p>
               This is an expected amount, not profit. Recount any time to correct it. It uses

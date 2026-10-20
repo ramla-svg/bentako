@@ -13,10 +13,7 @@ export function canShare(): boolean {
   return typeof navigator.share === "function" || !!navigator.clipboard || isNative();
 }
 
-export async function shareText(options: {
-  title?: string;
-  text: string;
-}): Promise<ShareResult> {
+export async function shareText(options: { title?: string; text: string }): Promise<ShareResult> {
   if (typeof navigator === "undefined") return "unavailable";
 
   // Android (Capacitor): native share sheet.
