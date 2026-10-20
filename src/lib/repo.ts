@@ -743,8 +743,8 @@ export async function saveExpense(ctx: StoreContext, input: ExpenseInput): Promi
       sync_status: "pending",
     };
     await db().expenses.put(row);
-    await enqueue("expenses", row.id, { groupId: `expense:${row.id}` });
     await reconcileExpenseDrawer(ctx, row);
+    await enqueue("expenses", row.id, { groupId: `expense:${row.id}` });
     await logAudit(ctx, existing ? "expense.updated" : "expense.created", "expense", row.id, {
       title: row.title,
       amount: row.amount,
@@ -762,8 +762,8 @@ export async function archiveExpense(ctx: StoreContext, id: string): Promise<voi
     if (!existing.is_active) return;
     const row = { ...existing, is_active: false, updated_at: nowIso(), sync_status: "pending" as const };
     await db().expenses.put(row);
-    await enqueue("expenses", id, { groupId: `expense:${id}` });
     await reconcileExpenseDrawer(ctx, row);
+    await enqueue("expenses", id, { groupId: `expense:${id}` });
     await logAudit(ctx, "expense.archived", "expense", id);
   });
 }
