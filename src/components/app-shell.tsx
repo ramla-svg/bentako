@@ -35,6 +35,7 @@ const NAV = [
   { to: "/sales", label: "Sales", icon: Receipt },
   { to: "/cash", label: "GCash / E-wallet", icon: Smartphone },
   { to: "/utang", label: "Utang / Customers", icon: HandCoins },
+  { to: "/cash-on-hand", label: "Cash on hand", icon: Wallet },
   { to: "/payments", label: "Payments", icon: Wallet },
   { to: "/expenses", label: "Expenses", icon: Wallet },
   { to: "/reports", label: "Reports", icon: BarChart3 },
