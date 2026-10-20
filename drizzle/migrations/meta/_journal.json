@@ -78,6 +78,13 @@
       "when": 1791940673135,
       "tag": "0010_admin_revoke_store_pro_audit_id",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792463145686,
+      "tag": "0011_cash_on_hand",
+      "breakpoints": true
     }
   ]
 }
