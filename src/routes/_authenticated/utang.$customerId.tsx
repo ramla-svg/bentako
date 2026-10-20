@@ -50,6 +50,7 @@ type Entry = {
   label: string;
   amount: number;
   kind: "charge" | "payment";
+  method?: string | null;
 };
 
 function CustomerUtangPage() {
