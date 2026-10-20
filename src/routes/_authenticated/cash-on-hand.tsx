@@ -117,7 +117,9 @@ function CashOnHandPage() {
   }
 
   const ex = drawer?.excluded;
-  const excludedTotal = ex ? ex.unclassifiedExpenses + ex.unknownRepayments + ex.legacyService : 0;
+  const excludedTotal = ex
+    ? ex.unclassifiedExpenses + ex.unknownRepayments + ex.legacyService + ex.unknownRefunds
+    : 0;
   const events = [...(drawer?.events ?? [])].reverse();
 
   return (
@@ -184,7 +186,8 @@ function CashOnHandPage() {
               you add, and GCash/e-wallet entries where you confirmed drawer cash moved.
             </p>
             <p>
-              Subtracted: expenses paid from the cash drawer and cash you take out. Not included:
+              Subtracted: expenses paid from the cash drawer, cash you take out, and refunds you
+              confirmed when voiding a cash sale (a void with no cash returned changes nothing). Not included:
               utang sales, GCash/Maya/bank sales and repayments, and expenses paid outside the
               drawer.
             </p>
@@ -208,6 +211,12 @@ function CashOnHandPage() {
                 {ex?.legacyService ? (
                   <p>
                     {ex.legacyService} GCash entry(ies) since your count have no drawer cash info.
+                  </p>
+                ) : null}
+                {ex?.unknownRefunds ? (
+                  <p>
+                    {ex.unknownRefunds} voided cash sale(s) have no refund record. Their cash is
+                    still counted — recount the drawer if money was given back.
                   </p>
                 ) : null}
                 {drawer?.unclassifiedExpenseIds.length ? (

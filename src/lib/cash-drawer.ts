@@ -24,6 +24,8 @@ export type DrawerSource =
   | "cash_withdraw"
   | "expense"
   | "expense_correction"
+  | "sale_refund"
+  | "sale_void_no_refund"
   | "service";
 
 export interface DrawerEvent {
@@ -61,7 +63,13 @@ export interface DrawerSummary {
   inCents: number;
   outCents: number;
   /** Rows after the baseline whose cash effect is unknown and so excluded. */
-  excluded: { unclassifiedExpenses: number; unknownRepayments: number; legacyService: number };
+  excluded: {
+    unclassifiedExpenses: number;
+    unknownRepayments: number;
+    legacyService: number;
+    /** Voided cash sales with no recorded refund decision (legacy). */
+    unknownRefunds: number;
+  };
   /** Active expenses without a funding source (any date) — need classifying. */
   unclassifiedExpenseIds: string[];
 }
@@ -74,15 +82,20 @@ const MOVEMENT_LABELS: Record<string, string> = {
   cash_withdraw: "Cash taken out",
   expense: "Expense paid from drawer",
   expense_correction: "Expense correction",
+  sale_refund: "Cash refund (voided sale)",
+  sale_void_no_refund: "Sale voided — no cash returned",
 };
 
 function order(a: { at: string; id: string }, b: { at: string; id: string }): number {
   return a.at < b.at ? -1 : a.at > b.at ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 }
 
-/** Net physical cash from one sale: tendered minus change (= total for cash). */
+/**
+ * Net physical cash received by one sale: tendered minus change. A later void
+ * does not erase the original receipt; refunds are separate drawer movements.
+ */
 export function saleCashCents(s: LocalSale): number {
-  if (s.status !== "completed" || s.payment_method !== "cash") return 0;
+  if (s.payment_method !== "cash") return 0;
   return Math.max(0, toCents(s.cash_received) - toCents(s.change_amount));
 }
 
@@ -108,7 +121,12 @@ export function computeDrawer(input: DrawerInput): DrawerSummary {
   const unclassifiedExpenseIds = mine(input.expenses)
     .filter((e) => e.is_active && !e.paid_from)
     .map((e) => e.id);
-  const excluded = { unclassifiedExpenses: 0, unknownRepayments: 0, legacyService: 0 };
+  const excluded = {
+    unclassifiedExpenses: 0,
+    unknownRepayments: 0,
+    legacyService: 0,
+    unknownRefunds: 0,
+  };
 
   if (!first) {
     return {
@@ -125,14 +143,28 @@ export function computeDrawer(input: DrawerInput): DrawerSummary {
   }
   const after = (at: string) => at > first.at;
 
+  const voidDecided = new Set(
+    raw
+      .filter((r) => r.source === "sale_refund" || r.source === "sale_void_no_refund")
+      .map((r) => r.referenceId),
+  );
   for (const s of mine(input.sales)) {
     const cents = saleCashCents(s);
-    if (!cents || !after(s.created_at)) continue;
+    if (!cents) continue;
+    // Legacy void with no refund decision: never invent a deduction, just warn
+    // when it may touch cash since the count.
+    if (
+      s.status === "voided" &&
+      !voidDecided.has(s.id) &&
+      (after(s.created_at) || after(s.updated_at))
+    )
+      excluded.unknownRefunds += 1;
+    if (!after(s.created_at)) continue;
     raw.push({
       id: s.id,
       at: s.created_at,
       source: "cash_sale",
-      label: `Cash sale ${s.transaction_number}`,
+      label: `Cash sale ${s.transaction_number}${s.status === "voided" ? " (later voided)" : ""}`,
       cents,
       referenceType: "sale",
       referenceId: s.id,
@@ -192,6 +224,9 @@ export function computeDrawer(input: DrawerInput): DrawerSummary {
     if (r.source === "count") {
       balance = r.cents;
       lastCount = { at: r.at, cents: r.cents };
+      // "Since count" totals restart at every count; the timeline is kept.
+      inCents = 0;
+      outCents = 0;
       events.push({
         ...r,
         beforeCents: before,

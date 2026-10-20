@@ -174,7 +174,11 @@ export type DrawerMovementKind =
   | "cash_add"
   | "cash_withdraw"
   | "expense"
-  | "expense_correction";
+  | "expense_correction"
+  /** Cash handed back when a cash sale was voided (signed, negative). */
+  | "sale_refund"
+  /** Void confirmed with no cash returned (amount 0, kept for traceability). */
+  | "sale_void_no_refund";
 
 /**
  * Physical drawer ledger row. Immutable. `count` stores the counted cash and
