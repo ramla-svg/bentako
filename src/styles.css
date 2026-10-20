@@ -270,6 +270,9 @@
        rule here (hidden or clip) stops the page scrolling in Android WebView.
        Sideways drift is trimmed on <body> instead. */
     overscroll-behavior-x: none;
+    /* Kill the browser's native pull-to-refresh bounce; vertical page
+       scrolling is unaffected (only the overscroll glow/refresh is trimmed). */
+    overscroll-behavior-y: none;
   }
 
   body {
@@ -282,6 +285,7 @@
     overflow-x: clip;
     overflow-y: visible;
     overscroll-behavior-x: none;
+    overscroll-behavior-y: none;
   }
 
 
