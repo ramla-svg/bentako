@@ -23,6 +23,7 @@ const ENTITY_ORDER: SyncEntity[] = [
   "expenses",
   "cash_transactions",
   "customer_payments",
+  "cash_drawer_movements",
 ];
 
 const NUMERIC_FIELDS = new Set([
@@ -48,6 +49,7 @@ const NUMERIC_FIELDS = new Set([
   "wallet_after",
   "cash_before",
   "cash_after",
+  "drawer_effect",
   "sort_order",
 ]);
 
