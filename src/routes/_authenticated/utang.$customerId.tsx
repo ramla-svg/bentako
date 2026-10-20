@@ -253,7 +253,9 @@ function CustomerUtangPage() {
                       onClick={() => setMethod(m.value)}
                       className={cn(
                         "h-12 rounded-xl border text-sm font-semibold",
-                        method === m.value ? "border-primary bg-primary text-primary-foreground" : "bg-card",
+                        method === m.value
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "bg-card",
                       )}
                     >
                       {m.label}

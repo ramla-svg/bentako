@@ -618,7 +618,9 @@ function CashPage() {
                     onClick={() => setDrawerMove(m.value)}
                     className={cn(
                       "h-12 rounded-xl border px-3 text-left text-sm font-semibold",
-                      drawerMove === m.value ? "border-primary bg-primary text-primary-foreground" : "bg-card",
+                      drawerMove === m.value
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "bg-card",
                     )}
                   >
                     {m.label}

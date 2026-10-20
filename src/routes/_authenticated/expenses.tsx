@@ -155,14 +155,19 @@ function ExpensesPage() {
   function CashImpact() {
     if (!paidFrom) return <p className="text-xs text-muted-foreground">Required.</p>;
     if (paidFrom !== "cash")
-      return <p className="text-xs text-muted-foreground">Cash on hand: no change (paid outside the drawer).</p>;
+      return (
+        <p className="text-xs text-muted-foreground">
+          Cash on hand: no change (paid outside the drawer).
+        </p>
+      );
     if (!drawer?.hasBaseline)
       return (
         <p className="text-xs text-muted-foreground">
           Will be deducted from cash on hand once you count your drawer on the Cash on hand screen.
         </p>
       );
-    const was = editing && editing.is_active && editing.paid_from === "cash" ? toCents(editing.amount) : 0;
+    const was =
+      editing && editing.is_active && editing.paid_from === "cash" ? toCents(editing.amount) : 0;
     const now = Number(amount) > 0 ? toCents(Number(amount)) : 0;
     const before = editing && editing.created_at <= (drawer.lastCount?.at ?? "") ? null : was;
     if (before === null)
@@ -300,7 +305,9 @@ function ExpensesPage() {
                     onClick={() => setPaidFrom(p.value)}
                     className={cn(
                       "min-h-12 rounded-xl border px-3 py-2 text-left text-sm font-semibold",
-                      paidFrom === p.value ? "border-primary bg-primary text-primary-foreground" : "bg-card",
+                      paidFrom === p.value
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "bg-card",
                     )}
                   >
                     {p.label}

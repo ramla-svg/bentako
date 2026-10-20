@@ -85,7 +85,8 @@ function CashOnHandPage() {
   }
 
   const value = Number(amount);
-  const valid = amount.trim() !== "" && Number.isFinite(value) && (mode === "count" ? value >= 0 : value > 0);
+  const valid =
+    amount.trim() !== "" && Number.isFinite(value) && (mode === "count" ? value >= 0 : value > 0);
   const current = drawer?.expectedCents ?? 0;
   const preview =
     !valid || !mode
@@ -143,7 +144,9 @@ function CashOnHandPage() {
                   </div>
                   <div className="rounded-xl bg-primary-foreground/15 p-2">
                     <p className="opacity-80">Cash out since count</p>
-                    <p className="tnum font-display text-base font-bold">{money(drawer.outCents)}</p>
+                    <p className="tnum font-display text-base font-bold">
+                      {money(drawer.outCents)}
+                    </p>
                   </div>
                 </div>
               </>
@@ -203,7 +206,9 @@ function CashOnHandPage() {
                   <p>{ex.unknownRepayments} utang payment(s) since your count have no method.</p>
                 ) : null}
                 {ex?.legacyService ? (
-                  <p>{ex.legacyService} GCash entry(ies) since your count have no drawer cash info.</p>
+                  <p>
+                    {ex.legacyService} GCash entry(ies) since your count have no drawer cash info.
+                  </p>
                 ) : null}
                 {drawer?.unclassifiedExpenseIds.length ? (
                   <p>

@@ -725,7 +725,8 @@ export async function saveExpense(ctx: StoreContext, input: ExpenseInput): Promi
     const existing = input.id ? await db().expenses.get(input.id) : undefined;
     if (existing && existing.store_id !== ctx.storeId)
       throw new Error("Expense not found in this store.");
-    const paidFrom = input.paid_from === undefined ? (existing?.paid_from ?? null) : input.paid_from;
+    const paidFrom =
+      input.paid_from === undefined ? (existing?.paid_from ?? null) : input.paid_from;
     if (!existing && !paidFrom) throw new Error("Choose where the money came from.");
     const row: LocalExpense = {
       id: existing?.id ?? input.id ?? uuid(),
@@ -762,7 +763,12 @@ export async function archiveExpense(ctx: StoreContext, id: string): Promise<voi
     if (!existing || existing.store_id !== ctx.storeId)
       throw new Error("Expense not found in this store.");
     if (!existing.is_active) return;
-    const row = { ...existing, is_active: false, updated_at: nowIso(), sync_status: "pending" as const };
+    const row = {
+      ...existing,
+      is_active: false,
+      updated_at: nowIso(),
+      sync_status: "pending" as const,
+    };
     await db().expenses.put(row);
     // Drawer reads happen before enqueue: a query after enqueue in the same
     // transaction commits it early under IndexedDB auto-commit rules.
@@ -776,7 +782,12 @@ export async function archiveExpense(ctx: StoreContext, id: string): Promise<voi
 
 async function putDrawerMovement(
   ctx: StoreContext,
-  input: { id?: string; kind: LocalDrawerMovement["kind"]; amount: number; notes?: string | null },
+  input: {
+    id?: string | undefined;
+    kind: LocalDrawerMovement["kind"];
+    amount: number;
+    notes?: string | null | undefined;
+  },
 ): Promise<LocalDrawerMovement> {
   return atomic(["cash_drawer_movements"], async () => {
     const local = db();

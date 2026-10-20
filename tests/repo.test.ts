@@ -205,7 +205,9 @@ describe("customer ledger", () => {
   it("rejects missing and wrong-store customers without writing", async () => {
     const other = await addCustomer({ store_id: OTHER, credit_balance: 50 });
     for (const id of [other.id, "missing"]) {
-      await expect(recordCustomerPayment(ctx, { customer_id: id, amount: 10, payment_method: "cash" })).rejects.toThrow();
+      await expect(
+        recordCustomerPayment(ctx, { customer_id: id, amount: 10, payment_method: "cash" }),
+      ).rejects.toThrow();
       await expect(addManualCharge(ctx, { customer_id: id, amount: 10 })).rejects.toThrow();
     }
     expect(await db().customer_payments.count()).toBe(0);

@@ -36,7 +36,7 @@ export interface DrawerEvent {
   beforeCents: number;
   afterCents: number;
   /** For counts: counted minus expected (shortage < 0). */
-  differenceCents?: number;
+  differenceCents?: number | undefined;
   referenceType: string | null;
   referenceId: string | null;
   notes: string | null;
