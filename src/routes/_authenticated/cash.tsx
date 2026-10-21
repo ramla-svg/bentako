@@ -40,7 +40,11 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppSession } from "@/hooks/use-app-session";
 import { formatDateTime, formatMoney, localDayKey } from "@/lib/format";
 import { downloadBlob, downscaleImage, sharePhoto } from "@/lib/image-file";
-import { CASH_PROVIDERS, db, type CashTxnType, type LocalCashTransaction } from "@/lib/local-db";
+import { CASH_PROVIDERS, db, type LocalCashTransaction } from "@/lib/local-db";
+import {
+  CASH_SERVICE_LABELS, physicalCashEffect, recordedWalletBalance, serviceKindOf,
+  suggestedPhysicalCash, walletDirection, type CashServiceKind, type PhysicalCashMove,
+} from "@/lib/cash-flow";
 import { deleteCashPhoto, getCashPhoto, putCashPhoto, saveCashTransaction } from "@/lib/repo";
 import { cn } from "@/lib/utils";
 
@@ -53,7 +57,7 @@ export const Route = createFileRoute("/_authenticated/cash")({
       { title: "GCash & E-Wallet — BentaKo" },
       {
         name: "description",
-        content: "Track every peso in and out of your drawer, GCash, Maya and bank.",
+        content: "Record GCash customer services with separate e-wallet and physical cash movements.",
       },
       { property: "og:title", content: "GCash & E-Wallet — BentaKo" },
       { property: "og:description", content: "Cash in/out, load, bills and more in one list." },
@@ -66,12 +70,14 @@ type RangeKey = "today" | "7d" | "30d";
 type FilterKey = "all" | "in" | "out";
 
 /** What kind of entry this is. `add_balance` is a wallet top-up by the store. */
-type EntryKind = "cash_in" | "cash_out" | "add_balance";
+type EntryKind = CashServiceKind;
 
 const KINDS: { value: EntryKind; label: string; hint: string }[] = [
-  { value: "cash_in", label: "Cash In", hint: "Customer gives cash — balance goes up" },
-  { value: "cash_out", label: "Cash Out", hint: "Customer takes cash — balance goes down" },
+  { value: "cash_in", label: "Cash In", hint: "You send GCash to the customer — your GCash balance decreases" },
+  { value: "cash_out", label: "Cash Out", hint: "You receive GCash from the customer — your GCash balance increases" },
   { value: "add_balance", label: "Add Balance", hint: "You top up your own e-wallet" },
+  { value: "buy_load", label: "Buy Load", hint: "You buy load for the customer — your GCash balance decreases" },
+  { value: "pay_bills", label: "Pay Bills", hint: "You pay the customer's bill — your GCash balance decreases" },
 ];
 
 const NOTE_SOURCES = ["Bank", "GCash app", "Cash on hand", "Load / Bills", "Other"] as const;
@@ -94,30 +100,17 @@ function rangeStart(range: RangeKey): number {
   return now.getTime() - days * 24 * 60 * 60 * 1000;
 }
 
-/** Direction actually stored for a kind: a top-up raises the wallet. */
-function directionOf(kind: EntryKind): CashTxnType {
-  return kind === "cash_out" ? "cash_out" : "cash_in";
-}
-
-/** Rebuilds the display label of a saved row from its note + direction. */
-function kindLabel(e: LocalCashTransaction): string {
-  if (e.transaction_type === "cash_out") return "Cash Out";
-  return (e.notes ?? "").startsWith("Add balance") ? "Add Balance" : "Cash In";
-}
-
-type DrawerMove = "in" | "out" | "none";
+type DrawerMove = PhysicalCashMove;
 
 const DRAWER_MOVES: { value: DrawerMove; label: string }[] = [
-  { value: "in", label: "Cash came into drawer" },
-  { value: "out", label: "Cash left drawer" },
-  { value: "none", label: "No drawer cash" },
+  { value: "in", label: "Add physical cash (+)" },
+  { value: "out", label: "Take physical cash out (−)" },
+  { value: "none", label: "No physical cash (bank / online)" },
 ];
 
 /** Suggested drawer effect; the user confirms or changes it in the form. */
 function defaultDrawerMove(kind: EntryKind, source: NoteSource): DrawerMove | "" {
-  if (kind === "add_balance") return "";
-  if (source === "Load / Bills") return "in";
-  return kind === "cash_out" ? "out" : "in";
+  return suggestedPhysicalCash(kind, source);
 }
 
 type Preset = {
@@ -149,7 +142,7 @@ const PRESETS: Preset[] = [
     label: "Buy Load",
     icon: Smartphone,
     tint: "bg-tile-lavender text-tile-lavender-ink",
-    kind: "cash_out",
+    kind: "buy_load",
     source: "Load / Bills",
   },
   {
@@ -157,7 +150,7 @@ const PRESETS: Preset[] = [
     label: "Pay Bills",
     icon: FileText,
     tint: "bg-tile-peach text-tile-peach-ink",
-    kind: "cash_out",
+    kind: "pay_bills",
     source: "Load / Bills",
   },
 ];
@@ -221,33 +214,37 @@ function CashPage() {
   const today = localDayKey();
 
   const inRange = useMemo(
-    () => (entries ?? []).filter((e) => new Date(e.created_at).getTime() >= from),
+    () => (entries ?? []).filter((e) => e.status !== "voided" && new Date(e.created_at).getTime() >= from),
     [entries, from],
   );
 
   const wallet = useMemo(() => (entries ?? []).filter((e) => e.provider !== "other"), [entries]);
 
-  const walletTotal =
-    wallet.filter((e) => e.transaction_type === "cash_in").reduce((s, e) => s + e.amount, 0) -
-    wallet.filter((e) => e.transaction_type === "cash_out").reduce((s, e) => s + e.amount, 0);
+  const walletTotal = recordedWalletBalance(wallet, storeId);
+  const hasLegacyWalletEntries = wallet.some((e) => e.status !== "voided" && !e.service_kind);
+  const previewAmount = Number(amount);
+  const previewFee = Number(fee);
+  const walletChange = walletDirection(kind) === "cash_in" ? previewAmount : -previewAmount;
+  const physicalChange = physicalCashEffect(drawerMove || "none", previewAmount, feeInCash ? previewFee : 0);
+  const showPreview = Number.isFinite(previewAmount) && previewAmount > 0 && Number.isFinite(previewFee);
 
   const todayEntries = useMemo(
-    () => (entries ?? []).filter((e) => localDayKey(e.created_at) === today),
+    () => (entries ?? []).filter((e) => e.status !== "voided" && localDayKey(e.created_at) === today),
     [entries, today],
   );
   const cashInToday = todayEntries
-    .filter((e) => e.transaction_type === "cash_in")
+    .filter((e) => serviceKindOf(e) === "cash_in")
     .reduce((s, e) => s + e.amount, 0);
   const cashOutToday = todayEntries
-    .filter((e) => e.transaction_type === "cash_out")
+    .filter((e) => serviceKindOf(e) === "cash_out")
     .reduce((s, e) => s + e.amount, 0);
   const feesToday = todayEntries.reduce((s, e) => s + e.service_fee, 0);
 
   const filtered = useMemo(
     () =>
       inRange.filter((e) => {
-        if (filter === "in") return e.transaction_type === "cash_in";
-        if (filter === "out") return e.transaction_type === "cash_out";
+        if (filter === "in") return serviceKindOf(e) === "cash_in";
+        if (filter === "out") return serviceKindOf(e) === "cash_out";
         return true;
       }),
     [inRange, filter],
@@ -308,18 +305,18 @@ function CashPage() {
       return;
     }
     if (!drawerMove) {
-      toast.error("Choose what happened to the drawer cash.");
+      toast.error("Choose what happened to the physical cash.");
       return;
     }
     if (busy) return;
     const feeValue = Number(fee) || 0;
-    const sign = drawerMove === "in" ? 1 : drawerMove === "out" ? -1 : 0;
-    const drawerEffect = sign * value + (feeInCash ? feeValue : 0);
+    const drawerEffect = physicalCashEffect(drawerMove, value, feeInCash ? feeValue : 0);
     setBusy(true);
     try {
       await saveCashTransaction(ctx, {
         drawer_effect: drawerEffect,
-        transaction_type: directionOf(kind),
+        transaction_type: walletDirection(kind),
+        service_kind: kind,
         notes: composeNote(),
         provider: "gcash",
         amount: value,
@@ -374,7 +371,7 @@ function CashPage() {
               <Smartphone className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold opacity-90">E-Wallet Balance</p>
+              <p className="truncate text-sm font-semibold opacity-90">Recorded E-Wallet Balance</p>
               <p className="tnum truncate font-display text-fluid-amount font-extrabold">
                 {formatMoney(walletTotal, currency)}
               </p>
@@ -387,6 +384,13 @@ function CashPage() {
             <WalletStat label="Transactions" value={String(todayEntries.length)} />
           </div>
         </div>
+
+        {hasLegacyWalletEntries ? (
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Older entries keep their original amounts and directions. Past Cash In/Out entries may
+            have used the opposite GCash direction, so this recorded balance may differ from your GCash app.
+          </p>
+        ) : null}
 
         {/* Action tiles */}
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
@@ -476,7 +480,7 @@ function CashPage() {
                   </span>
                   <div className="min-w-0">
                     <p className="truncate font-semibold">
-                      {kindLabel(e)} · {label}
+                      {CASH_SERVICE_LABELS[serviceKindOf(e)]} · {label}
                       {e.customer_name ? ` · ${e.customer_name}` : ""}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
@@ -487,10 +491,10 @@ function CashPage() {
                     ) : null}
                     <p className="truncate text-xs text-muted-foreground">
                       {e.drawer_effect == null
-                        ? "Drawer cash: not recorded"
+                        ? "Physical cash: not recorded"
                         : e.drawer_effect === 0
-                          ? "Drawer cash: no change"
-                          : `Drawer cash: ${e.drawer_effect > 0 ? "+" : "−"}${formatMoney(Math.abs(e.drawer_effect), currency)}`}
+                          ? "Physical cash: no change"
+                          : `Physical cash: ${e.drawer_effect > 0 ? "+" : "−"}${formatMoney(Math.abs(e.drawer_effect), currency)}`}
                     </p>
                     {e.reference_number || e.service_fee > 0 ? (
                       <p className="truncate text-xs text-muted-foreground">
@@ -512,6 +516,7 @@ function CashPage() {
                       isIn ? "text-primary" : "text-destructive",
                     )}
                   >
+                    <span className="block text-right text-[10px] font-medium text-muted-foreground">E-wallet</span>
                     {isIn ? "+" : "−"}
                     {formatMoney(e.amount, currency)}
                   </span>
@@ -563,7 +568,11 @@ function CashPage() {
               <Label>Where from / what for (optional)</Label>
               <Select
                 value={source || "none"}
-                onValueChange={(v) => setSource(v === "none" ? "" : (v as NoteSource))}
+                onValueChange={(v) => {
+                  const next = v === "none" ? "" : (v as NoteSource);
+                  setSource(next);
+                  if (kind === "add_balance") setDrawerMove(defaultDrawerMove(kind, next));
+                }}
               >
                 <SelectTrigger className="h-12 w-full">
                   <SelectValue placeholder="Not set" />
@@ -607,24 +616,25 @@ function CashPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Physical cash drawer</Label>
-              <div className="grid gap-2" role="radiogroup" aria-label="Physical cash drawer">
+              <Label>Physical cash (Cash on hand)</Label>
+              <div className="grid gap-2" role="radiogroup" aria-label="Physical cash">
                 {DRAWER_MOVES.map((m) => (
-                  <button
+                  <Button
                     key={m.value}
                     type="button"
+                    variant={drawerMove === m.value ? "default" : "outline"}
                     role="radio"
                     aria-checked={drawerMove === m.value}
                     onClick={() => setDrawerMove(m.value)}
                     className={cn(
-                      "h-12 rounded-xl border px-3 text-left text-sm font-semibold",
+                      "min-h-12 h-auto justify-start whitespace-normal rounded-lg border px-3 py-3 text-left text-sm font-semibold",
                       drawerMove === m.value
                         ? "border-primary bg-primary text-primary-foreground"
                         : "bg-card",
                     )}
                   >
                     {m.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
               <label className="flex min-h-11 items-center gap-2 text-sm">
@@ -637,10 +647,16 @@ function CashPage() {
                 Service fee was paid in cash
               </label>
               <p className="text-[11px] text-muted-foreground">
-                Customer cash-in: customer hands you cash. Cash-out: you hand out cash. Topping up
-                your wallet from the bank: no drawer cash. Only this choice changes Cash on hand —
-                the GCash balance above is not affected.
+                Cash In: receive the customer's cash and send GCash. Cash Out: give the customer cash
+                and receive GCash. Bank/online funding moves no physical cash. A fee paid in cash adds
+                to Cash on hand only; it is not added to the GCash balance.
               </p>
+              {showPreview ? (
+                <dl className="grid gap-1 text-sm" aria-label="Transaction cash effects">
+                  <div className="flex justify-between gap-2"><dt>GCash change</dt><dd className="tnum font-semibold">{walletChange >= 0 ? "+" : "−"}{formatMoney(Math.abs(walletChange), currency)}</dd></div>
+                  <div className="flex justify-between gap-2"><dt>Physical cash change</dt><dd className="tnum font-semibold">{physicalChange >= 0 ? "+" : "−"}{formatMoney(Math.abs(physicalChange), currency)}</dd></div>
+                </dl>
+              ) : null}
             </div>
             <div className="space-y-1.5">
               <Label>Customer name (optional)</Label>

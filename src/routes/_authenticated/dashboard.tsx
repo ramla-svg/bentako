@@ -24,6 +24,7 @@ import { useAppSession } from "@/hooks/use-app-session";
 import { formatDate, formatMoney, formatQty, formatTime, localDayKey } from "@/lib/format";
 import { db } from "@/lib/local-db";
 import { fromCents } from "@/lib/cash-drawer";
+import { recordedWalletBalance } from "@/lib/cash-flow";
 import { loadDrawer } from "@/lib/repo";
 import { cn } from "@/lib/utils";
 
@@ -84,12 +85,6 @@ function Dashboard() {
       });
 
       const active = products.filter((p) => p.is_active);
-      const walletIn = cash
-        .filter((c) => c.provider !== "other" && c.transaction_type === "cash_in")
-        .reduce((s, c) => s + c.amount, 0);
-      const walletOut = cash
-        .filter((c) => c.provider !== "other" && c.transaction_type === "cash_out")
-        .reduce((s, c) => s + c.amount, 0);
       const utangCharges = completed
         .filter((s) => s.payment_method === "utang")
         .reduce((s, x) => s + x.total, 0);
@@ -108,7 +103,7 @@ function Dashboard() {
         expenses: expenses
           .filter((e) => e.is_active && e.expense_date === today)
           .reduce((s, e) => s + e.amount, 0),
-        walletBalance: walletIn - walletOut,
+        walletBalance: recordedWalletBalance(cash, storeId),
         utangTotal: Math.max(0, utangCharges - utangLedger),
         lowStock: active.filter(
           (p) => p.stock_quantity > 0 && p.stock_quantity <= p.low_stock_threshold,

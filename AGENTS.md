@@ -22,3 +22,4 @@
 - POS thumbnails read the store-scoped device-only product photo table and release temporary object URLs on replacement/unmount; product rows and checkout remain independent of display handles.
 - Use BrandMark and the canonical storefront SVG for app branding; derive install rasters from that source so app-owned marks stay consistent without affecting merchant receipt logos.
 - Derive Cash on hand only from `cash-drawer.ts` over explicit sources (counted baseline, cash-sale net tender, cash-method repayments, drawer movements, confirmed `drawer_effect`); never infer cash meaning from notes, and write expense edits/archives as delta drawer movements so nothing double-deducts.
+- Keep customer service kind separate from stored wallet direction via `cash-flow.ts`; new entries persist optional `service_kind` for labels/filters while shared wallet totals use recorded directions, so legacy rows and physical cash are never silently reinterpreted.

@@ -21,6 +21,7 @@ import {
 } from "./local-db";
 import { canAddProduct, planLimits, type PlanFields } from "./plan";
 import { localDayKey } from "./format";
+import { isCashServiceKind, recordedWalletBalance, walletDirection, type CashServiceKind } from "./cash-flow";
 import {
   computeDrawer,
   expenseDrawerTarget,
@@ -987,6 +988,8 @@ export function matchProductByCode(products: LocalProduct[], code: string): Loca
 
 export interface CashTransactionInput {
   transaction_type: CashTxnType;
+  /** Explicit service semantics for new entries; omitted preserves legacy callers. */
+  service_kind?: CashServiceKind | null;
   provider: ServiceProvider;
   amount: number;
   service_fee?: number;
@@ -1017,11 +1020,14 @@ export async function saveCashTransaction(
   if (!Number.isFinite(fee) || fee < 0) throw new Error("Enter a valid service fee.");
   const drawer = input.drawer_effect == null ? null : Number(input.drawer_effect);
   if (drawer != null && !Number.isFinite(drawer)) throw new Error("Invalid drawer cash effect.");
+  if (input.service_kind != null && !isCashServiceKind(input.service_kind))
+    throw new Error("Invalid GCash service type.");
   const now = nowIso();
   const row: LocalCashTransaction = {
     id: uuid(),
     store_id: ctx.storeId,
-    transaction_type: input.transaction_type,
+    transaction_type: input.service_kind ? walletDirection(input.service_kind) : input.transaction_type,
+    service_kind: input.service_kind ?? null,
     provider: input.provider,
     customer_name: input.customer_name?.trim() || null,
     customer_mobile_number: input.customer_mobile_number?.trim() || null,
@@ -1143,9 +1149,7 @@ export async function deleteProductPhoto(productId: string): Promise<void> {
 /** Current e-wallet balance derived from all non-drawer cash entries. */
 export async function walletBalance(storeId: string): Promise<number> {
   const rows = await db().cash_transactions.where("store_id").equals(storeId).toArray();
-  return rows
-    .filter((r) => r.provider !== "other" && r.status !== "voided")
-    .reduce((sum, r) => sum + (r.transaction_type === "cash_in" ? r.amount : -r.amount), 0);
+  return recordedWalletBalance(rows, storeId);
 }
 
 /* ---------------------------------------------------------- credit ledger */
