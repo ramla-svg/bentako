@@ -135,6 +135,7 @@ export type Database = {
           provider: Database["public"]["Enums"]["service_provider"]
           reference_number: string | null
           service_fee: number
+          service_kind: string | null
           status: string
           store_id: string
           transaction_type: Database["public"]["Enums"]["cash_txn_type"]
@@ -156,6 +157,7 @@ export type Database = {
           provider?: Database["public"]["Enums"]["service_provider"]
           reference_number?: string | null
           service_fee?: number
+          service_kind?: string | null
           status?: string
           store_id: string
           transaction_type: Database["public"]["Enums"]["cash_txn_type"]
@@ -177,6 +179,7 @@ export type Database = {
           provider?: Database["public"]["Enums"]["service_provider"]
           reference_number?: string | null
           service_fee?: number
+          service_kind?: string | null
           status?: string
           store_id?: string
           transaction_type?: Database["public"]["Enums"]["cash_txn_type"]

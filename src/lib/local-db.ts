@@ -229,6 +229,8 @@ export interface LocalCashTransaction {
   id: string;
   store_id: string;
   transaction_type: CashTxnType;
+  /** Customer service name; absent/null = legacy. transaction_type is wallet direction. */
+  service_kind?: import("./cash-flow").CashServiceKind | null;
   provider: ServiceProvider;
   customer_name: string | null;
   customer_mobile_number: string | null;

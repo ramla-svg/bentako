@@ -1,0 +1,2 @@
+ALTER TABLE public.cash_transactions ADD COLUMN IF NOT EXISTS service_kind text;
+COMMENT ON COLUMN public.cash_transactions.service_kind IS 'Explicit customer service kind: cash_in, cash_out, add_balance, buy_load or pay_bills. Null means legacy; transaction_type remains the recorded wallet direction and is never backfilled by guessing.';

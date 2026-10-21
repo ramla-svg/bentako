@@ -85,6 +85,13 @@
       "when": 1792463145686,
       "tag": "0011_cash_on_hand",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792541449107,
+      "tag": "0012_gcash_service_kind",
+      "breakpoints": true
     }
   ]
 }
