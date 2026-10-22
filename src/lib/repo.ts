@@ -21,7 +21,12 @@ import {
 } from "./local-db";
 import { canAddProduct, planLimits, type PlanFields } from "./plan";
 import { localDayKey } from "./format";
-import { isCashServiceKind, recordedWalletBalance, walletDirection, type CashServiceKind } from "./cash-flow";
+import {
+  isCashServiceKind,
+  recordedWalletBalance,
+  walletDirection,
+  type CashServiceKind,
+} from "./cash-flow";
 import {
   computeDrawer,
   expenseDrawerTarget,
@@ -1026,7 +1031,9 @@ export async function saveCashTransaction(
   const row: LocalCashTransaction = {
     id: uuid(),
     store_id: ctx.storeId,
-    transaction_type: input.service_kind ? walletDirection(input.service_kind) : input.transaction_type,
+    transaction_type: input.service_kind
+      ? walletDirection(input.service_kind)
+      : input.transaction_type,
     service_kind: input.service_kind ?? null,
     provider: input.provider,
     customer_name: input.customer_name?.trim() || null,

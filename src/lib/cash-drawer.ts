@@ -201,7 +201,7 @@ export function computeDrawer(input: DrawerInput): DrawerSummary {
       id: t.id,
       at: t.created_at,
       source: "service",
-      label: `GCash/e-wallet ${t.transaction_type === "cash_out" ? "cash out" : "entry"}`,
+      label: `GCash/e-wallet ${t.service_kind ? t.service_kind.replaceAll("_", " ") : t.transaction_type === "cash_out" ? "cash out" : "entry"}`,
       cents,
       referenceType: "cash_transaction",
       referenceId: t.id,
