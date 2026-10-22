@@ -42,8 +42,14 @@ import { formatDateTime, formatMoney, localDayKey } from "@/lib/format";
 import { downloadBlob, downscaleImage, sharePhoto } from "@/lib/image-file";
 import { CASH_PROVIDERS, db, type LocalCashTransaction } from "@/lib/local-db";
 import {
-  CASH_SERVICE_LABELS, physicalCashEffect, recordedWalletBalance, serviceKindOf,
-  suggestedPhysicalCash, walletDirection, type CashServiceKind, type PhysicalCashMove,
+  CASH_SERVICE_LABELS,
+  physicalCashEffect,
+  recordedWalletBalance,
+  serviceKindOf,
+  suggestedPhysicalCash,
+  walletDirection,
+  type CashServiceKind,
+  type PhysicalCashMove,
 } from "@/lib/cash-flow";
 import { deleteCashPhoto, getCashPhoto, putCashPhoto, saveCashTransaction } from "@/lib/repo";
 import { cn } from "@/lib/utils";
@@ -57,7 +63,8 @@ export const Route = createFileRoute("/_authenticated/cash")({
       { title: "GCash & E-Wallet — BentaKo" },
       {
         name: "description",
-        content: "Record GCash customer services with separate e-wallet and physical cash movements.",
+        content:
+          "Record GCash customer services with separate e-wallet and physical cash movements.",
       },
       { property: "og:title", content: "GCash & E-Wallet — BentaKo" },
       { property: "og:description", content: "Cash in/out, load, bills and more in one list." },
@@ -73,11 +80,27 @@ type FilterKey = "all" | "in" | "out";
 type EntryKind = CashServiceKind;
 
 const KINDS: { value: EntryKind; label: string; hint: string }[] = [
-  { value: "cash_in", label: "Cash In", hint: "You send GCash to the customer — your GCash balance decreases" },
-  { value: "cash_out", label: "Cash Out", hint: "You receive GCash from the customer — your GCash balance increases" },
+  {
+    value: "cash_in",
+    label: "Cash In",
+    hint: "You send GCash to the customer — your GCash balance decreases",
+  },
+  {
+    value: "cash_out",
+    label: "Cash Out",
+    hint: "You receive GCash from the customer — your GCash balance increases",
+  },
   { value: "add_balance", label: "Add Balance", hint: "You top up your own e-wallet" },
-  { value: "buy_load", label: "Buy Load", hint: "You buy load for the customer — your GCash balance decreases" },
-  { value: "pay_bills", label: "Pay Bills", hint: "You pay the customer's bill — your GCash balance decreases" },
+  {
+    value: "buy_load",
+    label: "Buy Load",
+    hint: "You buy load for the customer — your GCash balance decreases",
+  },
+  {
+    value: "pay_bills",
+    label: "Pay Bills",
+    hint: "You pay the customer's bill — your GCash balance decreases",
+  },
 ];
 
 const NOTE_SOURCES = ["Bank", "GCash app", "Cash on hand", "Load / Bills", "Other"] as const;
@@ -214,7 +237,10 @@ function CashPage() {
   const today = localDayKey();
 
   const inRange = useMemo(
-    () => (entries ?? []).filter((e) => e.status !== "voided" && new Date(e.created_at).getTime() >= from),
+    () =>
+      (entries ?? []).filter(
+        (e) => e.status !== "voided" && new Date(e.created_at).getTime() >= from,
+      ),
     [entries, from],
   );
 
@@ -225,11 +251,17 @@ function CashPage() {
   const previewAmount = Number(amount);
   const previewFee = Number(fee);
   const walletChange = walletDirection(kind) === "cash_in" ? previewAmount : -previewAmount;
-  const physicalChange = physicalCashEffect(drawerMove || "none", previewAmount, feeInCash ? previewFee : 0);
-  const showPreview = Number.isFinite(previewAmount) && previewAmount > 0 && Number.isFinite(previewFee);
+  const physicalChange = physicalCashEffect(
+    drawerMove || "none",
+    previewAmount,
+    feeInCash ? previewFee : 0,
+  );
+  const showPreview =
+    Number.isFinite(previewAmount) && previewAmount > 0 && Number.isFinite(previewFee);
 
   const todayEntries = useMemo(
-    () => (entries ?? []).filter((e) => e.status !== "voided" && localDayKey(e.created_at) === today),
+    () =>
+      (entries ?? []).filter((e) => e.status !== "voided" && localDayKey(e.created_at) === today),
     [entries, today],
   );
   const cashInToday = todayEntries
@@ -388,7 +420,8 @@ function CashPage() {
         {hasLegacyWalletEntries ? (
           <p className="text-xs leading-relaxed text-muted-foreground">
             Older entries keep their original amounts and directions. Past Cash In/Out entries may
-            have used the opposite GCash direction, so this recorded balance may differ from your GCash app.
+            have used the opposite GCash direction, so this recorded balance may differ from your
+            GCash app.
           </p>
         ) : null}
 
@@ -516,7 +549,9 @@ function CashPage() {
                       isIn ? "text-primary" : "text-destructive",
                     )}
                   >
-                    <span className="block text-right text-[10px] font-medium text-muted-foreground">E-wallet</span>
+                    <span className="block text-right text-[10px] font-medium text-muted-foreground">
+                      E-wallet
+                    </span>
                     {isIn ? "+" : "−"}
                     {formatMoney(e.amount, currency)}
                   </span>
@@ -647,14 +682,26 @@ function CashPage() {
                 Service fee was paid in cash
               </label>
               <p className="text-[11px] text-muted-foreground">
-                Cash In: receive the customer's cash and send GCash. Cash Out: give the customer cash
-                and receive GCash. Bank/online funding moves no physical cash. A fee paid in cash adds
-                to Cash on hand only; it is not added to the GCash balance.
+                Cash In: receive the customer's cash and send GCash. Cash Out: give the customer
+                cash and receive GCash. Bank/online funding moves no physical cash. A fee paid in
+                cash adds to Cash on hand only; it is not added to the GCash balance.
               </p>
               {showPreview ? (
                 <dl className="grid gap-1 text-sm" aria-label="Transaction cash effects">
-                  <div className="flex justify-between gap-2"><dt>GCash change</dt><dd className="tnum font-semibold">{walletChange >= 0 ? "+" : "−"}{formatMoney(Math.abs(walletChange), currency)}</dd></div>
-                  <div className="flex justify-between gap-2"><dt>Physical cash change</dt><dd className="tnum font-semibold">{physicalChange >= 0 ? "+" : "−"}{formatMoney(Math.abs(physicalChange), currency)}</dd></div>
+                  <div className="flex justify-between gap-2">
+                    <dt>GCash change</dt>
+                    <dd className="tnum font-semibold">
+                      {walletChange >= 0 ? "+" : "−"}
+                      {formatMoney(Math.abs(walletChange), currency)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <dt>Physical cash change</dt>
+                    <dd className="tnum font-semibold">
+                      {physicalChange >= 0 ? "+" : "−"}
+                      {formatMoney(Math.abs(physicalChange), currency)}
+                    </dd>
+                  </div>
                 </dl>
               ) : null}
             </div>

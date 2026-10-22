@@ -2,7 +2,11 @@ import { fromCents, toCents } from "./cash-drawer";
 import type { CashTxnType, LocalCashTransaction } from "./local-db";
 
 export const CASH_SERVICE_KINDS = [
-  "cash_in", "cash_out", "add_balance", "buy_load", "pay_bills",
+  "cash_in",
+  "cash_out",
+  "add_balance",
+  "buy_load",
+  "pay_bills",
 ] as const;
 export type CashServiceKind = (typeof CASH_SERVICE_KINDS)[number];
 export type PhysicalCashMove = "in" | "out" | "none";
@@ -35,14 +39,20 @@ export function serviceKindOf(row: LocalCashTransaction): CashServiceKind {
 }
 
 export const CASH_SERVICE_LABELS: Record<CashServiceKind, string> = {
-  cash_in: "Cash In", cash_out: "Cash Out", add_balance: "Add Balance",
-  buy_load: "Buy Load", pay_bills: "Pay Bills",
+  cash_in: "Cash In",
+  cash_out: "Cash Out",
+  add_balance: "Add Balance",
+  buy_load: "Buy Load",
+  pay_bills: "Pay Bills",
 };
 
 /** All recorded wallet directions, including untouched legacy entries, in cents. */
 export function recordedWalletBalance(rows: LocalCashTransaction[], storeId: string): number {
-  return fromCents(rows.reduce((sum, row) => {
-    if (row.store_id !== storeId || row.provider === "other" || row.status === "voided") return sum;
-    return sum + (row.transaction_type === "cash_in" ? 1 : -1) * toCents(row.amount);
-  }, 0));
+  return fromCents(
+    rows.reduce((sum, row) => {
+      if (row.store_id !== storeId || row.provider === "other" || row.status === "voided")
+        return sum;
+      return sum + (row.transaction_type === "cash_in" ? 1 : -1) * toCents(row.amount);
+    }, 0),
+  );
 }
