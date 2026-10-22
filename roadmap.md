@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Correct new GCash customer transaction wallet direction, clarify physical-cash choices, preserve legacy records, and verify with isolated tests and desktop/mobile checks; no publishing.
+- [x] Correct new GCash customer transaction wallet direction, clarify physical-cash choices, preserve legacy records, and verify with isolated tests and desktop/mobile checks; no publishing.
 
 - [x] Apply chosen storefront branding and versioned install icons; verify assets, headers and regressions without publishing.
 
