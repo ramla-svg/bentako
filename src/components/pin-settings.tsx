@@ -6,9 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppSession } from "@/hooks/use-app-session";
-import { supabase } from "@/integrations/supabase/client";
 import { PIN_LENGTH, clearPin, hasPin, isValidPin, setPin, verifyPin } from "@/lib/offline-pin";
-import { isOnline } from "@/lib/sync-service";
 
 export function PinSettings() {
   const { userId, store } = useAppSession();
@@ -41,16 +39,8 @@ export function PinSettings() {
     }
     setBusy(true);
     try {
-      if (enabled) {
-        if (!(await checkCurrent())) return;
-      } else {
-        // First setup needs a live Google sign-in on this phone.
-        const { data } = await supabase.auth.getSession();
-        if (!isOnline() || data.session?.user.id !== userId) {
-          toast.error("Connect to the internet and stay signed in to set a PIN.");
-          return;
-        }
-      }
+      // Works offline: changing needs only the current PIN.
+      if (enabled && !(await checkCurrent())) return;
       await setPin(userId, storeId, next);
       setEnabled(true);
       setCurrent("");
