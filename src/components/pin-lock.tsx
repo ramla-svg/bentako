@@ -146,9 +146,12 @@ function PinPad({
           <Delete className="size-6" />
         </Button>
       </div>
-      <Button variant="link" onClick={() => void forgot()}>
-        Forgot PIN? Sign in with Google
-      </Button>
+      <div className="text-center text-sm text-muted-foreground">
+        <p>Forgot PIN? Ask the store owner.</p>
+        <Button variant="link" className="h-auto p-1 text-xs" onClick={() => void forgot()}>
+          Or reset with Google (needs internet)
+        </Button>
+      </div>
     </div>
   );
 }
