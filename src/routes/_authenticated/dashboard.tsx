@@ -6,7 +6,6 @@ import {
   BarChart3,
   Boxes,
   ChevronRight,
-  Crown,
   HandCoins,
   Package,
   Receipt,
@@ -50,7 +49,7 @@ function dayKeyOffset(days: number): string {
 }
 
 function Dashboard() {
-  const { store, userName, role, pro } = useAppSession();
+  const { store, userName, role } = useAppSession();
   const storeId = store?.id ?? "";
   const currency = store?.currency ?? "PHP";
   const today = localDayKey();
