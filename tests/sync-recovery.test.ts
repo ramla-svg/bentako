@@ -287,30 +287,64 @@ describe("sync recovery", () => {
   });
 
   it("a rejected grouped header blocks its items until manual retry", async () => {
-    const now=new Date().toISOString();
-    const saleId=crypto.randomUUID();const itemId=crypto.randomUUID();
-    await db().table("sales").put({id:saleId,store_id:STORE,created_at:now,sync_status:"pending"});
-    await db().table("sale_items").put({id:itemId,sale_id:saleId,store_id:STORE,created_at:now,sync_status:"pending"});
-    await enqueue("sales",saleId,{groupId:saleId});await enqueue("sale_items",itemId,{groupId:saleId});
-    const uploaded:string[]=[];
-    hooks.__upsert=async(row:{id:string})=>{uploaded.push(row.id);return {error:{message:"constraint violation"}};};
-    hooks.__online=true;await syncNow();await syncNow();
+    const now = new Date().toISOString();
+    const saleId = crypto.randomUUID();
+    const itemId = crypto.randomUUID();
+    await db()
+      .table("sales")
+      .put({ id: saleId, store_id: STORE, created_at: now, sync_status: "pending" });
+    await db()
+      .table("sale_items")
+      .put({
+        id: itemId,
+        sale_id: saleId,
+        store_id: STORE,
+        created_at: now,
+        sync_status: "pending",
+      });
+    await enqueue("sales", saleId, { groupId: saleId });
+    await enqueue("sale_items", itemId, { groupId: saleId });
+    const uploaded: string[] = [];
+    hooks.__upsert = async (row: { id: string }) => {
+      uploaded.push(row.id);
+      return { error: { message: "constraint violation" } };
+    };
+    hooks.__online = true;
+    await syncNow();
+    await syncNow();
     expect(uploaded).toEqual([saleId]);
     expect(await db().sync_queue.count()).toBe(2);
-    hooks.__upsert=async(row:{id:string})=>{uploaded.push(row.id);return {error:null};};
-    await syncNow({retryFailed:true});
-    expect(uploaded).toEqual([saleId,saleId,itemId]);
+    hooks.__upsert = async (row: { id: string }) => {
+      uploaded.push(row.id);
+      return { error: null };
+    };
+    await syncNow({ retryFailed: true });
+    expect(uploaded).toEqual([saleId, saleId, itemId]);
     expect(await db().sync_queue.count()).toBe(0);
   });
 
   it("foreign-key prerequisites upload before dependent rows across groups", async () => {
-    const p=await addProduct({sync_status:"pending"});const categoryId=crypto.randomUUID();
-    await db().products.update(p.id,{category_id:categoryId});
-    await db().table("categories").put({id:categoryId,store_id:STORE,created_at:new Date().toISOString(),sync_status:"pending"});
-    await enqueue("products",p.id,{groupId:"a"});await enqueue("categories",categoryId,{groupId:"z"});
-    const uploaded:string[]=[];hooks.__upsert=async(row:{id:string})=>{uploaded.push(row.id);return {error:null};};
-    hooks.__online=true;await syncNow();
-    expect(uploaded).toEqual([categoryId,p.id]);
+    const p = await addProduct({ sync_status: "pending" });
+    const categoryId = crypto.randomUUID();
+    await db().products.update(p.id, { category_id: categoryId });
+    await db()
+      .table("categories")
+      .put({
+        id: categoryId,
+        store_id: STORE,
+        created_at: new Date().toISOString(),
+        sync_status: "pending",
+      });
+    await enqueue("products", p.id, { groupId: "a" });
+    await enqueue("categories", categoryId, { groupId: "z" });
+    const uploaded: string[] = [];
+    hooks.__upsert = async (row: { id: string }) => {
+      uploaded.push(row.id);
+      return { error: null };
+    };
+    hooks.__online = true;
+    await syncNow();
+    expect(uploaded).toEqual([categoryId, p.id]);
     expect(await db().sync_queue.count()).toBe(0);
   });
 });

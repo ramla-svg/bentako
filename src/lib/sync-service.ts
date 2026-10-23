@@ -620,7 +620,11 @@ async function pullStore(storeId: string): Promise<void> {
   try {
     const session = await cloudSession();
     if (!session || session.user.id !== activeUserId) {
-      if (version === contextVersion) emit({ authRequired: true, lastIssue: "Reconnect the account for this shop. Your saved records stay here." });
+      if (version === contextVersion)
+        emit({
+          authRequired: true,
+          lastIssue: "Reconnect the account for this shop. Your saved records stay here.",
+        });
       return;
     }
   } catch (err) {
