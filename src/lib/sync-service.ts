@@ -428,7 +428,9 @@ async function drainQueue(options: SyncOptions): Promise<void> {
     }
     const all = (await db().sync_queue.toArray()).filter(inScope);
     if (all.length === 0) return;
-    const session = await cloudSession(options.retryFailed);
+    // Do not rotate a usable sign-in merely because Retry was tapped. Refresh
+    // near expiry or after a confirmed auth rejection, not a data rejection.
+    const session = await cloudSession();
     if (!stillCurrent()) return;
     if (!session || session.user.id !== userId) {
       emit({
