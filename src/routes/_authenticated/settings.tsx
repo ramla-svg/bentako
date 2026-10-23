@@ -46,7 +46,6 @@ import { listStoreDevices, releaseDevice, type StoreDevice } from "@/lib/devices
 import { PLAN_SUMMARY, LOCAL_DATA_NOTE, SYNC_DATA_NOTE, PRINT_NOTE } from "@/lib/plan";
 import { deviceId } from "@/lib/device-id";
 import { lovable } from "@/integrations/lovable";
-import { PinSettings } from "@/components/pin-settings";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   ssr: false,
@@ -412,7 +411,6 @@ function SettingsPage() {
           )}
         </section>
 
-        {isOwner && <PinSettings />}
 
         <section className="space-y-3 fin-card p-4">
           <h2 className="font-display text-sm font-bold">Offline &amp; Sync</h2>
