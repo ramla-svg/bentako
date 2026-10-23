@@ -11,7 +11,13 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { db, getSetting, setSetting } from "@/lib/local-db";
 import { activePlan, isPro, planLimits, type PlanId, type PlanLimits } from "@/lib/plan";
-import { pullAll, startSyncEngine, isOnline, setCloudBackupEnabled } from "@/lib/sync-service";
+import {
+  pullAll,
+  startSyncEngine,
+  isOnline,
+  setCloudBackupEnabled,
+  setSyncContext,
+} from "@/lib/sync-service";
 import type { StoreContext } from "@/lib/repo";
 
 export type Role = "owner" | "cashier";
@@ -183,7 +189,8 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       }
 
       let store: StoreProfile | null = null;
-      if (profile?.store_id) {
+      const profileStoreId = profile?.store_id;
+      if (profileStoreId) {
         const storeRow = await withTimeout(
           Promise.resolve().then(async () => {
             const result = await supabase
@@ -192,7 +199,7 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
                 "id, name, owner_name, logo_url, currency, receipt_footer, allow_negative_stock, default_low_stock_threshold, confirm_void, plan, plan_period, plan_expires_at, plan_source",
               )
 
-              .eq("id", profile.store_id!)
+              .eq("id", profileStoreId)
               .maybeSingle();
             return result.data;
           }),
@@ -213,7 +220,6 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       await withTimeout(setSetting(SNAPSHOT_KEY, fresh), 4000, undefined as void);
       setSnapshot(fresh);
       setStatus(store ? "ready" : "no-store");
-      if (store) void pullAll(store.id);
     } else if (!cached) {
       setStatus("no-store");
     }
@@ -255,6 +261,8 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     );
     setSnapshot(null);
     setStatus("signed-out");
+    setSyncContext(null, null);
+    setCloudBackupEnabled(false);
     await withTimeout(
       supabase.auth.signOut().then(() => undefined),
       8000,
@@ -272,8 +280,11 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
 
   // Cloud backup is a Pro feature: on Free, records stay queued on the device.
   useEffect(() => {
-    setCloudBackupEnabled(isPro(store));
-  }, [store]);
+    const ready = status === "ready" && !!snapshot?.userId && !!store?.id;
+    setSyncContext(ready ? (snapshot?.userId ?? null) : null, ready ? (store?.id ?? null) : null);
+    setCloudBackupEnabled(ready && isPro(store));
+    if (ready && store && isPro(store)) void pullAll(store.id);
+  }, [status, snapshot?.userId, store]);
 
   const value = useMemo<AppSessionValue>(
     () => ({

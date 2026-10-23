@@ -39,12 +39,13 @@ import { useIsNativeApp } from "@/hooks/use-native-app";
 import { promptInstall, useInstallState } from "@/lib/platform/install-service";
 import { platformLabel } from "@/lib/platform/platform-service";
 import { seedDemoProducts } from "@/lib/repo";
-import { isOnline, syncNow } from "@/lib/sync-service";
+import { isOnline, retrySync } from "@/lib/sync-service";
 import { isBillingAdmin } from "@/lib/billing.functions";
 import { removeStoreLogo, uploadStoreLogo, useStoreLogo } from "@/lib/store-logo";
 import { listStoreDevices, releaseDevice, type StoreDevice } from "@/lib/devices.functions";
 import { PLAN_SUMMARY, LOCAL_DATA_NOTE, SYNC_DATA_NOTE, PRINT_NOTE } from "@/lib/plan";
 import { deviceId } from "@/lib/device-id";
+import { lovable } from "@/integrations/lovable";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   ssr: false,
@@ -74,6 +75,8 @@ function SettingsPage() {
   const [confirmVoid, setConfirmVoid] = useState(store?.confirm_void ?? true);
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [syncBusy, setSyncBusy] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
 
   const [issues, setIssues] = useState<IntegrityIssue[] | null>(null);
 
@@ -119,7 +122,7 @@ function SettingsPage() {
       .catch(() => setDevices([]));
   }, [loadDevices]);
   const install = useInstallState();
-  const { connection, pending, failed, lastIssue } = useConnection();
+  const { connection, pending, failed, lastIssue, authRequired } = useConnection();
   const online = connection !== "offline" && isOnline();
   const lastSyncAt = useLiveQuery(
     async () => await getSetting<string | null>("last_sync_at", null),
@@ -427,24 +430,68 @@ function SettingsPage() {
               <dd className="tnum font-medium">{pending}</dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-muted-foreground">Retrying</dt>
+              <dt className="text-muted-foreground">Needs retry</dt>
               <dd className="tnum font-medium">{failed}</dd>
             </div>
           </dl>
           {pro ? (
             <>
               <p className="text-sm text-muted-foreground">
-                {pending === 0
-                  ? lastSyncAt
-                    ? "No changes currently waiting to upload. The recorded sync time does not confirm a complete backup."
-                    : "No changes currently waiting to upload; no sync has been recorded yet."
-                  : (lastIssue ??
-                    `${pending} change${pending > 1 ? "s" : ""} waiting to upload. They are safe on this device.`)}
+                {lastIssue ??
+                  (pending === 0
+                    ? lastSyncAt
+                      ? "No changes currently waiting to upload. The recorded sync time does not confirm a complete backup."
+                      : "No changes currently waiting to upload; no sync has been recorded yet."
+                    : `${pending} change${pending > 1 ? "s" : ""} waiting to upload. They are safe on this device.`)}
               </p>
               <p className="text-xs text-muted-foreground">{SYNC_DATA_NOTE}</p>
-              <Button variant="outline" className="h-12 w-full" onClick={() => void syncNow()}>
-                <RefreshCw className="size-4" /> Sync now
+              <Button
+                variant="outline"
+                className="h-12 w-full"
+                disabled={!online || syncBusy || connection === "syncing" || reconnecting}
+                onClick={async () => {
+                  setSyncBusy(true);
+                  try {
+                    await retrySync();
+                  } finally {
+                    setSyncBusy(false);
+                  }
+                }}
+              >
+                <RefreshCw
+                  className={
+                    syncBusy || connection === "syncing" ? "size-4 animate-spin" : "size-4"
+                  }
+                />{" "}
+                {syncBusy || connection === "syncing" ? "Syncing…" : "Retry sync"}
               </Button>
+              {authRequired ? (
+                <Button
+                  className="h-12 w-full"
+                  disabled={!online || reconnecting}
+                  onClick={async () => {
+                    setReconnecting(true);
+                    try {
+                      const result = await lovable.auth.signInWithOAuth("google", {
+                        redirect_uri: window.location.origin,
+                        extraParams: { prompt: "select_account" },
+                      });
+                      if (result.error)
+                        toast.error(
+                          "Could not reconnect. Your saved records remain on this device.",
+                        );
+                      else if (!result.redirected) {
+                        await refresh();
+                        await retrySync();
+                      }
+                    } finally {
+                      setReconnecting(false);
+                    }
+                  }}
+                >
+                  {reconnecting ? "Reconnecting…" : "Reconnect with Google"}
+                </Button>
+              ) : null}
             </>
           ) : (
             <>

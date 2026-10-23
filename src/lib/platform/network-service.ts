@@ -64,8 +64,12 @@ export async function probeReachable(url = "/favicon.png", timeoutMs = 4000): Pr
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    await fetch(`${url}?ping=${Date.now()}`, { method: "HEAD", signal: controller.signal });
-    return true;
+    const response = await fetch(`${url}?ping=${Date.now()}`, {
+      method: "HEAD",
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    return response.ok;
   } catch {
     return false;
   } finally {

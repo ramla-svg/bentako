@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, Cloud, CloudOff, RefreshCw, UploadCloud } from "lucide-react";
 
 import { subscribeNetwork } from "@/lib/platform/network-service";
-import { getSyncState, isOnline, subscribeSync, syncNow } from "@/lib/sync-service";
+import { getSyncState, isOnline, subscribeSync, retrySync } from "@/lib/sync-service";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export function useConnection() {
   const [state, setState] = useState(() => getSyncState());
@@ -21,23 +22,29 @@ export function useConnection() {
 }
 
 export function ConnectionChip({ className }: { className?: string }) {
-  const { connection, pending, failed } = useConnection();
+  const { connection, pending, failed, backupEnabled, authRequired, lastIssue } = useConnection();
   const offline = connection === "offline" || !isOnline();
-  const issue = failed > 0 && !offline;
+  const issue = backupEnabled && (failed > 0 || authRequired || !!lastIssue) && !offline;
 
-  const label = offline
-    ? pending > 0
-      ? `Offline • ${pending} pending`
-      : "Offline"
-    : issue
-      ? "Sync issue"
-      : connection === "syncing"
-        ? pending > 0
-          ? `Syncing • ${pending} left`
-          : "Syncing"
-        : pending > 0
-          ? `${pending} pending`
-          : "Synced";
+  const label = !backupEnabled
+    ? offline
+      ? "Offline • Saved here"
+      : "Saved on device"
+    : offline
+      ? pending > 0
+        ? `Offline • ${pending} pending`
+        : "Offline"
+      : issue
+        ? authRequired
+          ? "Reconnect account"
+          : "Sync issue"
+        : connection === "syncing"
+          ? pending > 0
+            ? `Syncing • ${pending} left`
+            : "Syncing"
+          : pending > 0
+            ? `${pending} pending`
+            : "Synced";
 
   const Icon = offline
     ? CloudOff
@@ -50,18 +57,21 @@ export function ConnectionChip({ className }: { className?: string }) {
           : Cloud;
 
   return (
-    <button
+    <Button
+      variant="ghost"
       type="button"
-      onClick={() => void syncNow()}
+      onClick={() => void retrySync()}
       title={
-        offline
-          ? "Offline — sales are saved here and sync automatically later"
-          : issue
-            ? "Some records are still waiting. Tap to try again."
-            : "Tap to sync now"
+        !backupEnabled
+          ? "Saved on this device. Cloud backup is available with Pro."
+          : offline
+            ? "Offline — sales are saved here and sync automatically later"
+            : issue
+              ? (lastIssue ?? "Some records are still waiting. Tap to try again.")
+              : "Tap to sync now"
       }
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+        "h-auto inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
         offline
           ? "border-warning/40 bg-warning/15 text-accent-foreground"
           : issue
@@ -74,7 +84,6 @@ export function ConnectionChip({ className }: { className?: string }) {
     >
       <Icon className={cn("size-3.5", connection === "syncing" && "animate-spin")} />
       {label}
-    </button>
+    </Button>
   );
 }
-
