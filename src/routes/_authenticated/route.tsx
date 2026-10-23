@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 import { DeviceGate } from "@/components/device-gate";
+import { PinGate } from "@/components/pin-lock";
 import { useAppSession } from "@/hooks/use-app-session";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -28,9 +29,9 @@ function AuthenticatedLayout() {
   }
 
   return (
-    <>
+    <PinGate>
       <DeviceGate />
       <Outlet />
-    </>
+    </PinGate>
   );
 }

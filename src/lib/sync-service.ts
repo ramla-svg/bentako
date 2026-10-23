@@ -403,16 +403,87 @@ export interface SyncOptions {
 }
 
 /** Drain the queue. Safe to call often; never throws to the caller. */
+let rerunRequested = false;
+
 export function syncNow(options: SyncOptions = {}): Promise<void> {
   if (typeof window === "undefined") return Promise.resolve();
   if (!cloudBackupEnabled || !activeStoreId || !activeUserId || !isOnline() || criticalDepth > 0) {
     return refreshPending();
   }
-  if (activeRun) return activeRun;
+  if (activeRun) {
+    // A save landed mid-pass: run again right after, not on the 30s timer.
+    rerunRequested = true;
+    return activeRun;
+  }
   activeRun = drainQueue(options).finally(() => {
     activeRun = null;
+    if (rerunRequested) {
+      rerunRequested = false;
+      void syncNow();
+    }
   });
   return activeRun;
+}
+
+const BATCH_SIZE = 200;
+
+async function uploadBatches(
+  queue: SyncQueueItem[],
+  storeId: string,
+  stillCurrent: () => boolean,
+): Promise<Set<string>> {
+  const done = new Set<string>();
+  const signature = (q: SyncQueueItem) => `${q.entity}|${Object.keys(q.payload).sort().join(",")}`;
+  let i = 0;
+  while (i < queue.length) {
+    const sig = signature(queue[i]!);
+    const chunk: SyncQueueItem[] = [];
+    while (i < queue.length && chunk.length < BATCH_SIZE && signature(queue[i]!) === sig) {
+      chunk.push(queue[i]!);
+      i++;
+    }
+    if (chunk.length < 2) continue;
+    if (!stillCurrent() || criticalDepth > 0) break;
+    const claims: { item: SyncQueueItem; row: Record<string, unknown>; token: string }[] = [];
+    for (const snap of chunk) {
+      const token = uuid();
+      const claim = await claimAttempt(snap, token, storeId);
+      if (claim) claims.push({ ...claim, token });
+    }
+    const rows = claims.map((c) => c.row);
+    const same = rows.every(
+      (r) =>
+        Object.keys(r).sort().join(",") ===
+        Object.keys(rows[0] ?? {})
+          .sort()
+          .join(","),
+    );
+    if (claims.length < 2 || !same) continue;
+    const controller = new AbortController();
+    uploadController = controller;
+    let ok = false;
+    try {
+      const res = await bounded(
+        supabase
+          .from(chunk[0]!.entity)
+          .upsert(rows as never, { onConflict: "id" })
+          .abortSignal(controller.signal),
+      );
+      ok = !res.error;
+    } catch {
+      ok = false;
+    } finally {
+      controller.abort();
+      if (uploadController === controller) uploadController = null;
+    }
+    if (!ok || !stillCurrent()) break;
+    for (const c of claims) {
+      await finishUpload(c.item, c.token);
+      done.add(c.item.id);
+    }
+    log("batch", { entity: chunk[0]!.entity, rows: claims.length });
+  }
+  return done;
 }
 
 async function drainQueue(options: SyncOptions): Promise<void> {
@@ -473,7 +544,13 @@ async function drainQueue(options: SyncOptions): Promise<void> {
     const brokenGroups = new Set<string>();
     let lastIssue: string | null = null;
 
+    // Fast path: send consecutive rows of the same type (and same columns) in
+    // one request. Any failed batch stops batching; the per-record loop below
+    // then retries those rows one by one with full error handling.
+    const done = await uploadBatches(queue, storeId, stillCurrent);
+
     for (const snapshot of queue) {
+      if (done.has(snapshot.id)) continue;
       if (networkDown || !stillCurrent() || criticalDepth > 0) break;
       // Do not attempt dependent group members after a rejection. Cloud upserts
       // are UUID-idempotent, but separate HTTP requests are not an atomic sale.
