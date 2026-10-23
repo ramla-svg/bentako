@@ -27,7 +27,10 @@ export function PinSettings() {
 
   const checkCurrent = async () => {
     const res = await verifyPin(userId, storeId, current);
-    if (!res.ok) toast.error(res.waitMs ? "Too many wrong tries. Wait and try again." : "Current PIN is wrong.");
+    if (!res.ok)
+      toast.error(
+        res.waitMs ? "Too many wrong tries. Wait and try again." : "Current PIN is wrong.",
+      );
     return res.ok;
   };
 
@@ -104,7 +107,12 @@ export function PinSettings() {
         {enabled ? "Change PIN" : "Turn on PIN"}
       </Button>
       {enabled && (
-        <Button variant="outline" className="h-12 w-full" disabled={busy} onClick={() => void turnOff()}>
+        <Button
+          variant="outline"
+          className="h-12 w-full"
+          disabled={busy}
+          onClick={() => void turnOff()}
+        >
           Turn off PIN
         </Button>
       )}

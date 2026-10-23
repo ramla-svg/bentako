@@ -436,10 +436,10 @@ async function uploadBatches(
   const signature = (q: SyncQueueItem) => `${q.entity}|${Object.keys(q.payload).sort().join(",")}`;
   let i = 0;
   while (i < queue.length) {
-    const sig = signature(queue[i]);
+    const sig = signature(queue[i]!);
     const chunk: SyncQueueItem[] = [];
-    while (i < queue.length && chunk.length < BATCH_SIZE && signature(queue[i]) === sig) {
-      chunk.push(queue[i]);
+    while (i < queue.length && chunk.length < BATCH_SIZE && signature(queue[i]!) === sig) {
+      chunk.push(queue[i]!);
       i++;
     }
     if (chunk.length < 2) continue;
@@ -452,7 +452,11 @@ async function uploadBatches(
     }
     const rows = claims.map((c) => c.row);
     const same = rows.every(
-      (r) => Object.keys(r).sort().join(",") === Object.keys(rows[0] ?? {}).sort().join(","),
+      (r) =>
+        Object.keys(r).sort().join(",") ===
+        Object.keys(rows[0] ?? {})
+          .sort()
+          .join(","),
     );
     if (claims.length < 2 || !same) continue;
     const controller = new AbortController();
@@ -461,7 +465,7 @@ async function uploadBatches(
     try {
       const res = await bounded(
         supabase
-          .from(chunk[0].entity)
+          .from(chunk[0]!.entity)
           .upsert(rows as never, { onConflict: "id" })
           .abortSignal(controller.signal),
       );
@@ -477,7 +481,7 @@ async function uploadBatches(
       await finishUpload(c.item, c.token);
       done.add(c.item.id);
     }
-    log("batch", { entity: chunk[0].entity, rows: claims.length });
+    log("batch", { entity: chunk[0]!.entity, rows: claims.length });
   }
   return done;
 }

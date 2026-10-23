@@ -54,7 +54,12 @@ export async function hasPin(userId: string, storeId: string): Promise<boolean> 
 export async function setPin(userId: string, storeId: string, pin: string): Promise<void> {
   if (!isValidPin(pin)) throw new Error(`PIN must be ${PIN_LENGTH} digits`);
   const salt = crypto.getRandomValues(new Uint8Array(16));
-  const record: PinRecord = { salt: toB64(salt), hash: await derive(pin, salt), failures: 0, lockedUntil: 0 };
+  const record: PinRecord = {
+    salt: toB64(salt),
+    hash: await derive(pin, salt),
+    failures: 0,
+    lockedUntil: 0,
+  };
   await setSetting(pinKey(userId, storeId), record);
 }
 
