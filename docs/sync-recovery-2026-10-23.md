@@ -2,7 +2,7 @@
 
 ## Scope
 
-Sync only; offline PIN is deferred until the user approves it separately. No publishing, business-record deletion, entitlement changes, migrations, or production writes.
+Sync only. The user cancelled the subsequently approved offline PIN phase; all three unfinished, unreferenced PIN files were removed before UI integration. Google sign-in and cached offline entry remain unchanged. No publishing, business-record deletion, entitlement changes, migrations, or production writes.
 
 ## Confirmed issues and corrections
 
@@ -19,6 +19,7 @@ Sync only; offline PIN is deferred until the user approves it separately. No pub
 ## Verification
 
 - Initially reproduced three regression failures before implementing fixes.
+- After PIN cancellation and removal: all 155 tests in 14 files passed; changed-file lint had no errors, and the latest automatic preview build was OK.
 - Targeted and full Vitest runs cover authentication, permission failures, manual backoff bypass, UUID replay, interrupted attempts, hung uploads, concurrent calls, active-store switching, Free preservation, pull failure, edits during pull, and dependency/group order.
 - Changed-file ESLint: no errors; existing mixed-export Fast Refresh warnings on session/connection files remain.
 - Automatic preview diagnostics: build OK. No manual production build/typecheck or publication was run.

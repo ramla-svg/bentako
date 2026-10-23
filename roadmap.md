@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Cancel offline PIN work and remove its unfinished files; retain and recheck the completed sync fix without publishing.
+- [x] Cancel offline PIN work and remove its unfinished files; retain and recheck the completed sync fix without publishing.
 
 - [x] Fix sync authentication/retry/status issues without deleting local records or changing plans; verify isolated failures and the available signed-in flow, then ask about offline PIN separately. No publishing.
 
