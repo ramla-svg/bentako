@@ -53,8 +53,6 @@ const NUMERIC_FIELDS = new Set([
   "sort_order",
 ]);
 
-const CLOUD_HEALTH_URL = `${import.meta.env["VITE_SUPABASE_URL"] ?? ""}/auth/v1/health`;
-
 export type ConnectionState = "online" | "offline" | "syncing";
 
 export interface SyncState {
@@ -66,6 +64,8 @@ export interface SyncState {
   lastSync: string | null;
   /** Friendly, non-technical description of the last problem. */
   lastIssue: string | null;
+  backupEnabled: boolean;
+  authRequired: boolean;
 }
 
 type Listener = () => void;
@@ -78,6 +78,8 @@ let state: SyncState = {
   failed: 0,
   lastSync: null,
   lastIssue: null,
+  backupEnabled: false,
+  authRequired: false,
 };
 
 export function getSyncState(): SyncState {
@@ -104,13 +106,52 @@ function log(event: string, detail?: Record<string, unknown>) {
 
 function friendlyIssue(message: string): string {
   if (isNetworkError(message)) return "No stable internet connection yet.";
-  if (/permission|policy|denied|jwt|401|403/i.test(message))
-    return "Sign in again so this device can upload your records.";
+  if (isAuthError({ message }))
+    return "Reconnect your cloud account. Your records stay on this device.";
+  if (/permission|policy|denied|row.level security|42501|403/i.test(message))
+    return "Cloud access was refused for this shop. Your records stay on this device.";
   return "Some records could not be uploaded yet. They are safe on this device.";
 }
 
 function isNetworkError(message: string): boolean {
-  return /fetch|network|Load failed|timeout|abort|ERR_|502|503|504/i.test(message);
+  return /fetch|network|Load failed|time.?out|abort|ERR_|429|502|503|504/i.test(message);
+}
+
+type UploadError = { message: string; code?: string; status?: number };
+
+function isAuthError(error: UploadError): boolean {
+  return (
+    error.status === 401 ||
+    /PGRST30[123]/i.test(error.code ?? "") ||
+    /jwt|401|refresh.?token|invalid.?token|session.*expired/i.test(error.message)
+  );
+}
+
+/** Auth locks and interrupted requests must never leave sync busy forever. */
+async function bounded<T>(promise: PromiseLike<T>, ms = 12000): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      Promise.resolve(promise),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error("Network timeout")), ms);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function cloudSession(refresh = false) {
+  const result = await bounded(supabase.auth.getSession(), 8000);
+  if (result.error) throw new Error(result.error.message);
+  let session = result.data.session;
+  if (session && (refresh || (session.expires_at ?? 0) <= Date.now() / 1000 + 60)) {
+    const refreshed = await bounded(supabase.auth.refreshSession(), 8000);
+    if (refreshed.error) throw new Error(refreshed.error.message);
+    session = refreshed.data.session;
+  }
+  return session;
 }
 
 /* ------------------------------------------------------------- connectivity */
@@ -124,11 +165,35 @@ export function isOnline(): boolean {
  * Cloud backup is a paid feature. On the Free plan nothing is pushed or pulled:
  * records stay queued on the device, so upgrading later uploads the backlog.
  */
-let cloudBackupEnabled = true;
+let cloudBackupEnabled = false;
+let activeStoreId: string | null = null;
+let activeUserId: string | null = null;
+let contextVersion = 0;
+let uploadController: AbortController | null = null;
+let pullController: AbortController | null = null;
+
+/** Resolved AppSessionProvider identity owns upload scope, not old queue rows. */
+export function setSyncContext(userId: string | null, storeId: string | null): void {
+  if (activeUserId === userId && activeStoreId === storeId) return;
+  activeUserId = userId;
+  activeStoreId = storeId;
+  contextVersion += 1;
+  uploadController?.abort();
+  pullController?.abort();
+  emit({ authRequired: false, lastIssue: null, lastSync: null, pending: 0, failed: 0 });
+  void refreshPending();
+}
 
 export function setCloudBackupEnabled(enabled: boolean): void {
   const changed = cloudBackupEnabled !== enabled;
   cloudBackupEnabled = enabled;
+  if (changed) {
+    contextVersion += 1;
+    uploadController?.abort();
+    pullController?.abort();
+    emit({ backupEnabled: enabled, authRequired: false, lastIssue: null });
+    void refreshPending();
+  }
   if (changed && enabled) void syncNow();
 }
 
@@ -172,15 +237,23 @@ export function onCriticalWorkIdle(fn: () => void): () => void {
 }
 
 async function countQueue() {
-  const all = await db().sync_queue.toArray();
+  const all = (await db().sync_queue.toArray()).filter(inScope);
   return { pending: all.length, failed: all.filter((i) => i.status === "failed").length };
+}
+
+function inScope(item: SyncQueueItem): boolean {
+  return (
+    !!activeStoreId &&
+    item.payload["store_id"] === activeStoreId &&
+    ENTITY_ORDER.includes(item.entity)
+  );
 }
 
 async function refreshPending() {
   const { pending, failed } = await countQueue();
   emit({
     pending,
-    failed,
+    failed: cloudBackupEnabled ? failed : 0,
     connection: isOnline() ? (state.connection === "syncing" ? "syncing" : "online") : "offline",
   });
 }
@@ -236,6 +309,7 @@ function attemptChanged(current: SyncQueueItem | undefined, attemptToken: string
 export async function claimAttempt(
   snapshot: SyncQueueItem,
   attemptToken: string,
+  storeId?: string,
 ): Promise<{ item: SyncQueueItem; row: Record<string, unknown> } | null> {
   const local = db();
   return local.transaction("rw", [local.sync_queue, local.table(snapshot.entity)], async () => {
@@ -244,6 +318,7 @@ export async function claimAttempt(
     const current = (await local.table(item.entity).get(item.entity_id)) as
       Record<string, unknown> | undefined;
     const row = current ? stripLocalFields(current) : item.payload;
+    if (storeId && row["store_id"] !== storeId) return null;
     if (!current && Object.keys(row).length === 0) {
       // Nothing left locally and no snapshot: the record was removed.
       await local.sync_queue.delete(item.id);
@@ -288,13 +363,14 @@ export async function failUpload(
     const current = await local.sync_queue.get(item.id);
     if (!current || attemptChanged(current, attemptToken)) return "superseded";
     if (network) {
-      // Connectivity failure is not a data failure: stay pending, retry later.
+      // Connectivity/auth failure is not a data failure: stay pending.
       await local.sync_queue.update(item.id, {
         status: "pending",
         last_error: message,
         attempt_token: null,
         updated_at: nowIso(),
       });
+      await local.table(item.entity).update(item.entity_id, { sync_status: "pending" });
       return "retry-later";
     }
     await local.sync_queue.update(item.id, {
@@ -312,45 +388,72 @@ export async function failUpload(
 /** Exponential backoff so a permanently-failing row can't hammer the network. */
 function isBackedOff(item: SyncQueueItem): boolean {
   if (item.status !== "failed" || item.retry_count === 0) return false;
+  // Old versions counted expired sessions as rejected data. A usable session
+  // should retry those records immediately, without deleting their intent.
+  if (item.last_error && isAuthError({ message: item.last_error })) return false;
   const waitMs = Math.min(5 * 60_000, 5_000 * 2 ** Math.min(item.retry_count - 1, 6));
   const since = new Date(item.last_attempt_at ?? item.updated_at).getTime();
   return Date.now() - since < waitMs;
 }
 
-let running = false;
+let activeRun: Promise<void> | null = null;
+
+export interface SyncOptions {
+  retryFailed?: boolean;
+}
 
 /** Drain the queue. Safe to call often; never throws to the caller. */
-export async function syncNow(): Promise<void> {
-  if (typeof window === "undefined" || running) return;
-  if (!cloudBackupEnabled) {
-    await refreshPending();
-    return;
+export function syncNow(options: SyncOptions = {}): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
+  if (!cloudBackupEnabled || !activeStoreId || !activeUserId || !isOnline() || criticalDepth > 0) {
+    return refreshPending();
   }
-  if (criticalDepth > 0) return; // never interrupt an active checkout
+  if (activeRun) return activeRun;
+  activeRun = drainQueue(options).finally(() => {
+    activeRun = null;
+  });
+  return activeRun;
+}
 
-  if (!isOnline()) {
-    emit({ connection: "offline" });
-    return;
-  }
-
-  let hasSession = false;
+async function drainQueue(options: SyncOptions): Promise<void> {
+  const version = contextVersion;
+  const storeId = activeStoreId;
+  const userId = activeUserId;
+  const stillCurrent = () => version === contextVersion && cloudBackupEnabled;
   try {
-    const { data } = await supabase.auth.getSession();
-    hasSession = !!data.session;
-  } catch {
-    hasSession = false;
-  }
-  if (!hasSession) {
-    await refreshPending();
-    return;
-  }
-
-  running = true;
-  try {
-    const all = await db().sync_queue.toArray();
-    const queue = all.filter((item) => !isBackedOff(item));
+    if (!cloudBackupEnabled || !storeId || !userId || criticalDepth > 0) return;
+    if (!isOnline()) {
+      emit({ connection: "offline" });
+      return;
+    }
+    const all = (await db().sync_queue.toArray()).filter(inScope);
+    if (all.length === 0) return;
+    // Do not rotate a usable sign-in merely because Retry was tapped. Refresh
+    // near expiry or after a confirmed auth rejection, not a data rejection.
+    const session = await cloudSession();
+    if (!stillCurrent()) return;
+    if (!session || session.user.id !== userId) {
+      emit({
+        authRequired: true,
+        lastIssue: "Reconnect the account for this shop. Your saved records stay here.",
+      });
+      return;
+    }
+    emit({ authRequired: false });
+    const blockedGroups = new Set(
+      all
+        .filter(isBackedOff)
+        .map((q) => q.group_id)
+        .filter(Boolean),
+    );
+    const queue = all.filter(
+      (item) =>
+        options.retryFailed ||
+        (!isBackedOff(item) && !(item.group_id && blockedGroups.has(item.group_id))),
+    );
     if (queue.length === 0) {
-      await refreshPending();
+      const failure = all.find((q) => q.last_error)?.last_error;
+      emit({ lastIssue: failure ? friendlyIssue(failure) : state.lastIssue });
       return;
     }
     emit({ connection: "syncing" });
@@ -360,36 +463,62 @@ export async function syncNow(): Promise<void> {
     // FK-safe order inside the group.
     queue.sort(
       (a, b) =>
-        (a.group_id ?? "").localeCompare(b.group_id ?? "") ||
         ENTITY_ORDER.indexOf(a.entity) - ENTITY_ORDER.indexOf(b.entity) ||
+        (a.group_id ?? "").localeCompare(b.group_id ?? "") ||
         a.created_at.localeCompare(b.created_at),
     );
 
     let networkDown = false;
+    let refreshedAfterRejection = false;
     const brokenGroups = new Set<string>();
     let lastIssue: string | null = null;
 
     for (const snapshot of queue) {
-      if (networkDown) break;
-      // A group is atomic: if one member is rejected, stop pushing the rest so
-      // the cloud never ends up with a sale header and no items.
+      if (networkDown || !stillCurrent() || criticalDepth > 0) break;
+      // Do not attempt dependent group members after a rejection. Cloud upserts
+      // are UUID-idempotent, but separate HTTP requests are not an atomic sale.
       if (snapshot.group_id && brokenGroups.has(snapshot.group_id)) continue;
 
       // Read the CURRENT queue item and local row and mark the attempt in one
       // transaction, so no edit+enqueue can land between the read and the mark.
       const attemptToken = uuid();
-      const claim = await claimAttempt(snapshot, attemptToken);
+      const claim = await claimAttempt(snapshot, attemptToken, storeId);
       if (!claim) continue;
       const { item, row } = claim;
 
       // Upsert on the client-generated UUID primary key: replaying the same
       // record can never create a second cloud row.
-      let error: { message: string } | null = null;
-      try {
-        const res = await supabase.from(item.entity).upsert(row as never, { onConflict: "id" });
-        error = res.error;
-      } catch (err) {
-        error = { message: err instanceof Error ? err.message : "Network error" };
+      const upload = async (): Promise<UploadError | null> => {
+        const controller = new AbortController();
+        uploadController = controller;
+        try {
+          const res = await bounded(
+            supabase
+              .from(item.entity)
+              .upsert(row as never, { onConflict: "id" })
+              .abortSignal(controller.signal),
+          );
+          return res.error ? { ...res.error, status: res.status } : null;
+        } catch (err) {
+          return { message: err instanceof Error ? err.message : "Network error" };
+        } finally {
+          controller.abort();
+          if (uploadController === controller) uploadController = null;
+        }
+      };
+      let error = await upload();
+      if (error && isAuthError(error) && !refreshedAfterRejection && stillCurrent()) {
+        refreshedAfterRejection = true;
+        try {
+          const refreshed = await cloudSession(true);
+          if (refreshed?.user.id === userId && stillCurrent()) error = await upload();
+        } catch (err) {
+          error = { message: err instanceof Error ? err.message : "Refresh token unavailable" };
+        }
+      }
+      if (!stillCurrent()) {
+        await failUpload(item, attemptToken, "Upload interrupted; saved locally", true);
+        break;
       }
 
       if (!error) {
@@ -399,13 +528,16 @@ export async function syncNow(): Promise<void> {
 
       lastIssue = friendlyIssue(error.message);
       const network = isNetworkError(error.message);
-      if (network) networkDown = true;
+      const auth = isAuthError(error);
+      if (network || auth) networkDown = true;
+      if (auth) emit({ authRequired: true });
       if (item.group_id) brokenGroups.add(item.group_id);
-      const outcome = await failUpload(item, attemptToken, error.message, network);
+      const outcome = await failUpload(item, attemptToken, error.message, network || auth);
       log(outcome, { entity: item.entity, attempt: item.retry_count + 1 });
     }
 
     const { pending, failed } = await countQueue();
+    if (!stillCurrent()) return;
     const stamp = nowIso();
     if (pending === 0) {
       await setSetting("last_sync_at", stamp);
@@ -415,15 +547,20 @@ export async function syncNow(): Promise<void> {
       connection: isOnline() ? "online" : "offline",
       pending,
       failed,
-      lastSync: stamp,
-      lastIssue: pending === 0 ? null : lastIssue,
+      lastSync: pending === 0 ? stamp : state.lastSync,
+      lastIssue: pending === 0 ? null : (lastIssue ?? state.lastIssue),
     });
   } catch (err) {
-    log("aborted", { message: err instanceof Error ? err.message : "unknown" });
-    emit({ connection: isOnline() ? "online" : "offline" });
+    const message = err instanceof Error ? err.message : "Network error";
+    log("aborted");
+    if (stillCurrent())
+      emit({
+        connection: isOnline() ? "online" : "offline",
+        lastIssue: friendlyIssue(message),
+        authRequired: isAuthError({ message }),
+      });
   } finally {
-    running = false;
-    void refreshPending();
+    await refreshPending();
   }
 }
 
@@ -446,75 +583,143 @@ function newerThan(cloud: Record<string, unknown>, local: Record<string, unknown
   return c >= l;
 }
 
+let activePull: Promise<void> | null = null;
+let pullingStore: string | null = null;
+
+/** Retry both directions; a read failure must also be recoverable from Settings. */
+export async function retrySync(): Promise<void> {
+  await syncNow({ retryFailed: true });
+  const storeId = activeStoreId;
+  if (storeId && !state.authRequired) await pullAll(storeId);
+}
+
+/** Share pulls as well, so startup/reconnect cannot race cloud snapshots. */
+export function pullAll(storeId: string): Promise<void> {
+  if (activePull) {
+    if (pullingStore === storeId) return activePull;
+    return activePull.then(() => pullAll(storeId));
+  }
+  pullingStore = storeId;
+  activePull = pullStore(storeId).finally(() => {
+    activePull = null;
+    pullingStore = null;
+  });
+  return activePull;
+}
+
 /** Pull cloud data locally. Never clobbers local work that has not synced. */
-export async function pullAll(storeId: string): Promise<void> {
-  if (typeof window === "undefined" || !isOnline() || !cloudBackupEnabled) return;
+async function pullStore(storeId: string): Promise<void> {
+  if (
+    typeof window === "undefined" ||
+    !isOnline() ||
+    !cloudBackupEnabled ||
+    storeId !== activeStoreId
+  )
+    return;
+  const version = contextVersion;
   try {
-    const { data } = await supabase.auth.getSession();
-    if (!data.session) return;
-  } catch {
+    const session = await cloudSession();
+    if (!session || session.user.id !== activeUserId) {
+      if (version === contextVersion)
+        emit({
+          authRequired: true,
+          lastIssue: "Reconnect the account for this shop. Your saved records stay here.",
+        });
+      return;
+    }
+  } catch (err) {
+    if (version === contextVersion) {
+      const message = err instanceof Error ? err.message : "Network error";
+      emit({ lastIssue: friendlyIssue(message), authRequired: isAuthError({ message }) });
+    }
     return;
   }
 
   // Push first: a pull must never overwrite a sale or stock change that has not
   // reached the cloud yet.
   await syncNow();
+  if (version !== contextVersion || state.authRequired || !cloudBackupEnabled) return;
 
   try {
     emit({ connection: "syncing" });
-    const queue = await db().sync_queue.toArray();
-    const queuedIds = new Set(queue.map((q) => q.entity_id));
-    // A product with queued stock movements must keep its local quantity.
-    const lockedProducts = new Set<string>();
-    for (const q of queue) {
-      if (q.entity === "inventory_movements" || q.entity === "sale_items") {
-        const pid = q.payload["product_id"];
-        if (typeof pid === "string") lockedProducts.add(pid);
-      }
-      if (q.entity === "products") lockedProducts.add(q.entity_id);
-    }
-
+    let readIssue: string | null = null;
     for (const entity of ENTITY_ORDER) {
-      const { data, error } = await supabase
-        .from(entity)
-        .select("*")
-        .eq("store_id", storeId)
-        .limit(5000);
-      if (error || !data) continue;
+      if (version !== contextVersion || !cloudBackupEnabled || !isOnline()) return;
+      const controller = new AbortController();
+      pullController = controller;
+      const { data, error } = await bounded(
+        supabase
+          .from(entity)
+          .select("*")
+          .eq("store_id", storeId)
+          .limit(5000)
+          .abortSignal(controller.signal),
+      ).finally(() => {
+        controller.abort();
+        if (pullController === controller) pullController = null;
+      });
+      if (version !== contextVersion) return;
+      if (error || !data) {
+        readIssue = friendlyIssue(error?.message ?? "Cloud read unavailable");
+        if (error && isAuthError(error)) emit({ authRequired: true });
+        continue;
+      }
       const table = db().table(entity);
       for (const raw of data as Record<string, unknown>[]) {
         const id = raw["id"] as string;
-        if (queuedIds.has(id)) {
-          log("conflict-skip", { entity, reason: "local upload pending" });
-          continue;
-        }
-        const local = (await table.get(id)) as Record<string, unknown> | undefined;
-        if (local) {
-          if (local["sync_status"] !== "synced") continue; // local edit wins for now
-          if (
-            entity === "sales" &&
-            local["status"] === "completed" &&
-            raw["status"] === "completed"
-          )
-            continue; // a completed local sale is never rewritten
-          if (entity === "products" && lockedProducts.has(id)) continue; // stock ledger pending
-          if (!newerThan(raw, local)) {
-            log("conflict-keep-local", { entity });
-            continue;
+        if (raw["store_id"] !== storeId || version !== contextVersion) continue;
+        await db().transaction("rw", [table, db().sync_queue], async () => {
+          const queue = (await db().sync_queue.toArray()).filter(inScope);
+          if (queue.some((q) => q.entity === entity && q.entity_id === id)) {
+            log("conflict-skip", { entity, reason: "local upload pending" });
+            return;
           }
-        }
-        await table.put(coerce(raw));
+          const local = (await table.get(id)) as Record<string, unknown> | undefined;
+          if (local) {
+            if (local["sync_status"] !== "synced") return; // local edit wins for now
+            if (
+              entity === "sales" &&
+              local["status"] === "completed" &&
+              raw["status"] === "completed"
+            )
+              return; // a completed local sale is never rewritten
+            if (
+              entity === "products" &&
+              queue.some(
+                (q) =>
+                  q.payload["product_id"] === id &&
+                  (q.entity === "inventory_movements" || q.entity === "sale_items"),
+              )
+            )
+              return;
+            if (!newerThan(raw, local)) {
+              log("conflict-keep-local", { entity });
+              return;
+            }
+          }
+          await table.put(coerce(raw));
+        });
       }
     }
 
-    await setSetting("last_sync_at", nowIso());
-    emit({ connection: isOnline() ? "online" : "offline", lastSync: nowIso() });
+    const { pending } = await countQueue();
+    if (version !== contextVersion) return;
+    if (!readIssue && pending === 0) {
+      const stamp = nowIso();
+      await setSetting("last_sync_at", stamp);
+      emit({ lastSync: stamp, lastIssue: null });
+    } else if (readIssue) emit({ lastIssue: readIssue });
+    emit({ connection: isOnline() ? "online" : "offline" });
     log("pull-complete");
   } catch (err) {
-    log("pull-aborted", { message: err instanceof Error ? err.message : "unknown" });
-    emit({ connection: isOnline() ? "online" : "offline" });
+    log("pull-aborted");
+    emit({
+      connection: isOnline() ? "online" : "offline",
+      lastIssue: friendlyIssue(err instanceof Error ? err.message : "Network error"),
+    });
   } finally {
-    void refreshPending();
+    if (version === contextVersion) emit({ connection: isOnline() ? "online" : "offline" });
+    await refreshPending();
   }
 }
 
@@ -549,11 +754,16 @@ export function startSyncEngine(): () => void {
       log("reconnect-stable");
       // navigator.onLine can be true on a captive portal or dead hotspot. Do
       // not churn queue attempts until the cloud endpoint is actually reachable.
-      const reachable = CLOUD_HEALTH_URL.startsWith("http")
-        ? await probeReachable(CLOUD_HEALTH_URL)
-        : await probeReachable();
-      if (reachable) void syncNow();
-      else {
+      // A transport probe is not an authentication check. The app's own static
+      // endpoint avoids unauthenticated /auth/health requests returning 401.
+      const reachable = await probeReachable();
+      if (reachable) {
+        const storeId = activeStoreId;
+        void (async () => {
+          await syncNow();
+          if (storeId && storeId === activeStoreId) await pullAll(storeId);
+        })();
+      } else {
         emit({ connection: "offline" });
         log("reconnect-not-reachable");
       }

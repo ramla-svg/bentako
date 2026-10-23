@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Fix sync authentication/retry/status issues without deleting local records or changing plans; verify isolated failures and the available signed-in flow, then ask about offline PIN separately. No publishing.
+
 - [x] Correct new GCash customer transaction wallet direction, clarify physical-cash choices, preserve legacy records, and verify with isolated tests and desktop/mobile checks; no publishing.
 
 - [x] Apply chosen storefront branding and versioned install icons; verify assets, headers and regressions without publishing.
