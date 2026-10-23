@@ -293,15 +293,13 @@ describe("sync recovery", () => {
     await db()
       .table("sales")
       .put({ id: saleId, store_id: STORE, created_at: now, sync_status: "pending" });
-    await db()
-      .table("sale_items")
-      .put({
-        id: itemId,
-        sale_id: saleId,
-        store_id: STORE,
-        created_at: now,
-        sync_status: "pending",
-      });
+    await db().table("sale_items").put({
+      id: itemId,
+      sale_id: saleId,
+      store_id: STORE,
+      created_at: now,
+      sync_status: "pending",
+    });
     await enqueue("sales", saleId, { groupId: saleId });
     await enqueue("sale_items", itemId, { groupId: saleId });
     const uploaded: string[] = [];
@@ -327,14 +325,12 @@ describe("sync recovery", () => {
     const p = await addProduct({ sync_status: "pending" });
     const categoryId = crypto.randomUUID();
     await db().products.update(p.id, { category_id: categoryId });
-    await db()
-      .table("categories")
-      .put({
-        id: categoryId,
-        store_id: STORE,
-        created_at: new Date().toISOString(),
-        sync_status: "pending",
-      });
+    await db().table("categories").put({
+      id: categoryId,
+      store_id: STORE,
+      created_at: new Date().toISOString(),
+      sync_status: "pending",
+    });
     await enqueue("products", p.id, { groupId: "a" });
     await enqueue("categories", categoryId, { groupId: "z" });
     const uploaded: string[] = [];
