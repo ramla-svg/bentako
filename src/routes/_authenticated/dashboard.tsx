@@ -226,7 +226,6 @@ function Dashboard() {
           <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
         </Link>
 
-
         {/* Today at a glance */}
         <section>
           <SectionHead title="Today at a glance" to="/reports" />
