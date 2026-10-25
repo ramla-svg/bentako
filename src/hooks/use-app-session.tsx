@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useMemo,
   useState,
   type ReactNode,
@@ -10,7 +11,6 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { db, getSetting, setSetting } from "@/lib/local-db";
-import { clearAllPins } from "@/lib/offline-pin";
 import { activePlan, isPro, planLimits, type PlanId, type PlanLimits } from "@/lib/plan";
 import {
   pullAll,
@@ -98,7 +98,18 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [email, setEmail] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const inFlight = useRef<Promise<void> | null>(null);
+  const load = useCallback(() => {
+    if (inFlight.current) return inFlight.current;
+    const run = loadOnce().finally(() => {
+      inFlight.current = null;
+    });
+    inFlight.current = run;
+    return run;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadOnce = async () => {
     const readCache = () =>
       withTimeout<Snapshot | null>(getSetting<Snapshot | null>(SNAPSHOT_KEY, null), 4000, null);
 
@@ -224,7 +235,7 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     } else if (!cached) {
       setStatus("no-store");
     }
-  }, []);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -239,7 +250,9 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     const stop = startSyncEngine();
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
-        void load();
+        // Never call Supabase inside this callback: it holds the auth lock,
+        // and getSession() would wait on itself until timeouts expire.
+        window.setTimeout(() => void load().catch(() => undefined), 0);
       }
     });
     return () => {
@@ -253,10 +266,10 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     // Remove offline access before notifying Supabase, so an auth event racing
     // this call cannot reopen the cached store after an intentional logout.
+    // The device PIN is kept (keyed per user+store) so logging back in asks
+    // for the existing PIN instead of creating a new one.
     await withTimeout(
-      db()
-        .settings.delete(SNAPSHOT_KEY)
-        .then(() => clearAllPins()),
+      db().settings.delete(SNAPSHOT_KEY),
       4000,
       undefined,
     );
@@ -284,7 +297,12 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     const ready = status === "ready" && !!snapshot?.userId && !!store?.id;
     setSyncContext(ready ? (snapshot?.userId ?? null) : null, ready ? (store?.id ?? null) : null);
     setCloudBackupEnabled(ready && isPro(store));
-    if (ready && store && isPro(store)) void pullAll(store.id);
+    if (ready && store && isPro(store)) {
+      const id = store.id;
+      const t = window.setTimeout(() => void pullAll(id), 1500);
+      return () => window.clearTimeout(t);
+    }
+    return undefined;
   }, [status, snapshot?.userId, store]);
 
   const value = useMemo<AppSessionValue>(
