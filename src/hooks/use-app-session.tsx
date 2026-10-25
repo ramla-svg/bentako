@@ -10,7 +10,6 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { db, getSetting, setSetting } from "@/lib/local-db";
-import { clearAllPins } from "@/lib/offline-pin";
 import { activePlan, isPro, planLimits, type PlanId, type PlanLimits } from "@/lib/plan";
 import {
   pullAll,
@@ -235,7 +234,7 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     } else if (!cached) {
       setStatus("no-store");
     }
-  }, []);
+  };
 
   useEffect(() => {
     let cancelled = false;
