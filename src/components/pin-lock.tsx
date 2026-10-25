@@ -62,7 +62,12 @@ export function PinGate({ children }: { children: ReactNode }) {
     return () => document.removeEventListener("visibilitychange", onVis);
   }, [userId, storeId]);
 
-  if (locked === null) return null;
+  if (locked === null)
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-background" role="status" aria-label="Loading">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
   if (needsSetup && userId && storeId)
     return (
       <PinSetup

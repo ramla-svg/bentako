@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useMemo,
   useState,
   type ReactNode,
@@ -296,7 +297,11 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     const ready = status === "ready" && !!snapshot?.userId && !!store?.id;
     setSyncContext(ready ? (snapshot?.userId ?? null) : null, ready ? (store?.id ?? null) : null);
     setCloudBackupEnabled(ready && isPro(store));
-    if (ready && store && isPro(store)) void pullAll(store.id);
+    if (ready && store && isPro(store)) {
+      const id = store.id;
+      const t = window.setTimeout(() => void pullAll(id), 1500);
+      return () => window.clearTimeout(t);
+    }
   }, [status, snapshot?.userId, store]);
 
   const value = useMemo<AppSessionValue>(
