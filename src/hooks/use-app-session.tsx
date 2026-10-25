@@ -302,6 +302,7 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       const t = window.setTimeout(() => void pullAll(id), 1500);
       return () => window.clearTimeout(t);
     }
+    return undefined;
   }, [status, snapshot?.userId, store]);
 
   const value = useMemo<AppSessionValue>(
