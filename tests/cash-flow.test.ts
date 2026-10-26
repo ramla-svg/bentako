@@ -185,3 +185,16 @@ describe("GCash customer service flow", () => {
     );
   });
 });
+
+describe("automatic physical cash", () => {
+  it("Cash In ₱500 + ₱10 cash fee adds ₱510", () => {
+    expect(physicalCashEffect(suggestedPhysicalCash("cash_in"), 500, 10)).toBe(510);
+  });
+  it("Cash Out ₱1,000 + ₱20 cash fee removes ₱980", () => {
+    expect(physicalCashEffect(suggestedPhysicalCash("cash_out"), 1000, 20)).toBe(-980);
+  });
+  it("Add Balance from Bank leaves cash unchanged; from Cash on hand removes it", () => {
+    expect(physicalCashEffect(suggestedPhysicalCash("add_balance", "Bank"), 1000)).toBe(0);
+    expect(physicalCashEffect(suggestedPhysicalCash("add_balance", "Cash on hand"), 1000)).toBe(-1000);
+  });
+});
