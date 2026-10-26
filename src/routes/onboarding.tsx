@@ -43,6 +43,7 @@ function Onboarding() {
   }, [status, navigate]);
 
   async function finish() {
+    if (busy) return;
     if (!storeName.trim()) {
       toast.error("Please enter your store name.");
       setStep(1);
@@ -58,17 +59,34 @@ function Onboarding() {
       const uid = userData.user?.id ?? userId;
       if (!uid) throw new Error("Please sign in again.");
 
-      const { data: store, error: storeError } = await supabase
-        .from("stores")
-        .insert({
-          name: storeName.trim(),
-          owner_id: uid,
-          owner_name: ownerName.trim() || null,
-          receipt_footer: "Salamat po!",
-        })
-        .select("id")
-        .single();
-      if (storeError) throw storeError;
+      // One email = one store: reuse the active store if this account already has one.
+      const findExisting = async () =>
+        (
+          await supabase
+            .from("stores")
+            .select("id")
+            .eq("owner_id", uid)
+            .is("retired_at", null)
+            .maybeSingle()
+        ).data;
+      let store = await findExisting();
+      const isNew = !store;
+      if (!store) {
+        const { data, error: storeError } = await supabase
+          .from("stores")
+          .insert({
+            name: storeName.trim(),
+            owner_id: uid,
+            owner_name: ownerName.trim() || null,
+            receipt_footer: "Salamat po!",
+          })
+          .select("id")
+          .single();
+        if (storeError && storeError.code === "23505") store = await findExisting();
+        else if (storeError) throw storeError;
+        else store = data;
+      }
+      if (!store) throw new Error("Setup failed. Please try again.");
 
       const { error: profileError } = await supabase
         .from("profiles")
