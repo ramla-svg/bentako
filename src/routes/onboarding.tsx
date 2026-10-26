@@ -104,7 +104,7 @@ function Onboarding() {
 
       const ctx = { storeId: store.id, userId: uid, userName: ownerName.trim() || null };
       await ensureDefaultCategories(store.id);
-      if (withDemo) await seedDemoProducts(ctx);
+      if (withDemo && isNew) await seedDemoProducts(ctx);
 
       await refresh();
       toast.success("Your store is ready. Happy selling!");

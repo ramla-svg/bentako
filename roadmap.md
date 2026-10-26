@@ -26,4 +26,4 @@
 - [x] Share POS review content between persistent desktop checkout and mobile sheet; safe search shortcut.
 - [x] Improve desktop dashboard and product/inventory/sales scanning without changing mobile workflows.
 - [x] Verify synthetic checkout, resizing, keyboard behavior, responsive screenshots, regression tests and diagnostics; document limits.
-- [ ] One store per email; Owner Tools counts unique owners; Pro store set as primary owner
+- [x] One store per email; Owner Tools counts unique owners; Pro store set as primary owner
