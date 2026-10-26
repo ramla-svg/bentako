@@ -1,0 +1,3 @@
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS retired_at timestamptz;
+UPDATE public.stores SET retired_at = now() WHERE id IN ('7dbb8fb2-acea-496d-bc12-aeb6cb02bbfd','e6469920-ec71-40fc-943e-a26e25cb5c8c','1110d491-776a-4618-babd-76049742195a','3c82f047-07d1-429c-a216-0ec98b9bf9d6');
+CREATE UNIQUE INDEX IF NOT EXISTS stores_one_active_per_owner ON public.stores(owner_id) WHERE retired_at IS NULL;

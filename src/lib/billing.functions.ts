@@ -250,6 +250,7 @@ async function loadAll(admin: AdminClient) {
       const r = await admin
         .from("stores")
         .select(STORE_COLS)
+        .is("retired_at", null)
         .order("created_at")
         .order("id")
         .range(from, to);
