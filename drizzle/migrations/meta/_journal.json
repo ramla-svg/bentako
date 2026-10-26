@@ -92,6 +92,13 @@
       "when": 1792541449107,
       "tag": "0012_gcash_service_kind",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792990766151,
+      "tag": "0013_store_retired_at",
+      "breakpoints": true
     }
   ]
 }

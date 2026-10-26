@@ -788,6 +788,7 @@ export type Database = {
           plan_period: string | null
           plan_source: string | null
           receipt_footer: string | null
+          retired_at: string | null
           updated_at: string
         }
         Insert: {
@@ -806,6 +807,7 @@ export type Database = {
           plan_period?: string | null
           plan_source?: string | null
           receipt_footer?: string | null
+          retired_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -824,6 +826,7 @@ export type Database = {
           plan_period?: string | null
           plan_source?: string | null
           receipt_footer?: string | null
+          retired_at?: string | null
           updated_at?: string
         }
         Relationships: []
