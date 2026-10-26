@@ -125,14 +125,8 @@ function rangeStart(range: RangeKey): number {
 
 type DrawerMove = PhysicalCashMove;
 
-const DRAWER_MOVES: { value: DrawerMove; label: string }[] = [
-  { value: "in", label: "Add physical cash (+)" },
-  { value: "out", label: "Take physical cash out (−)" },
-  { value: "none", label: "No physical cash (bank / online)" },
-];
-
-/** Suggested drawer effect; the user confirms or changes it in the form. */
-function defaultDrawerMove(kind: EntryKind, source: NoteSource): DrawerMove | "" {
+/** Physical cash movement is decided by the service kind and funding source. */
+function defaultDrawerMove(kind: EntryKind, source: NoteSource): DrawerMove {
   return suggestedPhysicalCash(kind, source);
 }
 
@@ -198,8 +192,8 @@ function CashPage() {
   const [reference, setReference] = useState("");
   const [busy, setBusy] = useState(false);
   // Explicit physical drawer effect for Cash on hand (never inferred from notes).
-  const [drawerMove, setDrawerMove] = useState<DrawerMove | "">("");
-  const [feeInCash, setFeeInCash] = useState(false);
+  const drawerMove = defaultDrawerMove(kind, source);
+  const [feeInCash, setFeeInCash] = useState(true);
 
   // Screenshot attached to the entry being created (kept on this device only).
   const [photo, setPhoto] = useState<Blob | null>(null);
@@ -252,7 +246,7 @@ function CashPage() {
   const previewFee = Number(fee);
   const walletChange = walletDirection(kind) === "cash_in" ? previewAmount : -previewAmount;
   const physicalChange = physicalCashEffect(
-    drawerMove || "none",
+    drawerMove,
     previewAmount,
     feeInCash ? previewFee : 0,
   );
@@ -303,8 +297,7 @@ function CashPage() {
     setMobile("");
     setReference("");
     setPhoto(null);
-    setDrawerMove(defaultDrawerMove(preset?.kind ?? "cash_in", preset?.source ?? ""));
-    setFeeInCash(false);
+    setFeeInCash(true);
     setOpen(true);
   }
 
@@ -334,10 +327,6 @@ function CashPage() {
     const value = Number(amount);
     if (!value || value <= 0) {
       toast.error("Enter an amount.");
-      return;
-    }
-    if (!drawerMove) {
-      toast.error("Choose what happened to the physical cash.");
       return;
     }
     if (busy) return;
@@ -580,7 +569,6 @@ function CashPage() {
                 value={kind}
                 onValueChange={(v) => {
                   setKind(v as EntryKind);
-                  setDrawerMove(defaultDrawerMove(v as EntryKind, source));
                 }}
               >
                 <SelectTrigger className="h-12 w-full">
@@ -606,7 +594,6 @@ function CashPage() {
                 onValueChange={(v) => {
                   const next = v === "none" ? "" : (v as NoteSource);
                   setSource(next);
-                  if (kind === "add_balance") setDrawerMove(defaultDrawerMove(kind, next));
                 }}
               >
                 <SelectTrigger className="h-12 w-full">
@@ -651,40 +638,18 @@ function CashPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Physical cash (Cash on hand)</Label>
-              <div className="grid gap-2" role="radiogroup" aria-label="Physical cash">
-                {DRAWER_MOVES.map((m) => (
-                  <Button
-                    key={m.value}
-                    type="button"
-                    variant={drawerMove === m.value ? "default" : "outline"}
-                    role="radio"
-                    aria-checked={drawerMove === m.value}
-                    onClick={() => setDrawerMove(m.value)}
-                    className={cn(
-                      "min-h-12 h-auto justify-start whitespace-normal rounded-lg border px-3 py-3 text-left text-sm font-semibold",
-                      drawerMove === m.value
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "bg-card",
-                    )}
-                  >
-                    {m.label}
-                  </Button>
-                ))}
-              </div>
               <label className="flex min-h-11 items-center gap-2 text-sm">
                 <input
                   type="checkbox"
                   className="size-5 accent-primary"
-                  checked={feeInCash}
-                  onChange={(e) => setFeeInCash(e.target.checked)}
+                  checked={!feeInCash}
+                  onChange={(e) => setFeeInCash(!e.target.checked)}
                 />
-                Service fee was paid in cash
+                Fee was deducted from GCash instead
               </label>
               <p className="text-[11px] text-muted-foreground">
-                Cash In: receive the customer's cash and send GCash. Cash Out: give the customer
-                cash and receive GCash. Bank/online funding moves no physical cash. A fee paid in
-                cash adds to Cash on hand only; it is not added to the GCash balance.
+                Cash on hand updates automatically: Cash In, Buy Load and Pay Bills add cash; Cash
+                Out gives cash; Add Balance takes cash only when funded from Cash on hand.
               </p>
               {showPreview ? (
                 <dl className="grid gap-1 text-sm" aria-label="Transaction cash effects">
