@@ -335,7 +335,7 @@ function SettingsPage() {
                 ? "Manage plan"
                 : nativeApp
                   ? "What BentaKo Pro includes"
-                  : "See BentaKo Pro — ₱99/month"}
+                  : "See BentaKo Pro — ₱59/month"}
             </Link>
           </Button>
           {nativeApp && !pro ? (

@@ -29,12 +29,12 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
       {
         name: "description",
         content:
-          "Compare the free BentaKo plan with BentaKo Pro at ₱99 a month: cloud backup, unlimited products, extra devices and up to 30-day reports.",
+          "Compare the free BentaKo plan with BentaKo Pro at ₱59 a month: cloud backup, unlimited products, extra devices and up to 30-day reports.",
       },
       { property: "og:title", content: "BentaKo Pro — Plans and pricing" },
       {
         property: "og:description",
-        content: "Free forever on one phone, or ₱99 a month to sync eligible records and grow.",
+        content: "Free forever on one phone, or ₱59 a month to sync eligible records and grow.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
