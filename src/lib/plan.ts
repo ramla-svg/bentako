@@ -14,8 +14,8 @@ export type PlanPeriod = "monthly" | "yearly";
 
 export const GRACE_DAYS = 14;
 
-export const PRO_PRICE_MONTHLY = 99;
-export const PRO_PRICE_YEARLY = 999;
+export const PRO_PRICE_MONTHLY = 59;
+export const PRO_PRICE_YEARLY = 599;
 
 export interface PlanLimits {
   /** Maximum active products; Infinity = no limit. */

@@ -724,7 +724,7 @@ function ProductsPage() {
             <DialogTitle className="font-display">Free plan holds {limit} products</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            You already have {activeCount}. BentaKo Pro removes the limit for ₱99 a month, and keeps
+            You already have {activeCount}. BentaKo Pro removes the limit for ₱59 a month, and keeps
             a safe copy of your records outside this phone.
           </p>
           <DialogFooter className="gap-2">

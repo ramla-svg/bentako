@@ -24,10 +24,10 @@ beforeEach(resetDb);
 afterEach(() => vi.useRealTimers());
 
 describe("retained plan rules and available screens", () => {
-  it("retains 99 monthly and 999 yearly with 189 annual saving", () => {
-    expect(PRO_PRICE_MONTHLY).toBe(99);
-    expect(PRO_PRICE_YEARLY).toBe(999);
-    expect(ANNUAL_SAVING).toBe(189);
+  it("sets 59 monthly and 599 yearly with 109 annual saving", () => {
+    expect(PRO_PRICE_MONTHLY).toBe(59);
+    expect(PRO_PRICE_YEARLY).toBe(599);
+    expect(ANNUAL_SAVING).toBe(109);
   });
   it("retains Free 60 products and 1 device", () => {
     expect(PLAN_LIMITS.free.products).toBe(60);
