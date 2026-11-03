@@ -117,7 +117,7 @@ function UpgradePage() {
               )}
             >
               <span className="mb-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
-                Save ₱{ANNUAL_SAVING} · ~16%
+                Save ₱{ANNUAL_SAVING} · ~15%
               </span>
               <p className="text-xs font-semibold uppercase text-muted-foreground">Yearly</p>
               <p className="tnum font-display text-xl font-bold">₱{PRO_PRICE_YEARLY}</p>
