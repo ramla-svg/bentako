@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { InstallButton } from "@/components/install-button";
 import { BrandMark } from "@/components/brand-mark";
+import { LandingDemo } from "@/components/landing-demo/landing-demo";
 import shopPhoto from "@/assets/landing-shop.jpg";
 import ownerPhoto from "@/assets/landing-owner.jpg";
 
@@ -239,6 +240,9 @@ export function PublicLanding() {
                     Tingnan ang app <ChevronRight />
                   </a>
                 </Button>
+                <Button asChild variant="ghost" className="landing-view">
+                  <a href="#demo">Subukan ang demo ↓</a>
+                </Button>
                 <InstallButton className="landing-signin" />
               </div>
               <ul className="landing-reassurance">
@@ -293,6 +297,7 @@ export function PublicLanding() {
             ))}
           </div>
         </section>
+        <LandingDemo />
         <section id="paano-gumagana" className="landing-steps" aria-labelledby="steps-title">
           <div className="landing-container">
             <span className="landing-section-label">KONTING TAP. MALAKING LINAW.</span>
