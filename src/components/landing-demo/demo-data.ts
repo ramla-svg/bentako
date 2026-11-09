@@ -52,8 +52,9 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
       return { ...state, paid: null, cart: { ...state.cart, [action.id]: (state.cart[action.id] ?? 0) + 1 } };
     case "remove": {
       const cart = { ...state.cart };
-      if ((cart[action.id] ?? 0) <= 1) delete cart[action.id];
-      else cart[action.id] -= 1;
+      const qty = cart[action.id] ?? 0;
+      if (qty <= 1) delete cart[action.id];
+      else cart[action.id] = qty - 1;
       return { ...state, cart };
     }
     case "pay": {
